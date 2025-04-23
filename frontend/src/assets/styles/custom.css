@@ -1,0 +1,113 @@
+body {
+    background-color: #f03248;
+    font-size: 14px;
+    font-family: "Roboto", sans-serif;
+    background: #e7eef6;
+}
+
+.swiper-container-wrapper {
+    position: relative;
+  }
+  
+  .swiper-button-prev-custom,
+  .swiper-button-next-custom {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .swiper-button-prev-custom {
+    left: 10px;
+  }
+  
+  .swiper-button-next-custom {
+    right: 10px;
+  }
+  
+  /* Hover effect khi nút không bị disabled */
+  .swiper-button-prev-custom:hover:not(.swiper-button-disabled),
+  .swiper-button-next-custom:hover:not(.swiper-button-disabled) {
+    background-color: rgba(255, 255, 255, 1);
+    transform: translateY(-50%) scale(1.1);
+    border: 1px solid #ed4d2d;
+  }
+  
+  /* Màu SVG mặc định */
+  .swiper-button-prev-custom svg,
+  .swiper-button-next-custom svg {
+    stroke: #333;
+    transition: stroke 0.3s ease;
+  }
+  
+  /* Hover effect cho SVG khi không bị disabled */
+  .swiper-button-prev-custom:hover:not(.swiper-button-disabled) svg,
+  .swiper-button-next-custom:hover:not(.swiper-button-disabled) svg {
+    stroke: #ff0000; /* Màu khi hover */
+  }
+  
+  /* Trạng thái disabled */
+  .swiper-button-prev-custom.swiper-button-disabled,
+  .swiper-button-next-custom.swiper-button-disabled {
+    opacity: 0.5; /* Làm mờ nút */
+    cursor: not-allowed; /* Con trỏ không thể click */
+    background-color: rgba(255, 255, 255, 0.5); /* Nền mờ hơn */
+    transform: translateY(-50%) scale(1); /* Không scale khi disabled */
+  }
+  
+  /* Đảm bảo SVG cũng mờ đi khi disabled */
+  .swiper-button-prev-custom.swiper-button-disabled svg,
+  .swiper-button-next-custom.swiper-button-disabled svg {
+    stroke: #999; /* Màu xám nhạt khi disabled */
+  }
+
+  .thump-flash {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .count-down {
+    display: inline-block;
+  }
+  
+  .timer-view {
+    display: flex;
+    align-items: center;
+    font-family: Arial, sans-serif; /* Có thể thay đổi font */
+  }
+  
+  .countdown-item {
+    display: inline-block;
+    width: 35px; /* Điều chỉnh kích thước */
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    background-color: #fff; /* Nền trắng */
+    border: 1px solid #ff4500; /* Viền màu cam giống hình */
+    border-radius: 4px; /* Bo góc nhẹ */
+    color: #ff4500; /* Màu chữ cam */
+    font-size: 16px; /* Kích thước chữ */
+    font-weight: bold;
+    margin: 0 2px; /* Khoảng cách giữa các số */
+  }
+  
+  .countdown-separator {
+    display: inline-block;
+    color: #ff4500; /* Màu dấu : */
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 2px;
+  }
+
+  
