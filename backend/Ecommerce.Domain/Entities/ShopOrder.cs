@@ -16,10 +16,10 @@ public class ShopOrder
     public int UserId { get; set; }
 
     // Navigation property
-    public UserPaymentMethod PaymentMethod { get; set; }
-    public Address ShippingAddress { get; set; }
-    public ShippingMethod ShippingMethod { get; set; }
-    public User User { get; set; }
+    public UserPaymentMethod PaymentMethod { get; set; } = new UserPaymentMethod();
+    public Address ShippingAddress { get; set; } = new Address();
+    public ShippingMethod ShippingMethod { get; set; } = new ShippingMethod();
+    public User User { get; set; } = new User();
 
     public List<OrderStatusHistory> OrderStatusHistories { get; set; } = new List<OrderStatusHistory>();
     public List<OrderLine> OrderLines { get; set; } = new List<OrderLine>();

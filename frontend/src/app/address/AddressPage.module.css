@@ -1,0 +1,446 @@
+.main {
+    background: rgb(245, 245, 250);
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 1170px;
+    margin: 0 auto;
+}
+
+.addressSection {
+    margin-bottom: 20px;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.addressListText {
+    font-size: 16px;
+    font-weight: 400;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+.addressList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.addressRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.addressRow > div:nth-child(2) {
+    /* Ensure right column is empty if only one address in row */
+    grid-column: 2;
+}
+
+.addressItem {
+    border: 1px solid #e0e0e0;
+    padding: 16px;
+    border-radius: 4px;
+    position: relative;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+}
+
+.defaultAddress {
+    border: 1px dashed rgb(0, 153, 0);
+}
+
+.content {
+    flex: 1;
+}
+
+.name {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #333;
+}
+
+.address {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 4px;
+    line-height: 1.5;
+}
+
+.phone {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+.action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+}
+
+.savingAddress {
+    background: #626455;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.savingAddress:hover {
+    background: #40a9ff;
+}
+
+.editAddress, .deleteAddress {
+    background: none;
+    border: 1px solid #1890ff;
+    color: #1890ff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 3px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.editAddress:hover, .deleteAddress:hover {
+    color: #40a9ff;
+    background: rgba(24, 144, 255, 0.1);
+    border-color: #40a9ff;
+}
+
+.default {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    border: 1px dashed rgb(0, 153, 0);
+    color: #1890ff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.addNewAddress {
+    font-size: 14px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.addNewAddress span {
+    color: #1890ff;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.addNewAddress span:hover {
+    color: #40a9ff;
+}
+
+.formContainer {
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    border-radius: 4px;
+    background: #fff;
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+.formContainer.editing {
+    border-color: #1890ff;
+    background: rgba(24, 144, 255, 0.05);
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.form {
+    max-width: 600px;
+}
+
+.formGroup {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.label {
+    width: 150px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    padding-top: 8px;
+    line-height: 1.5;
+}
+
+.input, .textarea {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input:focus, .textarea:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.input::placeholder, .textarea::placeholder {
+    color: #bfbfbf;
+}
+
+.textarea {
+    min-height: 80px;
+    max-height: 120px;
+    overflow-y: auto;
+    resize: none;
+}
+
+.customSelectWrapper {
+    flex: 1;
+    position: relative;
+    width: 66.6666%;
+}
+
+.customSelect {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.customSelect:hover {
+    border-color: #1890ff;
+}
+
+.customSelect:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.customSelect.disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.selectedValue {
+    color: #333;
+}
+
+.placeholder {
+    color: #bfbfbf;
+}
+
+.arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #666;
+}
+
+.dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+.option {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: rgb(131, 131, 131);
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.option:hover {
+    background: rgb(0, 102, 240);
+    color: #fff;
+}
+
+.dropdown::-webkit-scrollbar {
+    width: 10px;
+}
+
+.dropdown::-webkit-scrollbar-track {
+    border: 1px solid #dddaef;
+    background: #fff;
+    border-radius: 4px;
+}
+
+.dropdown::-webkit-scrollbar-thumb {
+    background: #c1bcbc;
+    border-radius: 4px;
+}
+
+.dropdown::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+.hint {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.radioGroup {
+    display: flex;
+    gap: 30px;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.radioInput {
+    display: none;
+}
+
+.radioCustom {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #d9d9d9;
+    border-radius: 50%;
+    position: relative;
+    margin-right: 8px;
+    background: #fff;
+}
+
+.radioInput:checked + .radioCustom::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: #1890ff;
+    border-radius: 50%;
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.checkboxInput {
+    display: none;
+}
+
+.checkboxCustom {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    position: relative;
+    margin-right: 8px;
+    background: #fff;
+}
+
+.checkboxInput:checked + .checkboxCustom::after {
+    content: '✔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #1890ff;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.buttonGroup {
+    display: flex;
+    gap: 12px;
+}
+
+.cancelButton {
+    padding: 8px 20px;
+    border: 1px solid #d9d9d9;
+    background: white;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s;
+}
+
+.cancelButton:hover {
+    background: #f5f5f5;
+}
+
+.submitButton {
+    padding: 8px 20px;
+    background: #1890ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.submitButton:hover {
+    background: #40a9ff;
+}
+
+.submitButton.editing {
+    background: #52c41a; /* Màu xanh lá để phân biệt */
+}
+
+.submitButton.editing:hover {
+    background: #73d13d;
+}

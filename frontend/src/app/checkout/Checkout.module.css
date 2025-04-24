@@ -1,0 +1,922 @@
+.main {
+    background: rgb(245, 245, 250);
+    padding: 20px;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.left {
+    flex: 2;
+}
+
+.right {
+    flex: 0.8;
+}
+
+/* Section Styling */
+.section {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.sectionTitle {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+/* Shipping Method */
+.shippingMethod {
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    margin-bottom: 30px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #e5f2ff;
+    padding: 12px;
+    padding-bottom: 5px;
+    width: 50%;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.radioLabel input[type="radio"] {
+    display: none;
+}
+
+.radioFake {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 50%;
+    position: relative;
+}
+
+.radioLabel input:checked + .radioFake::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    background: #0a68ff;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.methodText {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.freeshipBadge {
+    background: white;
+    color: #0a68ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Payment Methods */
+.paymentMethods {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.method {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.methodIcon {
+    width: 32px;
+    height: 32px;
+}
+
+.methodContent {
+    display: flex;
+    flex-direction: column;
+}
+
+.subLabel {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.addCard {
+    margin-left: 40px;
+    margin-top: 8px;
+}
+
+.addCardButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.addIcon {
+    width: 24px;
+    height: 24px;
+}
+
+.paymentOffers {
+    padding: 10px;
+    background-color: rgb(245, 245, 251);
+    margin-left: 40px;
+    margin-top: 16px;
+}
+
+.offerTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.offerIcon {
+    width: 20px;
+    height: 20px;
+}
+
+.offerList {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.offerItem {
+    position: relative;
+    border: 1px solid #c2cee5;
+    border-radius: 4px;
+    padding: 8px;
+    background: rgb(245, 245, 251);
+    display: flex;
+    flex-direction: column;
+}
+
+.offerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.offerLabel {
+    color: #0a68ff;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.offerLabel.orange {
+    color: #ff6200;
+}
+
+.offerImage {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 71px;
+    height: 12px;
+    border-radius: 4px;
+}
+
+.offerRight {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.offerRight span:first-child {
+    font-size: 14px;
+}
+
+.offerCondition {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.infoIcon {
+    position: absolute;
+    top: 8px;
+    right: 48px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Right Section */
+.deliveryInfo {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.blockHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.blockHeader h3 {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.blockHeader a {
+    color: #0a68ff;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.blockHeader span {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.customerInfo {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    font-weight: 600;
+    color: rgb(56, 56, 62);
+    margin-bottom: 2px;
+}
+
+.customerInfo p {
+    font-size: 14px;
+}
+
+.address {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.addressType {
+    background: #f3f4f6;
+    color: #6b7280;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+
+/* Coupons Section */
+.couponSection {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.couponList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.coupon {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.couponWrapper {
+    position: relative;
+    z-index: 2;
+}
+
+.couponBg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.couponContent {
+    display: flex;
+    align-items: center;
+    padding: 0px 12px;
+    position: relative;
+    z-index: 2;
+}
+
+.couponImageWrapper {
+    margin-right: 8px;
+}
+
+.couponImage {
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 7px;
+    left: 31px;
+}
+
+.couponDiscount {
+    position: absolute;
+    top: 10px;
+    left: 80px;
+    font-size: 13px;
+    color: #0a68ff;
+    font-weight: 500;
+    line-height: 20px;
+    max-height: 20px;
+    margin-right: 4px;
+}
+
+.couponActions {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    gap: 8px;
+}
+
+.couponInfoButton {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    margin-left: -8px;
+}
+
+.couponInfoIcon {
+    position: absolute;
+    right: 100px;
+    top: 14px;
+    width: 16px;
+    height: 16px;
+}
+
+.couponButton {
+    position: absolute;
+    right: 20px;
+    background: #ed4d2d;
+    border: 1px solid #ed4d2d;
+    color: #fff;
+    border-radius: 4px;
+    padding: 0px 4px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    height: 30px;
+}
+
+.couponButton:hover {
+    background-color: #0056d2;
+    border: 1px solid #0056d2;
+}
+
+.couponMore {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #0a68ff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.couponMoreIcon {
+    flex-shrink: 0;
+}
+
+/* Order Summary */
+.orderSummary {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.orderDetails {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 16px;
+}
+
+.summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.positive {
+    color: #0a68ff;
+}
+
+.total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    font-weight: 500;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.totalAmount {
+    color: #111827;
+}
+
+.saving {
+    display: block;
+    font-size: 12px;
+    color: #0a68ff;
+    font-weight: 400;
+}
+
+.additionalText {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
+}
+
+.placeOrder {
+    width: 100%;
+    background: #ed4d2d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 16px;
+}
+
+.placeOrder:hover {
+    background: #e64446;
+}
+
+/* Banners */
+.banners {
+    margin-top: 20px;
+}
+
+.bannerSlider {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    scroll-snap-type: x mandatory;
+}
+
+.bannerLink {
+    flex: 0 0 320px;
+    scroll-snap-align: start;
+}
+
+.bannerImage {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.dot {
+    width: 16px;
+    height: 2px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.activeDot {
+    width: 24px;
+    height: 2px;
+    background: #0a68ff;
+    border-radius: 4px;
+}
+
+/* Modal Overlay */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(39, 39, 42, 0.7);
+    z-index: 999;
+}
+
+/* Modal Content */
+.modalContent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    bottom: 20px;
+    transform: translate(-50%, -50%);
+    padding: 36px;
+    border: none;
+    border-radius: 4px;
+    overflow-y: hidden;
+    width: 750px;
+    min-height: 750px;
+    outline: 0;
+    background-color: rgb(255, 255, 255);
+}
+
+/* Modal Inner */
+.modalInner {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Modal Title */
+.modalTitle {
+    font-size: 24px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+/* Card Type List */
+.cardTypeList {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+/* Add Card Form */
+.addCardForm {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+/* Form Left */
+.formLeft {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Form Right */
+.formRight {
+    flex: 1;
+}
+
+/* Form Field */
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Label */
+.label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Input */
+.inputLong {
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.inputShort {
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100px;
+}
+
+/* Input Wrapper */
+.inputWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Card Back Image */
+.cardBack {
+    width: 61px;
+    height: auto;
+}
+
+/* Error Placeholder */
+.error {
+    height: 16px;
+}
+
+/* Card Preview */
+.cardPreview {
+    width: 100%;
+}
+
+/* Card */
+.card {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    perspective: 1000px;
+}
+
+/* Card Front */
+.cardFront {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding-top: 56.25%;
+    background: linear-gradient(25deg, rgb(153, 153, 153), rgb(153, 153, 153));
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    backface-visibility: hidden;
+    transform: rotateY(0deg);
+    transition: transform 0.5s ease;
+}
+
+/* Card Back */
+.cardBack {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding-top: 56.25%;
+    background: linear-gradient(25deg, rgb(153, 153, 153), rgb(153, 153, 153));
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    backface-visibility: hidden;
+    transform: rotateY(180deg);
+    transition: transform 0.5s ease;
+}
+
+/* Khi focus vào CVC, lật thẻ */
+.card.flipped .cardFront {
+    transform: rotateY(-180deg);
+}
+
+.card.flipped .cardBack {
+    transform: rotateY(0deg);
+}
+
+/* Card Background */
+.cardBackground {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Card Issuer */
+.cardIssuer {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 24px;
+}
+
+/* Card CVC Front */
+.cardCvcFront {
+    display: none;
+}
+
+/* Card Number */
+.cardNumber {
+    position: absolute;
+    top: 40%;
+    left: 20px;
+    font-size: 18px;
+    color: #333;
+    font-weight: 1000;
+    opacity: 0.2;
+}
+
+/* Card Name */
+.cardName {
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0.5;
+    color: #333;
+}
+
+/* Card Expiry */
+.cardExpiry {
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Card Expiry Valid */
+.cardExpiryValid {
+    font-size: 13px;
+    color: #241f1f;
+    font-weight: 500;
+    opacity: 0.5;
+}
+
+/* Card Expiry Value */
+.cardExpiryValue {
+    font-size: 12px;
+    color: #333;
+    opacity: 0.5;
+}
+
+/* Card Chip */
+.cardChip {
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9Ijc2IiB2aWV3Qm94PSIwIDAgMTAwIDc2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIj48ZGVmcz48bGluZWFyR3JhZGllbnQgeDE9IjEwMCUiIHkxPSIwJSIgeDI9IjAlIiB5Mj0iMTAwJSIgaWQ9ImEiPjxzdG9wIHN0b3AtY29sb3I9IiNGM0QwOEYiIG9mZnNldD0iMCUiLz48c3RvcCBzdG9wLWNvbG9yPSIjRkFENzY2IiBvZmZzZXQ9IjEwMCUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNOTIuNzI3IDc1LjQ1NWgtODUuNDU1Yy00IDAtNy4yNzMtMy4yNzMtNy4yNzMtNy4yNzN2LTYwLjkwOWMwLTQgMy4yNzMtNy4yNzMgNy4yNzMtNy4yNzNoODUuNDU1YzQgMCA3LjI3MyAzLjI3MyA3LjI3MyA3LjI3M3Y2MC45MDljMCA0LTMuMjczIDcuMjczLTcuMjczIDcuMjczIiBmaWxsPSJ1cmwoI2EpIi8+PHBhdGggZD0iTTcyLjEyMyAyOC40ODVoMjcuODc4di0xLjgxOGgtMjkuNjQ4Yy0uOTY1IDAtMS44MzIuNjAxLTIuMTcyIDEuNTA0LTIuMjg3IDYuMDcyLTIuNDMzIDEyLjU5NC0uNDM4IDE5Ljg0Mi40NTUgMS42NTQuNDM1IDMuNC0uMSA1LjAzLTIuMDM2IDYuMTk1LTcuNzc5IDE5Ljk4OC0xOC41NTEgMTkuOTg4LTExLjAwOCAwLTE2LjA5Ni0xNS42OTktMTcuMzM0LTIxLjk1Mi0uMTU1LS43ODQtLjEyMi0xLjU5Mi4xMDctMi4zNTcgMS42OTUtNS42NDggMi4wOTQtMTAuNjQtLjAxNi0xOS41OS0uMjA1LS44Ny0uMTgyLTEuNzgzLjA0OC0yLjY0NiA0LjQ4LTE2Ljc1NSAxMi44ODItMjAuMTQ3IDEyLjk2NS0yMC4xNzkuMzU2LS4xMzIuNTkzLS40NzIuNTkzLS44NTJ2LTUuNDU1aC0xLjgxOHYzLjc3NmMwIC42NS0uMzMyIDEuMjUyLS44ODQgMS41OTYtMi44MDMgMS43NDItOC45MDQgNi45MzYtMTIuNTU3IDIwLjQ1Ni0uMTguNjY4LS43ODEgMS4xMzYtMS40NzMgMS4xMzNsLTI4LjcyMi0uMTM5djEuODE4bDI3LjQxNi4xMzNjMS40NjguMDA3IDIuNzM1IDEuMDQxIDMuMDM3IDIuNDc4IDEuNDE2IDYuNzQxIDEuMjE5IDExLjAzOS4wODIgMTUuNDU4LS4zMTYgMS4yMy0xLjQyIDIuMDk2LTIuNjkgMi4xMDlsLTI3Ljg0NC4yN3YxLjgxOWwyOC42MDUtLjI3OGMuNjkzLS4wMDcgMS4yOTYuNDczIDEuNDM1IDEuMTUyIDEuNDQyIDcuMDQxIDYuODg3IDIzLjA3IDE5LjA1IDIzLjA3IDYuMzY4IDAgMTIuMDYyLTQuMjUgMTYuNDY3LTEyLjI5IDIuNjQ0LTQuODI4IDQuMDY3LTkuNTkxIDQuNTQxLTExLjM0NmgyOS45MDF2LTEuODE4aC0yOC4wMTZjLTEuMTU4IDAtMi4xODMtLjc3Mi0yLjQ4OS0xLjg4OS0xLjY5Mi02LjE2NC0xLjc2MS0xMS43NTUtLjItMTYuOTU5LjM3MS0xLjIzNSAxLjUzOC0yLjA2MSAyLjgyNy0yLjA2MXptLTE3LjE1LTIxLjkxNGMuMDQ1LjAyMiA0LjUxOSAyLjMyMiA5LjI1MyAxMC4wNDEuMTcyLjI4LjQ3LjQzNC43NzYuNDM0LjE5OCAwIC4zOTktLjA2NC41NzEtLjIwMi4zNjUtLjI5Mi40MTYtLjgzNy4xNzItMS4yMzUtMy41Ny01LjgwNS03LjAyNC04LjcxLTguNzc1LTkuOTMxLS40My0uMjk5LS42OC0uNzkyLS42OC0xLjMxNXYtNC4zNjNoLTEuODE4djUuNzU4YzAgLjM0NS4xOTUuNjU5LjUwMi44MTN6IiBmaWxsPSIjMEMwMjAwIi8+PC9zdmc+);
+    background-size: cover;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 30px;
+    border-radius: 4px;
+}
+
+/* Card Stripe */
+.cardStripe {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    background: #2c2c2c;
+}
+
+/* Card Signature */
+.cardSignature {
+    position: absolute;
+    top: 70px;
+    left: 20px;
+    width: calc(100% - 40px);
+    height: 30px;
+    background: #fff;
+    border: 1px solid #ccc;
+}
+
+/* Card CVC */
+.cardCvc {
+    position: absolute;
+    top: 75px;
+    right: 20px;
+    font-size: 14px;
+    color: #333;
+    opacity: 0.5;
+}
+
+/* Khi focus vào CVC, tăng opacity của CVC */
+.cardCvc.focused {
+    opacity: 1;
+    transition: opacity 1s ease;
+}
+
+/* Button Group */
+.buttonGroup {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Back Button */
+.backButton {
+    padding: 10px 80px;
+    background: #ffffff;
+    border: 1px solid #1168e9;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.backButton:hover {
+    background: #f5f5f5;
+    border-color: #b0b0b0;
+    color: #111;
+}
+
+/* Confirm Button */
+.confirmButton {
+    padding: 10px 80px;
+    background: #ed4d2d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.confirmButton:hover {
+    background: #0056d2;
+}
+
+/* Bank Selection */
+.bankSelection {
+    padding: 10px;
+    background-color: rgb(245, 245, 251);
+    margin-left: 40px;
+    margin-top: 16px;
+    overflow: hidden;
+    transition: all 0.5s ease; /* Hiệu ứng mượt mà cho height và opacity */
+  }
+  
+  /* Trạng thái ẩn */
+  .bankSelection.hide {
+    height: 0;
+    opacity: 0;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  
+  /* Trạng thái hiển thị */
+  .bankSelection.show {
+    height: auto; /* Chiều cao tự động dựa trên nội dung */
+    opacity: 1;
+    padding: 10px;
+    margin-top: 16px;
+  }
+  
+  .bankList {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  
+  .bankItem {
+    position: relative;
+    border: 1px solid #c2cee5;
+    border-radius: 4px;
+    padding: 8px;
+    background: rgb(245, 245, 251);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .bankContent {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .bankImage {
+    width: 80px;
+    height: 53px;
+    object-fit: contain;
+  }
+  
+  .checkedIcon {
+    position: absolute;
+    top: -14px;
+    right: -35px;
+    width: 20px;
+    height: 20px;
+  }

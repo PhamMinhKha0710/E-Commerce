@@ -10,14 +10,15 @@ public class Product
     public int TotalRatingCount { get; set; } = 0;
     public bool HasVariation { get; set; } = false;
     public string Suggestion { get; set; } = string.Empty;
+    public byte[] ImageEmbedding { get; set; } = new byte[8];
 
     // Khóa ngoại
     public int ProductCategoryId { get; set; }
     public int BrandId { get; set; }
 
     // Navigation property
-    public ProductCategory ProductCategory { get; set; }
-    public Brand Brand { get; set; }
+    public ProductCategory ProductCategory { get; set; } = new ProductCategory();
+    public Brand Brand { get; set; } = new Brand();
     public List<ProductItem> ProductItems { get; set; } = new List<ProductItem>();
     public List<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 }

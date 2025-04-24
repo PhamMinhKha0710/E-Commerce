@@ -1,0 +1,119 @@
+.packageInfo {
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    box-sizing: border-box;
+    padding-right: 10px;
+    padding-left: 10px;
+    border: 1px solid #e5e7eb;
+    padding-top: 16px;
+    padding-bottom: 16px; /* Thêm padding dưới để không sát border */
+    border-radius: 10px;
+}
+.packageInfo:after {
+    display: block;
+    content: "";
+    width: 200px;
+    height: 1px;
+    background-color: #fff;
+    top: -1;
+    left: 20px;
+    position: absolute;
+}
+
+.packageTitle {
+    z-index: 1000;
+    height: 0px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    background: none; /* Bỏ background màu xanh nhạt */
+    padding: 0; /* Bỏ padding để chữ nằm sát border */
+}
+
+.packageDetails {
+    display: flex;
+    gap: 16px;
+}
+
+.leftColumn {
+    flex: 2;
+}
+
+.rightColumn {
+    flex: 1;
+}
+
+.fulfillment {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.fulfillmentIcon {
+    flex-shrink: 0;
+}
+
+.packageSummary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.methodText {
+    font-size: 12px;
+}
+
+.fee {
+    display: flex;
+    gap: 8px;
+}
+
+.originalFee {
+    text-decoration: line-through;
+    color: #6b7280;
+}
+
+.currentFee {
+    color: #0a68ff;
+    font-weight: 500;
+}
+
+.packageItem {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.itemIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+}
+
+.itemInfo {
+    flex: 1;
+}
+
+.itemName {
+    font-size: 14px;
+    line-height: 20px;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1; /* Giới hạn chỉ hiển thị 1 dòng */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Hiển thị dấu ba chấm khi văn bản bị tràn */
+}
+
+.itemDetails {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.itemPrice {
+    color: #111827;
+}

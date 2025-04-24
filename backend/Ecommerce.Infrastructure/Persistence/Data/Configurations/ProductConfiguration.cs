@@ -36,6 +36,10 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Suggestion)
                .HasMaxLength(500);
 
+        builder.Property(p => p.ImageEmbedding)
+               .HasColumnName("ImageEmbedding")
+               .HasColumnType("BINARY(8)");
+
         builder.HasOne(p => p.ProductCategory)
                .WithMany(pc => pc.Products)
                .HasForeignKey(p => p.ProductCategoryId)

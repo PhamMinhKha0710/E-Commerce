@@ -8,5 +8,5 @@ public class ProductImage
     public int ProductId { get; set; }
 
     // Navigation property
-    public Product Product { get; set; }
+    public Product Product { get; set; } = new Product();
 }

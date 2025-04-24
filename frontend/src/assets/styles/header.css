@@ -852,6 +852,8 @@ header.header .header-middle .header-cart .cart-head:hover svg {
         top: -5px;
     }
 }
+
+
 @media (max-width: 991px) {
     body {
         padding-bottom: 51px;
@@ -863,7 +865,7 @@ header.header .header-middle .header-cart .cart-head:hover svg {
         padding: 10px 15px;
     }
     header.header {
-        margin-bottom: 0;
+        margin-bottom: 0 !important;
     }
     header.header .header-middle {
         border-bottom: none;

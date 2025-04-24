@@ -9,6 +9,6 @@ public class ShoppingCartItem
     public int ProductItemId { get; set; }
 
     // Navigation property
-    public ShoppingCart ShoppingCart { get; set; }
-    public ProductItem ProductItem { get; set; }
+    public ShoppingCart ShoppingCart { get; set; } = new ShoppingCart();
+    public ProductItem ProductItem { get; set; } = new ProductItem();
 }

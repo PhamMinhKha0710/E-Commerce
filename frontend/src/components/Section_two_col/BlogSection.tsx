@@ -1,5 +1,8 @@
+"use client"; // Thêm "use client" vì sử dụng useState
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState } from 'react';
 
 // Định nghĩa kiểu dữ liệu cho bài viết
 interface BlogPost {
@@ -71,6 +74,10 @@ const promotionNews: BlogPost[] = [
 
 // Component BlogSection
 const BlogSection: React.FC = () => {
+  const [isBigNewsLoaded, setIsBigNewsLoaded] = useState(false);
+  const [smallNewsLoaded, setSmallNewsLoaded] = useState<Record<string, boolean>>({});
+  const [promotionNewsLoaded, setPromotionNewsLoaded] = useState<Record<string, boolean>>({});
+
   return (
     <div className="section_blogs">
       <div className="container">
@@ -93,9 +100,10 @@ const BlogSection: React.FC = () => {
                   <Image
                     src={bigNews.imageUrl}
                     alt={bigNews.title}
-                    width={400} // Điều chỉnh kích thước theo nhu cầu
+                    width={400}
                     height={300}
-                    className="lazyload img-responsive mx-auto d-block"
+                    className={`lazyload img-responsive mx-auto d-block ${isBigNewsLoaded ? 'loaded' : ''}`}
+                    onLoad={() => setIsBigNewsLoaded(true)}
                   />
                 </div>
                 <p>{bigNews.title}</p>
@@ -111,9 +119,10 @@ const BlogSection: React.FC = () => {
                     <Image
                       src={post.imageUrl}
                       alt={post.title}
-                      width={150} // Điều chỉnh kích thước theo nhu cầu
+                      width={150}
                       height={100}
-                      className="lazyload img-responsive mx-auto d-block"
+                      className={`lazyload img-responsive mx-auto d-block ${smallNewsLoaded[post.slug] ? 'loaded' : ''}`}
+                      onLoad={() => setSmallNewsLoaded((prev) => ({ ...prev, [post.slug]: true }))}
                     />
                   </div>
                   <p>{post.title}</p>
@@ -136,9 +145,10 @@ const BlogSection: React.FC = () => {
                         <Image
                           src={post.imageUrl}
                           alt={post.title}
-                          width={100} // Điều chỉnh kích thước theo nhu cầu
+                          width={100}
                           height={75}
-                          className="lazyload img-responsive center-block"
+                          className={`lazyload img-responsive center-block ${promotionNewsLoaded[post.slug] ? 'loaded' : ''}`}
+                          onLoad={() => setPromotionNewsLoaded((prev) => ({ ...prev, [post.slug]: true }))}
                         />
                       </Link>
                       <div className="info">

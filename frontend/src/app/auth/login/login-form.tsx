@@ -1,12 +1,18 @@
-'use client';
-import React, { FormEvent, useState, useRef, useEffect } from 'react';
+"use client";
+
+import React, { FormEvent, useState, useRef, useEffect } from "react";
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 const LoginForm = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [recoverEmail, setRecoverEmail] = useState('');
+  const { login } = useAuth();
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [recoverEmail, setRecoverEmail] = useState("");
   const [showRecoverForm, setShowRecoverForm] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const recoverFormRef = useRef<HTMLDivElement>(null);
   const [recoverFormHeight, setRecoverFormHeight] = useState(0);
 
@@ -18,21 +24,65 @@ const LoginForm = () => {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError('');
+    setFormError("");
 
     if (!email || !password) {
-      setFormError('Vui lòng điền đầy đủ email và mật khẩu.');
+      setFormError("Vui lòng điền đầy đủ email và mật khẩu.");
       return;
     }
 
-    // TODO: Gửi yêu cầu đăng nhập đến backend
-    console.log('Logging in with:', email, password);
+    setIsLoading(true);
+
+    try {
+      await login(email, password);
+      const redirectUrl = localStorage.getItem('redirectAfterLogin') || '/';
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirectUrl);
+    } catch  {
+      setFormError("Đăng nhập thất bại. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRecoverSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: Send recover email request to backend
-    console.log('Recovering password with:', recoverEmail);
+    setFormError("");
+
+    if (!recoverEmail) {
+      setFormError("Vui lòng nhập email để khôi phục mật khẩu.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5130/api/auth/recover-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: recoverEmail,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        setFormError(errorData.message || errorData.error || "Gửi yêu cầu khôi phục thất bại.");
+        setIsLoading(false);
+        return;
+      }
+
+      alert("Yêu cầu khôi phục mật khẩu đã được gửi. Vui lòng kiểm tra email.");
+      setRecoverEmail("");
+      setShowRecoverForm(false);
+    } catch (error) {
+      console.error("Recover error:", error);
+      setFormError("Đã xảy ra lỗi khi gửi yêu cầu khôi phục. Vui lòng thử lại sau.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleToggleRecoverForm = () => {
@@ -40,9 +90,9 @@ const LoginForm = () => {
   };
 
   const recoverFormStyle = {
-    height: showRecoverForm ? `${recoverFormHeight}px` : '0px',
-    overflow: 'hidden',
-    transition: 'height 0.3s ease-in-out', // Thêm transition ở đây
+    height: showRecoverForm ? `${recoverFormHeight}px` : "0px",
+    overflow: "hidden",
+    transition: "height 0.3s ease-in-out",
   };
 
   return (
@@ -57,8 +107,12 @@ const LoginForm = () => {
         >
           <input name="FormType" type="hidden" value="customer_login" />
           <input name="utf8" type="hidden" value="true" />
-          <input name="ReturnUrl" type="hidden" value="/account" />
-          {formError && <span className="form-signup" style={{ color: 'red' }}>{formError}</span>}
+          <input name="ReturnUrl" type="hidden" value="/auth" />
+          {formError && (
+            <span className="form-signup" style={{ color: "red" }}>
+              {formError}
+            </span>
+          )}
           <div className="form-signup clearfix">
             <fieldset className="form-group">
               <input
@@ -71,6 +125,7 @@ const LoginForm = () => {
                 placeholder="Email"
                 required
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </fieldset>
             <fieldset className="form-group">
@@ -83,10 +138,16 @@ const LoginForm = () => {
                 placeholder="Mật khẩu"
                 required
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </fieldset>
             <div className="pull-xs-left">
-              <input className="btn btn-style btn_50" type="submit" value="Đăng nhập" />
+              <input
+                className="btn btn-style btn_50"
+                type="submit"
+                value={isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                disabled={isLoading}
+              />
               <span className="block a-center quenmk" onClick={handleToggleRecoverForm}>
                 Quên mật khẩu
               </span>
@@ -105,7 +166,9 @@ const LoginForm = () => {
           >
             <input name="FormType" type="hidden" value="recover_customer_password" />
             <input name="utf8" type="hidden" value="true" />
-            <div className="form-signup" style={{ color: 'red' }}></div>
+            <div className="form-signup" style={{ color: "red" }}>
+              {formError && showRecoverForm && formError}
+            </div>
             <div className="form-signup clearfix">
               <fieldset className="form-group">
                 <input
@@ -118,11 +181,18 @@ const LoginForm = () => {
                   placeholder="Email"
                   required
                   onChange={(e) => setRecoverEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </fieldset>
             </div>
             <div className="action_bottom">
-              <input className="btn btn-style btn_50" style={{ marginTop: '0px' }} type="submit" value="Lấy lại mật khẩu" />
+              <input
+                className="btn btn-style btn_50"
+                style={{ marginTop: "0px" }}
+                type="submit"
+                value={isLoading ? "Đang xử lý..." : "Lấy lại mật khẩu"}
+                disabled={isLoading}
+              />
             </div>
           </form>
         </div>

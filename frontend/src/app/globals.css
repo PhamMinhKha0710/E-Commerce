@@ -14,8 +14,13 @@
 @import "../assets/styles/404page.css";
 @import "../assets/styles/bootstrap-4-3-min.css";
 @import "../assets/styles/custom.css";
+@import "../assets/styles/collection.css";
+@import "../assets/styles/cart_style.css";
+@import "../assets/styles/product_style.css";
 @import "../assets/styles/account_oder_style.module.css";
 @import "../assets/styles/breadcrumb_style.module.css";
+@import "../assets/styles/_sprite.css"
+
 
 
 

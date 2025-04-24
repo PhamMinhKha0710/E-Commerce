@@ -17,7 +17,7 @@ public class ProductItem
     public int ProductId { get; set; }
 
     // Navigation property
-    public Product Product { get; set; }
+    public Product Product { get; set; } = new Product();
     public List<ProductConfiguration> ProductConfigurations { get; set; } = new List<ProductConfiguration>();
     public List<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
     public List<OrderLine> OrderLines { get; set; } = new List<OrderLine>();

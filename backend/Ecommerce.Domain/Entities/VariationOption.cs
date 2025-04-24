@@ -8,6 +8,6 @@ public class VariationOption
     public int VariationId { get; set; }
 
     // Navigation property
-    public Variation Variation { get; set; }
+    public Variation Variation { get; set; } = new Variation();
     public List<ProductConfiguration> ProductConfigurations { get; set; } = new List<ProductConfiguration>();
 }

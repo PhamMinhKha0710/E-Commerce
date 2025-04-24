@@ -12,27 +12,13 @@ function RegisterForm() {
     const [formError, setFormError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleFirstNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setFirstName(event.target.value);
-    };
+    const handleFirstNameChange = (event: React.ChangeEvent<HTMLInputElement>) => setFirstName(event.target.value);
+    const handleLastNameChange = (event: React.ChangeEvent<HTMLInputElement>) => setLastName(event.target.value);
+    const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => setEmail(event.target.value);
+    const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(event.target.value);
+    const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => setPassword(event.target.value);
 
-    const handleLastNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setLastName(event.target.value);
-    };
-
-    const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setEmail(event.target.value);
-    };
-
-    const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setPhoneNumber(event.target.value);
-    };
-
-    const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setPassword(event.target.value);
-    };
-
-    const handleSubmit = async (event: React.FormEvent) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setFormError("");
 
@@ -51,7 +37,7 @@ function RegisterForm() {
 
         try {
             console.time("API Call");
-            const response = await fetch("http://localhost:5130/api/Auth/register", {
+            const response = await fetch("http://localhost:5130/api/auth/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -67,25 +53,25 @@ function RegisterForm() {
             console.timeEnd("API Call");
 
             if (!response.ok) {
-                const errorData = await response.json();
-                setFormError(errorData.message || "Đã xảy ra lỗi khi đăng ký.");
+                const errorData = await response.json().catch(() => ({}));
+                setFormError(errorData.message || errorData.error || "Đã xảy ra lỗi khi đăng ký.");
                 setIsLoading(false);
                 return;
             }
 
             const result = await response.json();
             console.log("Registration result:", result);
-            
+
             setFirstName("");
             setLastName("");
             setEmail("");
             setPhoneNumber("");
             setPassword("");
-            
+            setIsLoading(false);
+
             console.time("Redirect");
             window.location.href = `/auth/confirmemail?email=${encodeURIComponent(email)}`;
             console.timeEnd("Redirect");
-
         } catch (error) {
             console.error("Registration error:", error);
             setFormError("Đã xảy ra lỗi khi đăng ký. Vui lòng thử lại sau.");
@@ -105,7 +91,7 @@ function RegisterForm() {
                                     type="text"
                                     className="form-control form-control-lg"
                                     value={lastName}
-                                    onChange={handleLastNameChange}
+                                    onChange={handleLastNameChange} // Đã sửa
                                     name="lastName"
                                     id="lastName"
                                     placeholder="Họ"
@@ -119,7 +105,7 @@ function RegisterForm() {
                                     type="text"
                                     className="form-control form-control-lg"
                                     value={firstName}
-                                    onChange={handleFirstNameChange}
+                                    onChange={handleFirstNameChange} // Đã sửa
                                     name="firstName"
                                     id="firstName"
                                     placeholder="Tên"

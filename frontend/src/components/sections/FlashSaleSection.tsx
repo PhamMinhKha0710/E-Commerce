@@ -1,4 +1,6 @@
+// src/components/sections/FlashSaleSection.tsx
 "use client";
+
 import React, { useRef, useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
@@ -10,7 +12,6 @@ import FlashSaleProduct from "@/components/product/FlashSaleProduct";
 const FlashSaleSection = () => {
   const swiperRef = useRef(null);
 
-  // State để lưu trữ thời gian đếm ngược
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -18,11 +19,9 @@ const FlashSaleSection = () => {
     seconds: 0,
   });
 
-  // Ngày mục tiêu từ data-date
   const targetDate = new Date("2025-06-30T00:00:00").getTime();
 
   useEffect(() => {
-    // Hàm tính toán thời gian còn lại
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
       const difference = targetDate - now;
@@ -35,18 +34,13 @@ const FlashSaleSection = () => {
 
         setTimeLeft({ days, hours, minutes, seconds });
       } else {
-        // Nếu thời gian đã hết, đặt tất cả về 0
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       }
     };
 
-    // Cập nhật thời gian mỗi giây
+    calculateTimeLeft();
     const timer = setInterval(calculateTimeLeft, 1000);
 
-    // Gọi ngay lần đầu để tránh delay
-    calculateTimeLeft();
-
-    // Cleanup interval khi component unmount
     return () => clearInterval(timer);
   }, [targetDate]);
 
@@ -120,63 +114,67 @@ const FlashSaleSection = () => {
         >
           <SwiperSlide>
             <FlashSaleProduct
-              href="tai-nghe-bluetooth-headphone-edifier-w820nb-plus-thoang-khi-thoai-mai.html"
-              title="Tai Nghe Bluetooth Headphone Edifier W820NB PLUS thoáng khí thoải mái"
-              src="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp20.jpg?v=1696241238643"
+              href="/products/1"
+              productName="Tai Nghe Bluetooth Headphone Edifier W820NB PLUS thoáng khí thoải mái"
+              imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp20.jpg?v=1696241238643"
               discount="- 42%"
               price="1.399.000₫"
               comparePrice="2.399.000₫"
-              variantId="99452672"
+              productId="1"
               sold="48"
+              hasVariations={false}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="dau-goi-dau-clear-men-perfume-danh-bay-gau-ngua-va-luu-huong-nuoc-hoa-dang-cap.html"
-              title="Dầu Gội Đầu CLEAR MEN Perfume Đánh Bay Gàu Ngứa Và Lưu Hương Nước Hoa Đẳng Cấp"
-              src="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/1-1b8641c8-6064-43a5-8e07-dc697eb04a6e.jpg?v=1696233327897"
+              href="/products/2"
+              productName="Dầu Gội Đầu CLEAR MEN Perfume Đánh Bay Gàu Ngứa Và Lưu Hương Nước Hoa Đẳng Cấp"
+              imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/1-1b8641c8-6064-43a5-8e07-dc697eb04a6e.jpg?v=1696233327897"
               discount="- 50%"
               price="150.000₫"
               comparePrice="300.000₫"
-              variantId="99344172"
+              productId="2"
               sold="104"
-              isOption={true}
+              hasVariations={true}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="chuot-khong-day-logitech-b170-usb-nho-gon-thuan-ca-2-tay-phu-hop-pc-laptop.html"
-              title="Chuột không dây Logitech B170 - USB, nhỏ gọn, thuận cả 2 tay, phù hợp PC/Laptop"
-              src="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp21.jpg?v=1696240462333"
+              href="/products/3"
+              productName="Chuột không dây Logitech B170 - USB, nhỏ gọn, thuận cả 2 tay, phù hợp PC/Laptop"
+              imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp21.jpg?v=1696240462333"
               discount="- 26%"
               price="295.000₫"
               comparePrice="400.000₫"
-              variantId="99435662"
+              productId="3"
               sold="73"
+              hasVariations={false}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="banh-quy-dinh-duong-afc-vi-lua-mi-combo-2-hop-x-172g.html"
-              title="Bánh quy dinh dưỡng AFC vị lúa mì, combo 2 hộp x 172g"
-              src="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp1.jpg?v=1696238355997"
+              href="/products/4"
+              productName="Bánh quy dinh dưỡng AFC vị lúa mì, combo 2 hộp x 172g"
+              imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp1.jpg?v=1696238355997"
               discount="- 25%"
               price="60.000₫"
               comparePrice="80.000₫"
-              variantId="99422168"
+              productId="4"
               sold="131"
+              hasVariations={false}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="ao-chong-nang-nu-dong-uv-sunstop-master-mu-lien-mong-nhe-thoang-mat.html"
-              title="Áo chống nắng NỮ dòng UV SunStop Master mũ liền mỏng nhẹ thoáng mát"
-              src="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp4.jpg?v=1696237642290"
+              href="/products/5"
+              productName="Áo chống nắng NỮ dòng UV SunStop Master mũ liền mỏng nhẹ thoáng mát"
+              imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp4.jpg?v=1696237642290"
               discount="- 23%"
               price="575.000₫"
               comparePrice="750.000₫"
-              variantId="99399079"
+              productId="5"
               sold="Đang mở bán"
+              hasVariations={false}
             />
           </SwiperSlide>
         </Swiper>

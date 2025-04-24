@@ -50,15 +50,15 @@ const BestSellingSectionRight: React.FC = () => {
       discount: '-50%',
       dataId: 'product-actions-32880831',
     },
-    {
-      title: 'Thùng 24 chai Sữa nước Ensure Abbott 237ml/chai',
-      href: 'thung-24-chai-sua-nuoc-ensure-abbott-237ml-chai.html',
-      imgSrc: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp13.jpg?v=1696241512770',
-      price: '1.400.000₫',
-      comparePrice: '2.000.000₫',
-      discount: '-30%',
-      dataId: 'product-actions-32882811',
-    },
+    // {
+    //   title: 'Thùng 24 chai Sữa nước Ensure Abbott 237ml/chai',
+    //   href: 'thung-24-chai-sua-nuoc-ensure-abbott-237ml-chai.html',
+    //   imgSrc: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp13.jpg?v=1696241512770',
+    //   price: '1.400.000₫',
+    //   comparePrice: '2.000.000₫',
+    //   discount: '-30%',
+    //   dataId: 'product-actions-32882811',
+    // },
   ];
 
   return (

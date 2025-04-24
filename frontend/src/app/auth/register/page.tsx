@@ -1,6 +1,7 @@
 
 import RegisterForm from '@/app/auth/register/register-form';
 import Breadcrumb from '@/app/auth/components/BreadCrumb';
+import Link from 'next/link';
 
 function RegisterPage() {
   return (
@@ -22,9 +23,9 @@ function RegisterPage() {
                         </h1>
                         <span className="block a-center dkm margin-top-10">
                           Đã có tài khoản, đăng nhập{' '}
-                          <a href="login.html" className="btn-link-style btn-register">
-                            tại đây
-                          </a>
+                          <Link href="/auth/login" className="btn-link-style btn-register">
+                            Đăng ký tại đây
+                          </Link>
                         </span>
                         <RegisterForm />
                       </div>
