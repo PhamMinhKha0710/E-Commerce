@@ -37,15 +37,6 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-
-        // Tắt pluralization bằng cách đặt tên bảng giống tên entity
-        foreach (IMutableEntityType entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            // Lấy tên entity và đặt làm tên bảng
-            string tableName = entityType.ClrType.Name;
-            modelBuilder.Entity(entityType.Name).ToTable(tableName);
-        }
         // Áp dụng các configuration 
         modelBuilder.ApplyConfiguration(new AddressConfiguration());
         modelBuilder.ApplyConfiguration(new BrandConfiguration());

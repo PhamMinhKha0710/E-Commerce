@@ -14,6 +14,7 @@ public class ProductCategoryConfiguration : IEntityTypeConfiguration<ProductCate
                .IsRequired()
                .HasMaxLength(100);
 
+        // Mối quan hệ tự tham chiếu
         builder.HasOne(pc => pc.Parent)
                .WithMany(pc => pc.Children)
                .HasForeignKey(pc => pc.ParentId)

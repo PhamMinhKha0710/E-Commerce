@@ -19,4 +19,10 @@ public class CategoryRepository : ICategoryRepository
             .Where(c => c.ParentId == null)
             .ToListAsync();
     }
+    public async Task<List<ProductCategory>> GetSubcategoriesByCategoryIdAsync(int parentId)
+    {
+        return await _dbContext.ProductCategories
+            .Where(c => c.ParentId == parentId)
+            .ToListAsync();
+    }
 } 
