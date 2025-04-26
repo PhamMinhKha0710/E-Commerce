@@ -38,4 +38,13 @@ public class CategoriesController : ControllerBase
         var result = await _mediator.Send(query);
         return Ok(result);
     }
+
+    [HttpGet("/AdminCategories")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetCategories()
+    {
+        var query = new GetProductCategoriesQuery();
+        var categories = await _mediator.Send(query);
+        return Ok(categories);
+    }
 }

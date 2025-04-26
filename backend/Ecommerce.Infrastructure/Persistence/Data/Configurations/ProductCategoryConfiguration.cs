@@ -8,28 +8,34 @@ public class ProductCategoryConfiguration : IEntityTypeConfiguration<ProductCate
 {
     public void Configure(EntityTypeBuilder<ProductCategory> builder)
     {
-        builder.HasKey(pc => pc.Id);
+       builder.HasKey(pc => pc.Id);
 
-        builder.Property(pc => pc.Name)
-               .IsRequired()
-               .HasMaxLength(100);
+       builder.Property(pc => pc.Name)
+              .IsRequired()
+              .HasMaxLength(100);
 
-        // Mối quan hệ tự tham chiếu
-        builder.HasOne(pc => pc.Parent)
-               .WithMany(pc => pc.Children)
-               .HasForeignKey(pc => pc.ParentId)
-               .OnDelete(DeleteBehavior.Restrict);
+       builder.Property(pc => pc.Description) 
+              .HasMaxLength(500);
 
-        builder.HasMany(pc => pc.Products)
-               .WithOne(p => p.ProductCategory)
-               .HasForeignKey(p => p.ProductCategoryId)
-               .OnDelete(DeleteBehavior.Restrict);
+       builder.Property(pc => pc.DisplayOrder) 
+              .IsRequired(false);
 
-        builder.HasMany(pc => pc.PromotionCategories)
-               .WithOne(pc => pc.ProductCategory)
-               .HasForeignKey(pc => pc.ProductCategoryId)
-               .OnDelete(DeleteBehavior.Cascade);
+       
+       builder.HasOne(pc => pc.Parent)
+              .WithMany(pc => pc.Children)
+              .HasForeignKey(pc => pc.ParentId)
+              .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(pc => pc.Name);
+       builder.HasMany(pc => pc.Products)
+              .WithOne(p => p.ProductCategory)
+              .HasForeignKey(p => p.ProductCategoryId)
+              .OnDelete(DeleteBehavior.Restrict);
+
+       builder.HasMany(pc => pc.PromotionCategories)
+              .WithOne(pc => pc.ProductCategory)
+              .HasForeignKey(pc => pc.ProductCategoryId)
+              .OnDelete(DeleteBehavior.Cascade);
+
+       builder.HasIndex(pc => pc.Name);
     }
 }

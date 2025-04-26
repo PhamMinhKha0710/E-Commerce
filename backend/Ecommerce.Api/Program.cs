@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Slugify;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +66,7 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 
+
 // Register Khởi tạo admin
 builder.Services.AddScoped<AdminInitializer>();
 
@@ -80,6 +82,8 @@ builder.Services.AddMediatR(cfg => {
 
 // Register additional repositories
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddTransient<ICustomSlugHelper, SlugCustomHelper>();
 
 
 /// ************** ------------------------------ Swagger-Start-----------------------------------///*********************

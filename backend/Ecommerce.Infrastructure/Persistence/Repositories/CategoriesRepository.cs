@@ -25,4 +25,11 @@ public class CategoryRepository : ICategoryRepository
             .Where(c => c.ParentId == parentId)
             .ToListAsync();
     }
+
+    public async Task<List<ProductCategory>> GetAllAsync()
+    {
+        return await _dbContext.ProductCategories
+            .Include(pc => pc.Children)
+            .ToListAsync();
+    }
 } 

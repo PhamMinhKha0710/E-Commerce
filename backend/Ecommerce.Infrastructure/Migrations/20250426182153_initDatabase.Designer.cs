@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ecommerce.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250426060312_initDatabase")]
+    [Migration("20250426182153_initDatabase")]
     partial class initDatabase
     {
         /// <inheritdoc />
@@ -258,6 +258,14 @@ namespace Ecommerce.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("DisplayOrder")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()

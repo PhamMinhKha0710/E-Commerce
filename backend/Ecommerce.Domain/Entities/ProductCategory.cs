@@ -3,7 +3,9 @@ public class ProductCategory
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty; 
     public int? ParentId { get; set; }
+    public int? DisplayOrder { get; set; } 
     public ProductCategory? Parent { get; set; }
     public List<Product> Products { get; set; } = new List<Product>();
     public List<ProductCategory> Children { get; set; } = new List<ProductCategory>();
