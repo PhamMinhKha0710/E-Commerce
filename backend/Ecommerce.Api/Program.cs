@@ -54,6 +54,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+/// ************** ------------------------------ Scope dependency-----------------------------------///*********************
+//  ************** _______________________________________________________________________________///*********************
 // register
 builder.Services.AddScoped<RegisterCommandHandler>();
 builder.Services.AddScoped<LoginCommandHandler>();
@@ -66,10 +68,16 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 
+// Register additional repositories
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddTransient<ICustomSlugHelper, SlugCustomHelper>();
+
 
 // Register Khởi tạo admin
 builder.Services.AddScoped<AdminInitializer>();
 
+// đăng ký Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));
 builder.Services.AddLogging(logging => logging.AddConsole());
 
@@ -78,12 +86,11 @@ builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(GetAllCategoriesQuery).Assembly);
 });
 
+//+++++++++++++++++++++++++++++++++++++++++++ Dependency injection-end ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-// Register additional repositories
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddTransient<ICustomSlugHelper, SlugCustomHelper>();
+
 
 
 /// ************** ------------------------------ Swagger-Start-----------------------------------///*********************
