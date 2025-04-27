@@ -26,7 +26,6 @@ const FlashSaleProduct = ({
   price,
   comparePrice,
   productId,
-  slug, // Thêm vào destructuring
   sold,
   hasVariations,
 }: FlashSaleProductProps) => {
