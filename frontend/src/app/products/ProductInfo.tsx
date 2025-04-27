@@ -8,7 +8,7 @@ import toast, { Toaster } from 'react-hot-toast';
 interface ProductInfoProps {
   product: Product;
   variantCombinations: VariantCombination[];
-  onAddToCart: (quantity: number, selectedVariant?: VariantCombination) => void; // Thêm prop callback
+  onAddToCart: (quantity: number, selectedVariant?: VariantCombination) => void;
 }
 
 export default function ProductInfo({ product, variantCombinations, onAddToCart }: ProductInfoProps) {
@@ -83,10 +83,9 @@ export default function ProductInfo({ product, variantCombinations, onAddToCart 
     setSelectedAttributes((prev) => ({ ...prev, [groupName]: value }));
   };
 
-  // Xử lý khi nhấn nút "Thêm vào giỏ hàng"
   const handleAddToCartClick = (e: React.FormEvent) => {
     e.preventDefault();
-    onAddToCart(quantity, selectedVariant); // Gọi callback với quantity và selectedVariant
+    onAddToCart(quantity, selectedVariant);
   };
 
   return (
@@ -155,8 +154,9 @@ export default function ProductInfo({ product, variantCombinations, onAddToCart 
             action="https://nd-mall.mysapo.net/cart/add"
             method="post"
             className="form-inline"
-            onSubmit={handleAddToCartClick} // Thêm sự kiện onSubmit
+            onSubmit={handleAddToCartClick}
           >
+            <input type="hidden" name="productId" value={product.productId} /> {/* Thêm productId vào form */}
             <div className="price-box clearfix">
               <span className="special-price">
                 <span className="price product-price">

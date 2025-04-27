@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ecommerce.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250427164507_initDatabase")]
+    [Migration("20250427194502_initDatabase")]
     partial class initDatabase
     {
         /// <inheritdoc />
@@ -203,8 +203,7 @@ namespace Ecommerce.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("HasVariation")
                         .HasColumnType("bit");

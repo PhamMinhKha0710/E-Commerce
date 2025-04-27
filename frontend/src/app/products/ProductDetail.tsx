@@ -19,11 +19,11 @@ const fetcher = async (url: string) => {
 
 interface ProductDetailProps {
   initialProduct: Product | undefined;
+  productId: string;
   slug: string;
 }
 
-export default function ProductDetail({ initialProduct, slug }: ProductDetailProps) {
-  const productId = slug.split('-').pop() || slug;
+export default function ProductDetail({ initialProduct, productId, slug }: ProductDetailProps) {
   const handleAddToCart = useAddToCart();
 
   // API 1: Lấy thông tin sản phẩm và variantGroups
@@ -38,9 +38,9 @@ export default function ProductDetail({ initialProduct, slug }: ProductDetailPro
     }
   );
 
-  // API 3: Lấy tất cả variantCombinations
+  // API 2: Chỉ gọi variant-combinations nếu sản phẩm có biến thể
   const { data: variantCombinations, error: variantsError }: SWRResponse<VariantCombination[], Error> = useSWR(
-    `http://localhost:5130/api/products/${productId}/variant-combinations`,
+    product?.hasVariations ? `http://localhost:5130/api/products/${productId}/variant-combinations` : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -49,10 +49,17 @@ export default function ProductDetail({ initialProduct, slug }: ProductDetailPro
     }
   );
 
-  if (productError || variantsError) return <div>Error: {productError?.message || variantsError?.message}</div>;
-  if (!product || !variantCombinations) return <div>Loading...</div>;
+  if (productError) return <div>Error: {productError.message}</div>;
+  if (!product) return <div>Loading...</div>;
 
-  // Hàm xử lý khi thêm vào giỏ hàng từ ProductInfo
+  // Đảm bảo variantCombinationsData luôn là mảng
+  const variantCombinationsData: VariantCombination[] = product.hasVariations
+    ? variantCombinations ?? [] // Nếu variantCombinations là undefined, trả về mảng rỗng
+    : [];
+
+  if (product.hasVariations && variantsError) return <div>Error: {variantsError.message}</div>;
+  if (product.hasVariations && !variantCombinations) return <div>Loading variants...</div>;
+
   const onAddToCart = (quantity: number, selectedVariant?: VariantCombination) => {
     const cartItem = {
       productId: parseInt(productId),
@@ -62,7 +69,7 @@ export default function ProductDetail({ initialProduct, slug }: ProductDetailPro
       quantity,
       currency: product.currency || 'VND',
       hasVariations: product.hasVariations || false,
-      productItemId: selectedVariant ? parseInt(selectedVariant.id) : null, // Dùng id từ VariantCombination hoặc null
+      productItemId: selectedVariant ? parseInt(selectedVariant.id) : null,
     };
 
     handleAddToCart(cartItem);
@@ -113,7 +120,7 @@ export default function ProductDetail({ initialProduct, slug }: ProductDetailPro
               <div className="product-detail-left product-images col-12 col-md-12 col-lg-5 col-left">
                 <ProductImageCarousel images={product.images} alt={product.name} />
               </div>
-              <ProductInfo product={product} variantCombinations={variantCombinations} onAddToCart={onAddToCart} />
+              <ProductInfo product={product} variantCombinations={variantCombinationsData} onAddToCart={onAddToCart} />
             </div>
           </div>
 

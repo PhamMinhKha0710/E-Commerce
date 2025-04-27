@@ -20,7 +20,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
 
        builder.Property(p => p.Description)
-              .HasMaxLength(1000);
+              .HasColumnType("nvarchar(max)");
 
        builder.Property(p => p.QtyInStock)
               .IsRequired();
