@@ -208,7 +208,7 @@ namespace Ecommerce.Infrastructure.Migrations
 
                     b.Property<byte[]>("ImageEmbedding")
                         .IsRequired()
-                        .HasColumnType("BINARY(8)")
+                        .HasColumnType("VARBINARY(MAX)")
                         .HasColumnName("ImageEmbedding");
 
                     b.Property<string>("Name")
@@ -226,6 +226,11 @@ namespace Ecommerce.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Suggestion")
                         .IsRequired()
@@ -649,17 +654,12 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.Property<int>("AddressId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("AddressId1")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
                     b.HasKey("UserId", "AddressId");
 
                     b.HasIndex("AddressId");
-
-                    b.HasIndex("AddressId1");
 
                     b.ToTable("userAddresses");
                 });
@@ -987,14 +987,10 @@ namespace Ecommerce.Infrastructure.Migrations
             modelBuilder.Entity("Ecommerce.Domain.Entities.UserAddress", b =>
                 {
                     b.HasOne("Ecommerce.Domain.Entities.Address", "Address")
-                        .WithMany()
+                        .WithMany("UserAddresses")
                         .HasForeignKey("AddressId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Ecommerce.Domain.Entities.Address", null)
-                        .WithMany("UserAddresses")
-                        .HasForeignKey("AddressId1");
 
                     b.HasOne("Ecommerce.Domain.Entities.User", "User")
                         .WithMany("UserAddresses")

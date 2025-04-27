@@ -16,7 +16,7 @@ public class UserAddressConfiguration : IEntityTypeConfiguration<UserAddress>
                .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(ua => ua.Address)
-               .WithMany()
+               .WithMany(u => u.UserAddresses)
                .HasForeignKey(ua => ua.AddressId)
                .OnDelete(DeleteBehavior.Cascade);
     }

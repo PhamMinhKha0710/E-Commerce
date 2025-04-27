@@ -114,65 +114,70 @@ const FlashSaleSection = () => {
         >
           <SwiperSlide>
             <FlashSaleProduct
-              href="/products/1"
+              href="/products/1-tai-nghe-bluetooth-edifier-w820nb-plus"
               productName="Tai Nghe Bluetooth Headphone Edifier W820NB PLUS thoáng khí thoải mái"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp20.jpg?v=1696241238643"
               discount="- 42%"
               price="1.399.000₫"
               comparePrice="2.399.000₫"
               productId="1"
+              slug="tai-nghe-bluetooth-edifier-w820nb-plus"
               sold="48"
               hasVariations={false}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="/products/2"
+              href="/products/2-dau-goi-clear-men-perfume"
               productName="Dầu Gội Đầu CLEAR MEN Perfume Đánh Bay Gàu Ngứa Và Lưu Hương Nước Hoa Đẳng Cấp"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/1-1b8641c8-6064-43a5-8e07-dc697eb04a6e.jpg?v=1696233327897"
               discount="- 50%"
               price="150.000₫"
               comparePrice="300.000₫"
               productId="2"
+              slug="dau-goi-clear-men-perfume"
               sold="104"
               hasVariations={true}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="/products/3"
+              href="/products/3-chuot-khong-day-logitech-b170"
               productName="Chuột không dây Logitech B170 - USB, nhỏ gọn, thuận cả 2 tay, phù hợp PC/Laptop"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp21.jpg?v=1696240462333"
               discount="- 26%"
               price="295.000₫"
               comparePrice="400.000₫"
               productId="3"
+              slug="chuot-khong-day-logitech-b170"
               sold="73"
               hasVariations={false}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="/products/4"
+              href="/products/4-banh-quy-dinh-duong-afc"
               productName="Bánh quy dinh dưỡng AFC vị lúa mì, combo 2 hộp x 172g"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp1.jpg?v=1696238355997"
               discount="- 25%"
               price="60.000₫"
               comparePrice="80.000₫"
               productId="4"
+              slug="banh-quy-dinh-duong-afc"
               sold="131"
               hasVariations={false}
             />
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
-              href="/products/5"
+              href="/products/5-ao-chong-nang-nu-uv-sunstop"
               productName="Áo chống nắng NỮ dòng UV SunStop Master mũ liền mỏng nhẹ thoáng mát"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp4.jpg?v=1696237642290"
               discount="- 23%"
               price="575.000₫"
               comparePrice="750.000₫"
               productId="5"
+              slug="ao-chong-nang-nu-uv-sunstop"
               sold="Đang mở bán"
               hasVariations={false}
             />

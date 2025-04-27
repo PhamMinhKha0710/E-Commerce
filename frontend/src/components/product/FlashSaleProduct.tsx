@@ -7,14 +7,15 @@ import { useAddToCart } from "@/hooks/useAddToCart";
 
 interface FlashSaleProductProps {
   href: string;
-  productName: string; 
-  imageUrl: string; 
+  productName: string;
+  imageUrl: string;
   discount: string;
-  price: string; 
+  price: string;
   comparePrice: string;
-  productId: string; 
+  productId: string;
+  slug: string; // Thêm trường slug
   sold: string;
-  hasVariations?: boolean; 
+  hasVariations?: boolean;
 }
 
 const FlashSaleProduct = ({
@@ -25,6 +26,7 @@ const FlashSaleProduct = ({
   price,
   comparePrice,
   productId,
+  slug, // Thêm vào destructuring
   sold,
   hasVariations,
 }: FlashSaleProductProps) => {
@@ -34,9 +36,9 @@ const FlashSaleProduct = ({
     e.preventDefault();
     if (!hasVariations) {
       const numericPrice = price
-      ? parseInt(String(price).replace(/\./g, ""), 10) || 0
-      : 0;
-  
+        ? parseInt(String(price).replace(/\./g, ""), 10) || 0
+        : 0;
+
       addToCart({
         productId: parseInt(productId),
         productName,
@@ -45,7 +47,7 @@ const FlashSaleProduct = ({
         quantity: 1,
         currency: "VND",
         hasVariations: false,
-        productItemId:  null, // Thay selectedVariations
+        productItemId: null,
       });
     }
   };
@@ -56,7 +58,7 @@ const FlashSaleProduct = ({
         onSubmit={handleSubmit}
         className="variants product-action"
         data-cart-form
-        data-id={`product-actions-${productId}`} 
+        data-id={`product-actions-${productId}`}
         encType="multipart/form-data"
       >
         <div className="product-thumbnail">
@@ -89,12 +91,12 @@ const FlashSaleProduct = ({
                   fill="#f03248"
                   className="icon icon-settings"
                 >
-                  <path d="M0 416c0 17.7 14.3 32 32 32l54.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48L480 448c17.7 0 32-14.3 32-32s-14.3-32-32-32l-246.7 0c-12.3-28.3-40.5-48-73.3-48s-61 19.7-73.3 48L32 384c-17.7 0-32 14.3-32 32zm128 0a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zM320 256a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm32-80c-32.8 0-61 19.7-73.3 48L32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l246.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48l54.7 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-54.7 0c-12.3-28.3-40.5-48-73.3-48zM192 128a32 32 0 1 1 0-64 32 32 0 1 1 0 64zm73.3-64C253 35.7 224.8 16 192 16s-61 19.7-73.3 48L32 64C14.3 64 0 78.3 0 96s14.3 32 32 32l86.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48L480 128c17.7 0 32-14.3 32-32s-14.3-32-32-32L265.3 64z" />
+                  <path d="M0 416c0 17.7 14.3 32 32 32l54.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48L480 448c17.7 0 32-14.3 32-32s-14.3-32-32-32l-246.7 0c-12.3-28.3-40.5-48-73.3-48s-61 19.7-73.3 48L32 384c-17.7 0-32 14.3-32 32zm128 0a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zM320 256a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm32-80c-32.8 0-61 19.7-73.3 48L32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l246.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48l54.7 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-54.7 0c-12.3-28.3-40.5-48規劃-73.3-48zM192 128a32 32 0 1 1 0-64 32 32 0 1 1 0 64zm73.3-64C253 35.7 224.8 16 192 16s-61 19.7-73.3 48L32 64C14.3 64 0 78.3 0 96s14.3 32 32 32l86.7 0c12.3 28.3 40.5 48 73.3 48s61-19.7 73.3-48L480 128c17.7 0 32-14.3 32-32s-14.3-32-32-32L265.3 64z" />
                 </svg>
               </button>
             ) : (
               <>
-                <input type="hidden" name="productId" value={productId} /> {/* Cập nhật từ variantId sang productId */}
+                <input type="hidden" name="productId" value={productId} />
                 <button className="btn-cart add_to_cart" title="Thêm vào giỏ hàng" type="submit">
                   <svg
                     fill="#f03248"

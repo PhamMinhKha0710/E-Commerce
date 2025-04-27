@@ -162,6 +162,7 @@ namespace Ecommerce.Infrastructure.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Slug = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
                     QtyInStock = table.Column<int>(type: "int", nullable: false),
                     Currency = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false, defaultValue: "VND"),
@@ -169,7 +170,7 @@ namespace Ecommerce.Infrastructure.Migrations
                     TotalRatingCount = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     HasVariation = table.Column<bool>(type: "bit", nullable: false),
                     Suggestion = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    ImageEmbedding = table.Column<byte[]>(type: "BINARY(8)", nullable: false),
+                    ImageEmbedding = table.Column<byte[]>(type: "VARBINARY(MAX)", nullable: false),
                     ProductCategoryId = table.Column<int>(type: "int", nullable: false),
                     BrandId = table.Column<int>(type: "int", nullable: false)
                 },
@@ -262,8 +263,7 @@ namespace Ecommerce.Infrastructure.Migrations
                 {
                     UserId = table.Column<int>(type: "int", nullable: false),
                     AddressId = table.Column<int>(type: "int", nullable: false),
-                    IsDefault = table.Column<bool>(type: "bit", nullable: false),
-                    AddressId1 = table.Column<int>(type: "int", nullable: true)
+                    IsDefault = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -274,11 +274,6 @@ namespace Ecommerce.Infrastructure.Migrations
                         principalTable: "Addresses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_userAddresses_Addresses_AddressId1",
-                        column: x => x.AddressId1,
-                        principalTable: "Addresses",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_userAddresses_Users_UserId",
                         column: x => x.UserId,
@@ -721,11 +716,6 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "IX_userAddresses_AddressId",
                 table: "userAddresses",
                 column: "AddressId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_userAddresses_AddressId1",
-                table: "userAddresses",
-                column: "AddressId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserPaymentMethods_PaymentTypeId",
