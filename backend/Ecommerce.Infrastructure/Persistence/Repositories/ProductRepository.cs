@@ -19,30 +19,65 @@ public class ProductRepository : IProductRepository
         return await _dbContext.Products.ToListAsync();
     }
     public IQueryable<Product> Query()
-        {
-            return _dbContext.Products.AsQueryable();
-        }
+    {
+        return _dbContext.Products.AsQueryable();
+    }
 
-        public async Task<Product> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        {
-            return await _dbContext.Products.FindAsync(new object[] { id }, cancellationToken);
-        }
+    public async Task<Product> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Products.FindAsync(new object[] { id }, cancellationToken);
+    }
 
-        public async Task AddAsync(Product entity, CancellationToken cancellationToken = default)
-        {
-            await _dbContext.Products.AddAsync(entity, cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
+    public async Task AddAsync(Product entity, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.Products.AddAsync(entity, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 
-        public async Task UpdateAsync(Product entity, CancellationToken cancellationToken = default)
-        {
-            _dbContext.Products.Update(entity);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
+    public async Task UpdateAsync(Product entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Products.Update(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 
-        public async Task DeleteAsync(Product entity, CancellationToken cancellationToken = default)
-        {
-            _dbContext.Products.Remove(entity);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
+    public async Task DeleteAsync(Product entity, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Products.Remove(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+    public async Task<ProductItem> GetProductItemByIdAsync(int productItemId)
+    {
+        return await _dbContext.ProductItems
+            .AsSplitQuery()
+            .Include(pi => pi.ProductConfigurations)
+                .ThenInclude(pc => pc.VariationOption)
+                    .ThenInclude(vo => vo.Variation)
+            .FirstOrDefaultAsync(pi => pi.Id == productItemId);
+    }
+
+    public async Task<List<ProductItem>> GetProductItemsByProductIdAsync(int productId)
+    {
+        return await _dbContext.ProductItems
+            .AsSplitQuery()
+            .Where(pi => pi.ProductId == productId)
+            .Include(pi => pi.ProductConfigurations)
+                .ThenInclude(pc => pc.VariationOption)
+                    .ThenInclude(vo => vo.Variation)
+            .ToListAsync();
+    }
+
+    public async Task<Product> GetProductByIdAsync(int id)
+    {
+        // Use AsSplitQuery to optimize large object graphs with multiple includes
+        // This splits the query into multiple SQL queries, one per included relationship
+        return await _dbContext.Products
+            .AsSplitQuery()
+            .Include(p => p.Brand)
+            .Include(p => p.ProductCategory)
+            .Include(p => p.ProductImages)
+            // Include ProductItems only
+            .Include(p => p.ProductItems)
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
 }

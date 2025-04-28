@@ -11,7 +11,7 @@ public class UserPaymentMethod
     public int PaymentTypeId { get; set; }
 
     // Navigation property
-    public User User { get; set; } = new User();
+    public User User { get; set; }
     public PaymentType PaymentType { get; set; } = new PaymentType();
     public List<ShopOrder> ShopOrders { get; set; } = new List<ShopOrder>();
 }

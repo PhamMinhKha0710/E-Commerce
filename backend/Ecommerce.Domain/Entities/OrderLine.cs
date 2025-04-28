@@ -10,7 +10,7 @@ public class OrderLine
     public int ProductItemId { get; set; }
 
     // Navigation property
-    public ProductItem ProductItem { get; set; } = new ProductItem();
-    public ShopOrder ShopOrder { get; set; } = new ShopOrder();
-    public List<UserReview> UserReviews { get; set; } = new List<UserReview>();
+    public ProductItem ProductItem { get; set; } 
+    public ShopOrder ShopOrder { get; set; } 
+    public List<UserReview> UserReviews { get; set; } 
 }

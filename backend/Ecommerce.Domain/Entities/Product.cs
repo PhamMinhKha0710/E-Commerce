@@ -2,24 +2,24 @@ namespace Ecommerce.Domain.Entities;
 public class Product
 {
     public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Slug { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
+    public string Name { get; set; } 
+    public string Slug { get; set; } 
+    public string Description { get; set; } 
     public int QtyInStock { get; set; }
     public string Currency { get; set; } = "VND";
     public int Rating { get; set; } = 0;
     public int TotalRatingCount { get; set; } = 0;
     public bool HasVariation { get; set; } = false;
-    public string Suggestion { get; set; } = string.Empty;
-    public byte[] ImageEmbedding { get; set; } = new byte[8];
+    public string Suggestion { get; set; } 
+    public byte[] ImageEmbedding { get; set; } 
 
     // Khóa ngoại
     public int ProductCategoryId { get; set; }
     public int BrandId { get; set; }
 
     // Navigation property
-    public ProductCategory ProductCategory { get; set; } = new ProductCategory();
-    public Brand Brand { get; set; } = new Brand();
-    public List<ProductItem> ProductItems { get; set; } = new List<ProductItem>();
-    public List<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
+    public ProductCategory ProductCategory { get; set; } 
+    public Brand Brand { get; set; } 
+    public List<ProductItem> ProductItems { get; set; } 
+    public List<ProductImage> ProductImages { get; set; } 
 }

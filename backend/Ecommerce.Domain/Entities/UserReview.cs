@@ -12,6 +12,6 @@ public class UserReview
     public int OrderLineId { get; set; }
 
     // Navigation property
-    public User User { get; set; } = new User();
+    public User User { get; set; }
     public OrderLine OrderLine { get; set; } = new OrderLine();
 }

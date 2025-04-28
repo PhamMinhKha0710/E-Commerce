@@ -6,6 +6,6 @@ public class ProductConfiguration
     public int VariationOptionId { get; set; }
 
     // Navigation property
-    public ProductItem ProductItem { get; set; } = new ProductItem();
-    public VariationOption VariationOption { get; set; } = new VariationOption();
+    public ProductItem ProductItem { get; set; }
+    public VariationOption VariationOption { get; set; }
 }

@@ -7,6 +7,6 @@ public class ShoppingCart
     public int UserId { get; set; }
 
     // Navigation property
-    public User User { get; set; } = new User();
+    public User User { get; set; }
     public List<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
 }

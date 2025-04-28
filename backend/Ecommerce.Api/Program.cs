@@ -3,10 +3,12 @@ using Ecommerce.API.Filters;
 using Ecommerce.Application.CommandHandler;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.Interfaces.Repositories;
+using Ecommerce.Application.Interfaces.Services;
 using Ecommerce.Application.Queries.Categories;
 using Ecommerce.Application.QueryHandlers;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Infrastructure.Persistence.Repositories;
+using Ecommerce.Infrastructure.Repositories;
 using Ecommerce.Infrastructure.Services;
 using Ecommere.Application.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -73,9 +75,19 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddTransient<ICustomSlugHelper, SlugCustomHelper>();
 
+//Register Address
+builder.Services.AddScoped<IAddressRepository, AddressRepository>();
 
 // Register Khởi tạo admin
 builder.Services.AddScoped<AdminInitializer>();
+
+
+// Register cart
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+
+// Add the ICurrentUserService registration
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // đăng ký Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));

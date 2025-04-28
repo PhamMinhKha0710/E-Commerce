@@ -8,6 +8,6 @@ public class OrderStatusHistory
     public int ShopOrderId { get; set; }
 
     // Navigation property
-    public OrderStatus OrderStatus { get; set; } = new OrderStatus();
-    public ShopOrder ShopOrder { get; set; } = new ShopOrder();
+    public OrderStatus OrderStatus { get; set; } 
+    public ShopOrder ShopOrder { get; set; }
 }
