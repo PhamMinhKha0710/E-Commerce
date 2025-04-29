@@ -89,6 +89,9 @@ builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+// Register Payment
+builder.Services.AddScoped<IPaymentService, VnPayService>();
+
 // đăng ký Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));
 builder.Services.AddLogging(logging => logging.AddConsole());
