@@ -13,7 +13,6 @@ public class User
 
     // Navigation property
     public List <UserAddress> UserAddresses { get; set; } 
-    public List<UserPaymentMethod> PaymentMethods { get; set; } 
     public List<UserReview> Reviews { get; set; } 
     public List<ShoppingCart> ShoppingCarts { get; set; } 
     public List<ShopOrder> ShopOrders { get; set; } 

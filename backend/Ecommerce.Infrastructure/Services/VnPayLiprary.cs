@@ -19,7 +19,7 @@ namespace Ecommerce.Infrastructure.Services
                 _requestData.Add(key, value);
             }
         }
-
+    
         public void AddResponseData(string key, string value)
         {
             if (!string.IsNullOrEmpty(value))

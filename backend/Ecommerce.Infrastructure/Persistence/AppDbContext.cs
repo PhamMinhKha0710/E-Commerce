@@ -16,7 +16,9 @@ public class AppDbContext : DbContext
     public DbSet<OrderLine> OrderLines { get; set; }
     public DbSet<OrderStatus> OrderStatuses { get; set; }
     public DbSet<OrderStatusHistory> orderStatusHistories {get; set;}
-    public DbSet<PaymentType> PaymentTypes { get; set; }
+    public DbSet<Payment> payments {get; set;}
+    public DbSet<PaymentMethod> paymentMethods {get; set;}
+    public DbSet<PaymentLog> paymentLogs {get; set;}
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<Domain.Entities.ProductConfiguration> ProductConfigurations { get; set; }
@@ -30,7 +32,6 @@ public class AppDbContext : DbContext
     public DbSet<ShippingMethod> ShippingMethods { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<UserAddress> userAddresses {get; set;}
-    public DbSet<UserPaymentMethod> UserPaymentMethods { get; set; }
     public DbSet<UserReview> UserReviews { get; set; }
     public DbSet<Variation> Variations { get; set; }
     public DbSet<VariationOption> VariationOptions { get; set; }
@@ -42,7 +43,9 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new BrandConfiguration());
         modelBuilder.ApplyConfiguration(new OrderLineConfiguration());
         modelBuilder.ApplyConfiguration(new OrderStatusConfiguration());
-        modelBuilder.ApplyConfiguration(new PaymentTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new PaymentConfiguration());
+        modelBuilder.ApplyConfiguration(new PaymentMethodConfiguration());
+        modelBuilder.ApplyConfiguration(new PaymentLogConfiguration());
         modelBuilder.ApplyConfiguration(new Data.Configurations.ProductConfiguration());
         modelBuilder.ApplyConfiguration(new ProductCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new ProductConfigurationConfiguration());
@@ -57,7 +60,6 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new ShippingMethodConfiguration());
         modelBuilder.ApplyConfiguration(new UserAddressConfiguration());
         modelBuilder.ApplyConfiguration(new UserConfiguration());
-        modelBuilder.ApplyConfiguration(new UserPaymentMethodConfiguration());
         modelBuilder.ApplyConfiguration(new UserReviewConfiguration());
         modelBuilder.ApplyConfiguration(new VariationConfiguration());
         modelBuilder.ApplyConfiguration(new VariationOptionConfiguration());

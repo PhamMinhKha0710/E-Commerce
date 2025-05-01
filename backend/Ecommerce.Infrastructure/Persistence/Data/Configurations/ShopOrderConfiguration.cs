@@ -32,10 +32,10 @@ public class ShopOrderConfiguration : IEntityTypeConfiguration<ShopOrder>
         builder.Property(so => so.Note)
                .HasMaxLength(500);
 
-        builder.HasOne(so => so.PaymentMethod)
-               .WithMany(upm => upm.ShopOrders)
-               .HasForeignKey(so => so.PaymentMethodId)
-               .OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(so => so.Payments)
+               .WithOne(p => p.ShopOrder)
+               .HasForeignKey(p => p.ShopOrderId)
+               .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(so => so.ShippingAddress)
                .WithMany()
