@@ -5,6 +5,6 @@ public class Address
     public string Name { get; set; } 
     public string AddressLine { get; set; }
     public string Phone { get; set; } 
-    public string Note { get; set; } 
+    public string? Note { get; set; } = string.Empty;
     public List<UserAddress> UserAddresses { get; set; }
 }

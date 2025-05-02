@@ -9,7 +9,7 @@ public class OrderStatusHistoryConfiguration : IEntityTypeConfiguration<OrderSta
     public void Configure(EntityTypeBuilder<OrderStatusHistory> builder)
     {
         builder.HasKey(osh => osh.Id);
-
+        builder.Property(p => p.CreateAt).IsRequired();
         builder.HasOne(osh => osh.OrderStatus)
                .WithMany(os => os.OrderStatusHistories)
                .HasForeignKey(osh => osh.OrderStatusId)

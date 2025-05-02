@@ -1,44 +1,59 @@
-using Ecommerce.Application.Common.DTOs;
-using Ecommerce.Application.Interfaces;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Application.Command;
 
 namespace Ecommerce.Api.Controllers
 {
-    [Route("api/payments")]
     [ApiController]
+    [Route("api/[controller]")]
     public class PaymentsController : ControllerBase
     {
-        private readonly IPaymentService _paymentService;
+        private readonly IMediator _mediator;
 
-        public PaymentsController(IPaymentService paymentService)
+        public PaymentsController(IMediator mediator)
         {
-            _paymentService = paymentService;
+            _mediator = mediator;
         }
 
-        [HttpPost("vnpay")]
-        public async Task<IActionResult> CreateVnPayPayment([FromBody] VnPaymentRequestDto request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var paymentUrl = await _paymentService.CreatePaymentUrl(HttpContext, request);
-            return Ok(new { PaymentUrl = paymentUrl });
-        }
-
+        /// <summary>
+        /// Xử lý callback từ VnPay
+        /// </summary>
+        /// <returns>Kết quả thanh toán và chuyển hướng</returns>
         [HttpGet("vnpay/callback")]
+        [AllowAnonymous] // Cho phép VnPay gọi mà không cần đăng nhập
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> VnPayCallback()
         {
-            var response = await _paymentService.ProcessPaymentCallback(HttpContext.Request.Query);
-            if (!response.Success)
+            var command = new ProcessPaymentCallbackCommand { Query = HttpContext.Request.Query };
+            var response = await _mediator.Send(command);
+
+            if (response.Success && response.VnPayResponseCode == "00")
             {
-                return BadRequest(new { Message = "Invalid signature" });
+                // Chuyển hướng đến trang thanh toán thành công
+                return Redirect($"localhost://3000/payment/success");
             }
+            // Chuyển hướng đến trang thanh toán thất bại
+            return Redirect($"localhost://3000/payment/failure");
+        }
 
-            // Cập nhật trạng thái đơn hàng trong cơ sở dữ liệu nếu cần
-            // Ví dụ: Gọi repository để cập nhật ShopOrder
+        /// <summary>
+        /// Thử thanh toán lại cho đơn hàng
+        /// </summary>
+        /// <param name="orderId">ID của đơn hàng</param>
+        /// <returns>Thông tin đơn hàng và URL thanh toán mới</returns>
+        [HttpPost("retry-payment/{orderId}")]
+        [Authorize] // Yêu cầu đăng nhập
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> RetryPayment(int orderId)
+        {
+            if (orderId <= 0)
+                return BadRequest("Invalid order ID.");
 
+            var command = new RetryPaymentCommand { OrderId = orderId };
+            var response = await _mediator.Send(command);
             return Ok(response);
         }
     }

@@ -6,7 +6,7 @@ public class OrderStatusHistory
     // Khóa ngoại
     public int OrderStatusId { get; set; }
     public int ShopOrderId { get; set; }
-
+    public DateTime CreateAt {get; set;}
     // Navigation property
     public OrderStatus OrderStatus { get; set; } 
     public ShopOrder ShopOrder { get; set; }
