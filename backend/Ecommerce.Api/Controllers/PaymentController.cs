@@ -30,11 +30,9 @@ namespace Ecommerce.Api.Controllers
 
             if (response.Success && response.VnPayResponseCode == "00")
             {
-                // Chuyển hướng đến trang thanh toán thành công
-                return Redirect($"localhost://3000/payment/success");
+                return Redirect("http://localhost:3000/payment/success");
             }
-            // Chuyển hướng đến trang thanh toán thất bại
-            return Redirect($"localhost://3000/payment/failure");
+            return Redirect("http://localhost:3000/payment/failure");
         }
 
         /// <summary>

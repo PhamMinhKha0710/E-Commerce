@@ -6,6 +6,7 @@ using Ecommerce.Application.Interfaces.Repositories;
 using Ecommerce.Application.Interfaces.Services;
 using Ecommerce.Application.Queries.Categories;
 using Ecommerce.Application.QueryHandlers;
+using Ecommerce.Infrastructure.Messaging;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Infrastructure.Persistence.Repositories;
 using Ecommerce.Infrastructure.Repositories;
@@ -67,7 +68,8 @@ builder.Services.AddScoped<SendOtpCommandHandler>();
 builder.Services.AddScoped<GetUserInfoQueryHandler>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-builder.Services.AddScoped<IEmailService, EmailService>();
+// builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 
 // Register additional repositories
@@ -95,6 +97,10 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, VnPayService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+// Register rabitmq
+builder.Services.AddScoped<IRabbitMQService,  RabbitMQService>();
+builder.Services.AddHostedService<EmailConsumerWorker>();
 
 // đăng ký Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));

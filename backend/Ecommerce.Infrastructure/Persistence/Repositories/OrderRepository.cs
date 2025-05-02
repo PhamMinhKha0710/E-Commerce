@@ -118,5 +118,24 @@ namespace Ecommerce.Infrastructure.Repositories
                 }
             });
         }
+
+        public async Task<string> GetUserEmailByShopOrderIdAsync(int shopOrderId)
+        {
+            var order = await _context.ShopOrders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.Id == shopOrderId);
+
+            if (order == null)
+            {
+                throw new Exception($"Order with Id {shopOrderId} not found.");
+            }
+
+            if(order.User == null)
+            {
+                throw new Exception($"User not found for order with ID {shopOrderId}.");
+            }
+
+            return order.User.Email;
+        }
     }
 }
