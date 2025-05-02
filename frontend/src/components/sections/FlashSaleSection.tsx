@@ -124,6 +124,7 @@ const FlashSaleSection = () => {
               slug="tai-nghe-bluetooth-edifier-w820nb-plus"
               sold="48"
               hasVariations={false}
+              productItemId={1}
             />
           </SwiperSlide>
           <SwiperSlide>
@@ -138,6 +139,7 @@ const FlashSaleSection = () => {
               slug="dau-goi-clear-men-perfume"
               sold="104"
               hasVariations={true}
+              productItemId={2}
             />
           </SwiperSlide>
           <SwiperSlide>
@@ -152,6 +154,7 @@ const FlashSaleSection = () => {
               slug="chuot-khong-day-logitech-b170"
               sold="73"
               hasVariations={false}
+              productItemId={3}
             />
           </SwiperSlide>
           <SwiperSlide>
@@ -166,6 +169,7 @@ const FlashSaleSection = () => {
               slug="banh-quy-dinh-duong-afc"
               sold="131"
               hasVariations={false}
+              productItemId={4}
             />
           </SwiperSlide>
           <SwiperSlide>
@@ -180,6 +184,7 @@ const FlashSaleSection = () => {
               slug="ao-chong-nang-nu-uv-sunstop"
               sold="Đang mở bán"
               hasVariations={false}
+              productItemId={5}
             />
           </SwiperSlide>
         </Swiper>

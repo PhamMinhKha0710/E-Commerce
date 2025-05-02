@@ -16,6 +16,7 @@ interface FlashSaleProductProps {
   slug: string; // Thêm trường slug
   sold: string;
   hasVariations?: boolean;
+  productItemId?: number | null;
 }
 
 const FlashSaleProduct = ({
@@ -28,6 +29,7 @@ const FlashSaleProduct = ({
   productId,
   sold,
   hasVariations,
+  productItemId
 }: FlashSaleProductProps) => {
   const addToCart = useAddToCart();
 
@@ -46,7 +48,7 @@ const FlashSaleProduct = ({
         quantity: 1,
         currency: "VND",
         hasVariations: false,
-        productItemId: null,
+        productItemId: productItemId || null,
       });
     }
   };
