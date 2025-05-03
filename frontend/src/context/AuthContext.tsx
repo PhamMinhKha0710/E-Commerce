@@ -31,6 +31,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!refreshToken) {
       setIsLoggedIn(false);
       setUser(null);
+      localStorage.removeItem("cart");
+      localStorage.removeItem("isCartMerged");
+      localStorage.removeItem("lastSyncedCart");
       return;
     }
 
@@ -68,7 +71,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("tokenExpiry");
-        localStorage.removeItem("isCartMerged"); // Thêm dòng này
+        localStorage.removeItem("isCartMerged");
+        localStorage.removeItem("cart");
+        localStorage.removeItem("lastSyncedCart");
         setIsLoggedIn(false);
         setUser(null);
       }
@@ -77,7 +82,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("tokenExpiry");
-      localStorage.removeItem("isCartMerged"); // Thêm dòng này
+      localStorage.removeItem("isCartMerged");
+      localStorage.removeItem("cart");
+      localStorage.removeItem("lastSyncedCart");
       setIsLoggedIn(false);
       setUser(null);
     }
@@ -123,6 +130,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchUserData(accessToken);
       } else if (accessToken) {
         await refreshToken();
+      } else {
+        localStorage.removeItem("cart");
+        localStorage.removeItem("isCartMerged");
+        localStorage.removeItem("lastSyncedCart");
+        setIsLoggedIn(false);
+        setUser(null);
       }
     };
 
@@ -178,13 +191,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Logout error:", error);
       }
     }
-    // Xóa thông tin xác thực và dữ liệu giỏ hàng
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("tokenExpiry");
     localStorage.removeItem("cart");
-    localStorage.removeItem("isCartMerged"); // Thêm dòng này để xóa trạng thái hợp nhất
-    localStorage.removeItem("lastSyncedCart"); // Thêm dòng này để xóa giỏ hàng đã đồng bộ
+    localStorage.removeItem("isCartMerged");
+    localStorage.removeItem("lastSyncedCart");
     setIsLoggedIn(false);
     setUser(null);
   };
