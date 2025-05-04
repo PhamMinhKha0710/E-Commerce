@@ -41,9 +41,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
        builder.Property(p => p.Suggestion)
               .HasMaxLength(500);
 
-       builder.Property(p => p.ElasticsearchId)
-              .HasColumnName("ImageEmbedding")
-              .HasColumnType("VARBINARY(MAX)");
+       builder.Property(p => p.ElasticsearchId);
 
        builder.HasOne(p => p.ProductCategory)
               .WithMany(pc => pc.Products)

@@ -10,6 +10,7 @@ from torch.nn.functional import normalize
 from elasticsearch import Elasticsearch
 import requests
 from datetime import datetime, timezone
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -89,9 +90,27 @@ def process_message(ch, method, properties, body):
             if not suggestion_input:
                 suggestion_input = [data.get('sku', 'default_sku')]
 
-            response = requests.get(data['image_url'], timeout=10)
-            response.raise_for_status()
-            image_data = response.content
+            # Kiểm tra image_url là URL từ xa hay đường dẫn cục bộ
+            image_url = data['image_url']
+            if image_url.startswith(('http://', 'https://')):
+                # Tải ảnh từ URL
+                response = requests.get(image_url, timeout=10)
+                response.raise_for_status()
+                image_data = response.content
+                logging.info(f"Downloaded image from URL: {image_url}")
+            else:
+                # Đọc ảnh từ đường dẫn cục bộ
+                image_path = os.path.join(os.path.dirname(__file__), image_url)
+                if not os.path.exists(image_path):
+                    raise ValueError(f"Local image file not found: {image_path}")
+                with open(image_path, 'rb') as f:
+                    image_data = f.read()
+                logging.info(f"Loaded local image: {image_path}")
+
+            # Kiểm tra kích thước ảnh
+            if len(image_data) > 5 * 1024 * 1024:
+                raise ValueError("Image size exceeds 5MB limit")
+
             feature_vector = extract_features(image_data)
             doc = {
                 'product_id': product_id,
@@ -105,7 +124,7 @@ def process_message(ch, method, properties, body):
                 'old_price': data.get('old_price'),
                 'stock': data['stock'],
                 'sku': data['sku'],
-                'image_url': data['image_url'],
+                'image_url': image_url,
                 'feature_vector': vector_to_list(feature_vector),
                 'popularity_score': data['rating'] * data['total_rating_count'],
                 'has_variation': data['has_variation'],
@@ -121,7 +140,6 @@ def process_message(ch, method, properties, body):
                     'weight': suggestion_weight
                 }
             }
-            print(doc)
             es.index(index='ecommerce_product_item', id=str(product_id), body=doc)
             logging.info(f"Synced product {product_id} for action {action}")
 
