@@ -297,10 +297,9 @@ namespace Ecommerce.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<byte[]>("ElasticsearchId")
+                    b.Property<string>("ElasticsearchId")
                         .IsRequired()
-                        .HasColumnType("VARBINARY(MAX)")
-                        .HasColumnName("ImageEmbedding");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("HasVariation")
                         .HasColumnType("bit");

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ecommerce.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250503151226_v2")]
+    [Migration("20250504074452_v2")]
     partial class v2
     {
         /// <inheritdoc />
@@ -300,10 +300,9 @@ namespace Ecommerce.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<byte[]>("ElasticsearchId")
+                    b.Property<string>("ElasticsearchId")
                         .IsRequired()
-                        .HasColumnType("VARBINARY(MAX)")
-                        .HasColumnName("ImageEmbedding");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("HasVariation")
                         .HasColumnType("bit");
