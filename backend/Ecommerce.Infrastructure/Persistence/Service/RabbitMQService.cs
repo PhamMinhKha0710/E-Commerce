@@ -13,10 +13,12 @@ namespace Ecommerce.Infrastructure.Messaging
     public class RabbitMQService : IRabbitMQService, IAsyncDisposable
     {
         private readonly IConnection _connection;
-        private readonly IChannel _channel;
+        private IChannel _channel;
         private readonly ILogger<RabbitMQService> _logger;
         private readonly string _hostName;
         private readonly List<string> _validQueues;
+        private readonly Dictionary<string, string> _queueDeadLetterMap;
+        private readonly ConnectionFactory _factory;
         private bool _disposed;
 
         public RabbitMQService(IConfiguration configuration, ILogger<RabbitMQService> logger)
@@ -28,7 +30,12 @@ namespace Ecommerce.Infrastructure.Messaging
                 ?.Select(q => q.Name)
                 .ToList() ?? new List<string>();
 
-            var factory = new ConnectionFactory
+            _queueDeadLetterMap = configuration.GetSection("RabbitMQ:Queues")
+                .Get<List<QueueConfig>>()
+                ?.Where(q => !string.IsNullOrEmpty(q.DeadLetterQueue))
+                .ToDictionary(q => q.Name, q => q.DeadLetterQueue) ?? new Dictionary<string, string>();
+
+            _factory = new ConnectionFactory
             {
                 HostName = _hostName,
                 UserName = configuration["RabbitMQ:UserName"] ?? "guest",
@@ -42,14 +49,23 @@ namespace Ecommerce.Infrastructure.Messaging
 
             try
             {
-                _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
+                _connection = _factory.CreateConnectionAsync().GetAwaiter().GetResult();
                 _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
-                _logger.LogInformation("Connected to RabbitMQ at {HostName}, VirtualHost: {VirtualHost}", _hostName, factory.VirtualHost);
+                _logger.LogInformation("Connected to RabbitMQ at {HostName}, VirtualHost: {VirtualHost}", _hostName, _factory.VirtualHost);
             }
             catch (BrokerUnreachableException ex)
             {
-                _logger.LogError(ex, "Failed to connect to RabbitMQ at {HostName}, VirtualHost: {VirtualHost}", _hostName, factory.VirtualHost);
+                _logger.LogError(ex, "Failed to connect to RabbitMQ at {HostName}, VirtualHost: {VirtualHost}", _hostName, _factory.VirtualHost);
                 throw;
+            }
+        }
+
+        private async Task EnsureChannelAsync()
+        {
+            if (_channel == null || !_channel.IsOpen)
+            {
+                _logger.LogInformation("Creating new RabbitMQ channel");
+                _channel = await _connection.CreateChannelAsync();
             }
         }
 
@@ -67,13 +83,38 @@ namespace Ecommerce.Infrastructure.Messaging
             {
                 try
                 {
+                    await EnsureChannelAsync();
+
+                    // Chọn dead-letter queue dựa trên queue
+                    string deadLetterQueue = _queueDeadLetterMap.ContainsKey(queue)
+                        ? _queueDeadLetterMap[queue]
+                        : $"{queue}_dead_letter_queue";
+
                     var arguments = new Dictionary<string, object>
                     {
-                        { "x-dead-letter-exchange", "" }, // cấu hình giống với giao diện ở đây
-                        { "x-dead-letter-routing-key", "email_dead_letter_queue" }, 
-                        { "x-queue-type", "classic" } 
+                        { "x-dead-letter-exchange", "" },
+                        { "x-dead-letter-routing-key", deadLetterQueue },
+                        { "x-queue-type", "classic" }
                     };
-                    await _channel.QueueDeclareAsync(queue: queue, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
+
+                    // Kiểm tra và khai báo queue
+                    bool queueExists = false;
+                    try
+                    {
+                        await _channel.QueueDeclarePassiveAsync(queue);
+                        queueExists = true;
+                    }
+                    catch (OperationInterruptedException ex) when (ex.ShutdownReason.ReplyCode == 404)
+                    {
+                        _logger.LogInformation("Queue {Queue} not found, creating new queue", queue);
+                        // Tái tạo kênh vì lỗi 404 có thể đóng kênh
+                        await EnsureChannelAsync();
+                        // Khai báo dead-letter queue trước
+                        await _channel.QueueDeclareAsync(queue: deadLetterQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
+                        // Khai báo queue chính
+                        await _channel.QueueDeclareAsync(queue: queue, durable: true, exclusive: false, autoDelete: false, arguments: arguments);
+                    }
+
                     var body = Encoding.UTF8.GetBytes(message);
                     var properties = new BasicProperties { Persistent = true };
                     await _channel.BasicPublishAsync(exchange: "", routingKey: queue, mandatory: false, basicProperties: properties, body: body);
@@ -89,7 +130,9 @@ namespace Ecommerce.Infrastructure.Messaging
                         _logger.LogError(ex, "Failed to publish message to queue {Queue} after {MaxRetries} attempts", queue, maxRetries);
                         throw;
                     }
-                    await Task.Delay(1000 * retryCount); // Delay tăng dần: 1s, 2s, 3s
+                    // Tái tạo kênh trước khi thử lại
+                    _channel = null;
+                    await Task.Delay(1000 * retryCount);
                 }
             }
         }
@@ -101,10 +144,14 @@ namespace Ecommerce.Infrastructure.Messaging
 
             try
             {
-                await _channel.CloseAsync();
-                await _connection.CloseAsync();
-                await _channel.DisposeAsync();
-                await _connection.DisposeAsync();
+                if (_channel != null && _channel.IsOpen)
+                    await _channel.CloseAsync();
+                if (_connection != null && _connection.IsOpen)
+                    await _connection.CloseAsync();
+                if (_channel != null)
+                    await _channel.DisposeAsync();
+                if (_connection != null)
+                    await _connection.DisposeAsync();
                 _logger.LogInformation("RabbitMQ connection and channel disposed");
             }
             catch (Exception ex)
@@ -117,6 +164,7 @@ namespace Ecommerce.Infrastructure.Messaging
         {
             public string Name { get; set; }
             public string Description { get; set; }
+            public string DeadLetterQueue { get; set; }
         }
     }
 }

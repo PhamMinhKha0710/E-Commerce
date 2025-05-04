@@ -106,6 +106,9 @@ builder.Services.AddHostedService<EmailConsumerWorker>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));
 builder.Services.AddLogging(logging => logging.AddConsole());
 
+// đăng ký đồng bộ elashtic search
+builder.Services.AddScoped<IProductItemRepository, ProductItemRepository>();
+
 // Register MediatR 
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(GetAllCategoriesQuery).Assembly);

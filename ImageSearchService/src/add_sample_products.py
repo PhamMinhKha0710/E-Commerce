@@ -1,6 +1,7 @@
 import requests
 import os
 import logging
+import mimetypes
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -27,25 +28,41 @@ def add_sample_products():
         ('static/sample/product19.jpg', 'Chair', '/product/19', 'Furniture'),
         ('static/sample/product20.png', 'History Book', '/product/20', 'Books'),
     ]
-    
+
     for img_path, name, url, category in sample_products:
         img_path = os.path.join(os.path.dirname(__file__), img_path)
         if not os.path.exists(img_path):
             logging.warning(f"Image file {img_path} not found, skipping product {name}")
             continue
+
+        content_type, _ = mimetypes.guess_type(img_path)
+        if content_type not in ['image/jpeg', 'image/png']:
+            logging.warning(f"Unsupported file format for {img_path}, skipping product {name}")
+            continue
+
+        try:
+            with open(img_path, 'rb') as f:
+                files = {'file': (os.path.basename(img_path), f, content_type)}
+                data = {
+                    'product_name': name,
+                    'product_url': url,
+                    'category': category
+                }
+                response = requests.post('http://localhost:8000/add-product', files=files, data=data, timeout=10)
+                
+                if response.status_code == 200:
+                    try:
+                        response_json = response.json()
+                        product_id = response_json.get('id', 'unknown')
+                        logging.info(f"Added product {name} with ID {product_id}")
+                    except ValueError:
+                        logging.error(f"Failed to parse JSON response for product {name}: {response.text}")
+                else:
+                    logging.error(f"Failed to add product {name}: {response.status_code} - {response.text}")
         
-        with open(img_path, 'rb') as f:
-            files = {'file': (os.path.basename(img_path), f, 'image/jpeg')}
-            data = {
-                'product_name': name,
-                'product_url': url,
-                'category': category
-            }
-            response = requests.post('http://localhost:8000/add-product', files=files, data=data)
-            if response.status_code == 200:
-                logging.info(f"Added product {name}")
-            else:
-                logging.error(f"Failed to add product {name}: {response.text}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Request failed for product {name}: {e}")
+            continue
 
 if __name__ == "__main__":
     add_sample_products()

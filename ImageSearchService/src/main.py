@@ -14,17 +14,18 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 app = FastAPI()
 
+# Model configuration (choose 'resnet18' or 'resnet34')
+MODEL_NAME = 'resnet34'  # Change to 'resnet18' to use ResNet18
+
 # Elasticsearch connection
 try:
     es = Elasticsearch(
         ["http://localhost:9200"],
-        verify_certs=False,  # Bỏ qua kiểm tra chứng chỉ
+        verify_certs=False,
         request_timeout=10,
-        headers={"Content-Type": "application/json", "Accept": "application/json"}  # Thêm header
+        headers={"Content-Type": "application/json", "Accept": "application/json"}
     )
-    # Kiểm tra kết nối chi tiết
     if not es.ping():
-        # Thử yêu cầu GET để lấy thông tin lỗi
         try:
             response = es.transport.perform_request("GET", "/")
             logging.error(f"Elasticsearch ping failed. Response: {response}")
@@ -34,19 +35,23 @@ try:
             logging.error(f"Other connection error: {e}")
         raise Exception("Elasticsearch connection failed")
     logging.info("Connected to Elasticsearch successfully")
-    # Kiểm tra phiên bản
     info = es.info()
     logging.info(f"Elasticsearch version: {info['version']['number']}")
 except Exception as e:
     logging.error(f"Failed to connect to Elasticsearch: {e}")
     raise
 
-# Load ResNet50 model
-logging.info("Loading ResNet50 model")
-model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-dimension = 2048  # ResNet50 feature vector dimension
+# Load model
+logging.info(f"Loading {MODEL_NAME} model")
+if MODEL_NAME == 'resnet18':
+    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+elif MODEL_NAME == 'resnet34':
+    model = models.resnet34(weights=models.ResNet34_Weights.DEFAULT)
+else:
+    raise ValueError(f"Unsupported model: {MODEL_NAME}")
+dimension = 512  # Both ResNet18 and ResNet34 feature vector dimension
 model.eval()
-model = torch.nn.Sequential(*(list(model.children())[:-1]))  # Remove the last fully connected layer
+model = torch.nn.Sequential(*(list(model.children())[:-1]))  # Remove the fully connected layer
 logging.info("Model loaded successfully")
 
 # Image preprocessing
@@ -68,11 +73,15 @@ def extract_features(image_data: bytes) -> np.ndarray:
         with torch.no_grad():
             features = model(img_tensor)
         logging.info("Feature extraction completed")
+        
+        # Flatten tensor (outputs [1, 512, 1, 1] after removing FC layer)
         features = features.squeeze().cpu().numpy()
         if features.ndim > 1:
             features = features.flatten()
         if features.shape != (dimension,):
             raise ValueError(f"Feature vector shape {features.shape} does not match expected ({dimension},)")
+        
+        # Normalize the feature vector
         features = normalize(torch.tensor(features), p=2, dim=0).numpy()
         logging.info(f"Feature vector shape: {features.shape}")
         return features

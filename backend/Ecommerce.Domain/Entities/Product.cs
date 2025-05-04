@@ -11,7 +11,7 @@ public class Product
     public int TotalRatingCount { get; set; } = 0;
     public bool HasVariation { get; set; } = false;
     public string Suggestion { get; set; } 
-    public byte[] ImageEmbedding { get; set; } 
+    public string ElasticsearchId { get; set; }
 
     // Khóa ngoại
     public int ProductCategoryId { get; set; }

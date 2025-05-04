@@ -1,5 +1,8 @@
+using Ecommerce.Application.Command;
+using Ecommerce.Application.Commands.ProductCommands;
 using Ecommerce.Application.Queries.Products;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Api.Controllers;
@@ -37,5 +40,25 @@ public class ProductsController : ControllerBase
         var result = await _mediator.Send(query);
 
         return Ok(result);
+    }
+
+    [HttpPost("{productId}/sync")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SyncProduct(int productId, [FromBody] string action)
+    {
+        if (!new[] { "add", "update", "delete" }.Contains(action))
+            return BadRequest(new { Message = "Invalid action" });
+
+        var command = new SyncProductCommand { ProductId = productId, Action = action };
+        await _mediator.Send(command);
+        return Ok(new { Message = "Product sync message sent to queue" });
+    }
+
+    [HttpPost("update-elasticsearch-id")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdateElasticsearchId([FromBody] UpdateElasticsearchIdCommand command)
+    {
+        await _mediator.Send(command);
+        return Ok(new { Message = "ElasticsearchId updated" });
     }
 }

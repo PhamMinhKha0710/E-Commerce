@@ -55,6 +55,7 @@ namespace Ecommerce.API.Filters
                 operation.Description = operation.Description ?? "";
                 operation.Description += "\n\n**Yêu cầu siêu cấp dễ thương từ `TIEP_KHA_PHONG`! 😍**:\n";
                 operation.Description += "- Phải có một token JWT xịn xò trong `Authorization` header nhé, kiểu như: `Bearer <token>` nha! 😎\n";
+                operation.Description += "- Nói tóm lại là cần phải đăng nhập! 😎\n";
 
                 var roles = authAttributes
                     .Where(a => !string.IsNullOrEmpty(a.Roles))

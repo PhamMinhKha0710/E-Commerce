@@ -10,7 +10,6 @@ namespace Ecommerce.API.Controllers
 {
     [Route("api/addresses")]
     [ApiController]
-    
     public class AddressesController : ControllerBase
     {
         private readonly IMediator _mediator;
