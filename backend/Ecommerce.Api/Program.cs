@@ -1,11 +1,13 @@
 using System.Text;
 using Ecommerce.API.Filters;
 using Ecommerce.Application.CommandHandler;
+using Ecommerce.Application.Common.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.Interfaces.Repositories;
 using Ecommerce.Application.Interfaces.Services;
 using Ecommerce.Application.Queries.Categories;
 using Ecommerce.Application.QueryHandlers;
+using Ecommerce.Infrastructure.Elasticsearch;
 using Ecommerce.Infrastructure.Messaging;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Infrastructure.Persistence.Repositories;
@@ -16,6 +18,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Nest;
 using Slugify;
 using StackExchange.Redis;
 
@@ -114,6 +117,35 @@ builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(GetAllCategoriesQuery).Assembly);
 });
 
+// Register Elastichsearch
+builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
+var elasticUri = builder.Configuration["Elasticsearch:Uri"];
+var settings = new ConnectionSettings(new Uri(elasticUri))
+    .DefaultIndex("ecommerce_product_item")
+    .DefaultMappingFor<ProductItemDto>(m => m
+        .PropertyName(p => p.Name, "name")
+        .PropertyName(p => p.ProductId, "product_id")
+        .PropertyName(p => p.ItemId, "item_id")
+        .PropertyName(p => p.Description, "description")
+        .PropertyName(p => p.Category, "category")
+        .PropertyName(p => p.SubCategory, "sub_category")
+        .PropertyName(p => p.Brand, "brand")
+        .PropertyName(p => p.Price, "price")
+        .PropertyName(p => p.OldPrice, "old_price")
+        .PropertyName(p => p.Stock, "stock")
+        .PropertyName(p => p.Sku, "sku")
+        .PropertyName(p => p.ImageUrl, "image_url")
+        .PropertyName(p => p.PopularityScore, "popularity_score")
+        .PropertyName(p => p.HasVariation, "has_variation")
+        .PropertyName(p => p.CreatedAt, "created_at")
+        .PropertyName(p => p.UpdatedAt, "updated_at")
+        .PropertyName(p => p.Tags, "tags")
+        .PropertyName(p => p.Rating, "rating")
+        .PropertyName(p => p.TotalRatingCount, "total_rating_count")
+        .PropertyName(p => p.Status, "status")
+    );
+builder.Services.AddSingleton<IElasticClient>(new ElasticClient(settings));
+builder.Services.AddHttpClient();
 //+++++++++++++++++++++++++++++++++++++++++++ Dependency injection-end ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
