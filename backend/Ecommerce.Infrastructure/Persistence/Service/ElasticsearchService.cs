@@ -117,39 +117,86 @@ namespace Ecommerce.Infrastructure.Elasticsearch
 
         public async Task<ProductSearchResponseDto> SearchByImageAsync(byte[] imageData)
         {
+            if (imageData == null || imageData.Length == 0)
+                throw new ArgumentException("Image data is empty or null");
+
             using var content = new MultipartFormDataContent();
-            content.Add(new ByteArrayContent(imageData), "image", "image.jpg");
+            content.Add(new ByteArrayContent(imageData), "file", "image.jpg");
 
-            var response = await _httpClient.PostAsync(FeatureExtractionUrl, content);
-            response.EnsureSuccessStatusCode();
-            var featureVector = await response.Content.ReadFromJsonAsync<float[]>();
+            try
+            {
+                var response = await _httpClient.PostAsync(FeatureExtractionUrl, content);
+                response.EnsureSuccessStatusCode();
+                var featureVector = await response.Content.ReadFromJsonAsync<float[]>();
 
-            if (featureVector.Length != 512)
-                throw new InvalidOperationException($"Feature vector length {featureVector.Length} does not match expected 512");
+                if (featureVector == null || featureVector.Length != 512)
+                    throw new InvalidOperationException($"Invalid feature vector: length {featureVector?.Length ?? 0}, expected 512");
 
-            var esResponse = await _client.SearchAsync<ProductItemDto>(s => s
-                .Index(IndexName)
-                .Query(q => q
-                    .ScriptScore(ss => ss
-                        .Query(qq => qq.MatchAll())
-                        .Script(sc => sc
-                            .Source("cosineSimilarity(params.query_vector, 'feature_vector') + 1.0")
-                            .Params(p => p.Add("query_vector", featureVector))
+                // Gỡ lỗi: In vector đặc trưng
+                Console.WriteLine($"Feature Vector: {JsonSerializer.Serialize(featureVector.Take(10))}... (first 10 elements)");
+
+                var maxDistance = 0.3; // Tương ứng cosineSimilarity > 0.5
+                var esResponse = await _client.SearchAsync<ProductItemDto>(s => s
+                    .Index(IndexName)
+                    .Query(q => q
+                        .FunctionScore(fs => fs
+                            .Query(qq => qq.MatchAll())
+                            .Functions(f => f
+                                .ScriptScore(ss => ss
+                                    .Script(sc => sc
+                                        .Source("cosineSimilarity(params.query_vector, 'feature_vector') + 1.0")
+                                        .Params(p => p.Add("query_vector", featureVector))
+                                    )
+                                )
+                            )
                         )
                     )
-                )
-                .Size(20)
-            );
+                    .Sort(sort => sort
+                        .Field(f => f.Field("_score").Order(SortOrder.Descending))
+                    )
+                    .Size(20)
+                );
 
-            var results = esResponse.Hits.Select(h => h.Source).ToList();
+                // Gỡ lỗi: In số lượng hits và điểm số
+                Console.WriteLine($"Elasticsearch Hits: {esResponse.Hits.Count}, Total: {esResponse.Total}");
+                foreach (var hit in esResponse.Hits)
+                {
+                    Console.WriteLine($"Product: {hit.Source.Name}, Score: {hit.Score}, CosineSimilarity: {hit.Score - 1.0}");
+                }
 
-            return new ProductSearchResponseDto
+                // Lọc kết quả dựa trên max_distance
+                var results = esResponse.Hits
+                    .Where(hit => hit.Score - 1.0 >= 1.0 - maxDistance)
+                    .Select(h => new
+                    {
+                        h.Source,
+                        Distance = 1.0 - (h.Score - 1.0),
+                        CosineSimilarity = h.Score - 1.0
+                    })
+                    .OrderByDescending(x => x.CosineSimilarity)
+                    .Select(x => x.Source)
+                    .ToList();
+
+                Console.WriteLine($"Filtered Results Count: {results.Count}");
+
+                return new ProductSearchResponseDto
+                {
+                    Total = results.Count,
+                    Page = 1,
+                    PageSize = 20,
+                    Results = results
+                };
+            }
+            catch (HttpRequestException ex)
             {
-                Total = esResponse.Total,
-                Page = 1,
-                PageSize = 20,
-                Results = results
-            };
+                Console.WriteLine($"HTTP Error: {ex.Message}");
+                throw new InvalidOperationException($"Failed to extract features from image: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"General Error: {ex.Message}");
+                throw new InvalidOperationException($"Search by image failed: {ex.Message}", ex);
+            }
         }
 
         // public async Task<SuggestResponseDto> SuggestAsync(string query)
