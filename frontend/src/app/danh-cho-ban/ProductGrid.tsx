@@ -128,13 +128,15 @@ const ProductGrid: React.FC = () => {
   
     const isImageSearchStored = localStorage.getItem("isImageSearch") === "true";
   
-    if (isImageSearch || isImageSearchStored) {
-      loadImageSearchResults();
-    } else if (query) {
+    // Ưu tiên tìm kiếm văn bản nếu có query
+    if (query) {
       fetchProducts();
-    } else {
-      // Kiểm tra localStorage ngay cả khi không có query hoặc imageSearch
+    } else if (isImageSearch || isImageSearchStored) {
       loadImageSearchResults();
+    } else {
+      // Không có query và không có tìm kiếm hình ảnh
+      setProducts([]);
+      setIsLoading(false);
     }
   }, [query, isImageSearch]);
 
