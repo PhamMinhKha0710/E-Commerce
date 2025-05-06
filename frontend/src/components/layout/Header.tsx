@@ -5,11 +5,42 @@ import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import HeaderCart from "./HeaderCart";
+import { useRouter } from "next/navigation";
 
 interface SuggestionResponse {
   suggestions: string[];
   productNames: string[];
   urls: string[];
+}
+
+interface Product {
+  productId: number;
+  itemId: number;
+  name: string;
+  description: string;
+  category: string;
+  subCategory: string;
+  brand: string;
+  price: number;
+  oldPrice: number;
+  stock: number;
+  sku: string;
+  imageUrl: string;
+  popularityScore: number;
+  hasVariation: boolean;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+  rating: number;
+  totalRatingCount: number;
+  status: boolean;
+}
+
+interface SearchByImageResponse {
+  total: number;
+  page: number;
+  pageSize: number;
+  results: Product[];
 }
 
 const Header = () => {
@@ -19,10 +50,13 @@ const Header = () => {
   const [productUrls, setProductUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const { isLoggedIn, user, logout } = useAuth();
   const [isClient, setIsClient] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
@@ -102,13 +136,14 @@ const Header = () => {
   const handleSuggestionClick = (suggestion: string) => {
     setInputValue(suggestion);
     setIsSearchOpen(false);
-    window.location.href = `/danh-cho-ban?query=${encodeURIComponent(suggestion)}`;
+    router.push(`/danh-cho-ban?query=${encodeURIComponent(suggestion)}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      window.location.href = `/danh-cho-ban?query=${encodeURIComponent(inputValue)}`;
+      setIsSearchOpen(false); // Đóng ô gợi ý
+      router.push(`/danh-cho-ban?query=${encodeURIComponent(inputValue)}`);
     }
   };
 
@@ -116,19 +151,69 @@ const Header = () => {
     if (e.key === "Enter") {
       e.preventDefault();
       if (inputValue.trim()) {
-        window.location.href = `/danh-cho-ban?query=${encodeURIComponent(inputValue)}`;
+        setIsSearchOpen(false); // Đóng ô gợi ý
+        router.push(`/danh-cho-ban?query=${encodeURIComponent(inputValue)}`);
+      }
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append("image", file);
+  
+    setIsLoading(true);
+    setUploadError(null);
+  
+    try {
+      const response = await fetch("http://localhost:5130/api/Search/search-by-image", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to upload image");
+      }
+  
+      const data: SearchByImageResponse = await response.json();
+  
+      // Xóa dữ liệu tìm kiếm hình ảnh cũ trong localStorage
+      localStorage.removeItem("imageSearchResults");
+  
+      // Lưu kết quả tìm kiếm hình ảnh mới vào localStorage
+      localStorage.setItem("imageSearchResults", JSON.stringify(data.results));
+  
+      // Dispatch custom event để thông báo có dữ liệu mới
+      const event = new CustomEvent("imageSearchUpdated", {
+        detail: { results: data.results },
+      });
+      window.dispatchEvent(event);
+  
+      // Chuyển hướng đến trang kết quả tìm kiếm
+      router.push("/danh-cho-ban?imageSearch=true");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      setUploadError("Không thể tải lên hình ảnh. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
     }
   };
 
   const handleCameraClick = () => {
-    // Assuming camera icon triggers an image search
-    window.location.href = `/danh-cho-ban?imageSearch=true`;
+    fileInputRef.current?.click();
   };
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = "/auth/login";
+    router.push("/auth/login");
   };
 
   return (
@@ -137,18 +222,13 @@ const Header = () => {
         <div className="container">
           <div className="row d-flex align-items-center">
             <div className="col-xl-2 col-lg-2 col-md-3 col-12 col-left">
-              <Link href="/" className="logo" onClick={() => { window.location.href = '/'; return false; }}>
-                <Image
-                  src="/images/smile.svg"
-                  width={124}
-                  height={49}
-                  alt="ND Mall"
-                />
+              <Link href="/" className="logo">
+                <Image src="/images/smile.svg" width={124} height={49} alt="ND Mall" />
               </Link>
             </div>
             <div className="col-xl-7 col-lg-2 col-md-9 col-12 d-flex align-items-center col-middle">
               <div className="header-store d-lg-block d-none">
-                <a href="he-thong-cua-hang.html" title="Hệ thống cửa hàng">
+                <Link href="/he-thong-cua-hang" title="Hệ thống cửa hàng">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width={28}
@@ -177,7 +257,7 @@ const Header = () => {
                     <span>Hệ thống cửa hàng</span>
                     <span>40 cửa hàng</span>
                   </div>
-                </a>
+                </Link>
               </div>
               <div className="header-search" ref={searchRef}>
                 <form
@@ -214,28 +294,37 @@ const Header = () => {
                         <circle cx="12" cy="13" r="4" />
                       </svg>
                     </span>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: "none" }}
+                    />
                     <button className="btn icon-fallback-text" aria-label="Search" type="submit">
                       Tìm kiếm
                     </button>
                   </span>
+                  {uploadError && (
+                    <div style={{ color: "red", fontSize: "12px", marginTop: "5px" }}>
+                      {uploadError}
+                    </div>
+                  )}
                   <div className={`search-suggest ${isSearchOpen ? "open" : ""}`}>
                     <ul className="smart-search-title">
                       <li data-tab="#tab-search-1" className="active">
-                        <a href="javascript:void(0)" title="Sản phẩm">
+                        <a href="#" title="Sản phẩm">
                           Sản phẩm
                         </a>
                       </li>
                       <li data-tab="#tab-search-2">
-                        <a href="javascript:void(0)" title="Tin tức">
+                        <a href="#" title="Tin tức">
                           Tin tức
                         </a>
                       </li>
                     </ul>
                     <div className="list-search-suggest">
-                      <div
-                        className="list-search list-search-style active"
-                        id="tab-search-1"
-                      >
+                      <div className="list-search list-search-style active" id="tab-search-1">
                         {isLoading ? (
                           <div>Loading...</div>
                         ) : (
@@ -253,16 +342,19 @@ const Header = () => {
                                 style={{ cursor: "pointer" }}
                               >
                                 <div className="image_thumb">
-                                  <img
-                                    src={productUrls[index]}
-                                    alt={product}
-                                    width={80}
-                                    height={80}
-                                  />
+                                <Image
+                                  src={productUrls[index]}
+                                  alt={product}
+                                  width={80}
+                                  height={80}
+                                  style={{ objectFit: "cover" }}
+                                  placeholder="blur" 
+                                  blurDataURL="/images/placeholder.png" 
+                                />
                                 </div>
                                 <div className="product-info">
                                   <h3>
-                                    <a href="javascript:void(0)">{product}</a>
+                                    <a href="#">{product}</a>
                                   </h3>
                                   <div className="price-box">
                                     <span className="price">Liên hệ</span>
@@ -284,27 +376,23 @@ const Header = () => {
                               >
                                 <div className="product-info">
                                   <h3>
-                                    <a href="javascript:void(0)">{suggestion}</a>
+                                    <a href="#">{suggestion}</a>
                                   </h3>
                                 </div>
                               </div>
                             ))}
                             {(suggestions.length > 0 || productNames.length > 0) && (
-                              <a
+                              <Link
                                 href={`/danh-cho-ban?query=${encodeURIComponent(inputValue)}`}
                                 className="see-more"
                               >
                                 Xem thêm
-                              </a>
+                              </Link>
                             )}
                           </>
                         )}
                       </div>
-                      <div
-                        className="list-search2 list-search-style"
-                        id="tab-search-2"
-                      >
-                      </div>
+                      <div className="list-search2 list-search-style" id="tab-search-2"></div>
                     </div>
                   </div>
                 </form>
@@ -340,7 +428,7 @@ const Header = () => {
                 </svg>
               </div>
               <div className="header-wish">
-                <a href="yeu-thich.html" title="Yêu thích" style={{ whiteSpace: "nowrap" }}>
+                <Link href="/yeu-thich" title="Yêu thích" style={{ whiteSpace: "nowrap" }}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width={25}
@@ -362,10 +450,10 @@ const Header = () => {
                     />
                   </svg>
                   <div className="text">Yêu thích</div>
-                </a>
+                </Link>
               </div>
               <div className="header-store d-lg-none">
-                <a href="he-thong-cua-hang.html" title="Hệ thống cửa hàng">
+                <Link href="/he-thong-cua-hang" title="Hệ thống cửa hàng">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width={28}
@@ -394,7 +482,7 @@ const Header = () => {
                     <span>Hệ thống cửa hàng</span>
                     <span>40 cửa hàng</span>
                   </div>
-                </a>
+                </Link>
               </div>
               <div className="header-account">
                 {isClient ? (
@@ -410,7 +498,7 @@ const Header = () => {
                         }}
                       >
                         <Image
-                          src={"/images/user.png"}
+                          src="/images/user.png"
                           width={30}
                           height={30}
                           alt="User Avatar"
@@ -497,10 +585,7 @@ const Header = () => {
                           strokeWidth="2"
                         />
                       </svg>
-                      <span
-                        className="info"
-                        style={{ color: "white", whiteSpace: "nowrap" }}
-                      >
+                      <span className="info" style={{ color: "white", whiteSpace: "nowrap" }}>
                         Tài khoản
                       </span>
                       <div className="drop-account">
@@ -547,573 +632,627 @@ const Header = () => {
             <nav className="header-nav">
               <ul className="item_big item_big_index" style={{ marginBottom: "0px" }}>
                 <li className="nav-item active">
-                  <a className="a-img" href="index.html" title="Trang chủ">
+                  <Link href="/" className="a-img" title="Trang chủ">
                     Trang chủ
-                  </a>
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <a className="a-img" href="gioi-thieu.html" title="Giới thiệu">
+                  <Link href="/gioi-thieu" className="a-img" title="Giới thiệu">
                     Giới thiệu
-                  </a>
+                  </Link>
                 </li>
                 <li className="nav-item has-mega">
-                  <a className="a-img caret-down" href="collections/all.html" title="Sản phẩm">
+                  <Link href="/collections/all" className="a-img caret-down" title="Sản phẩm">
                     Sản phẩm
-                  </a>
+                  </Link>
                   <i className="fa fa-caret-down"></i>
                   <div className="mega-content d-lg-block d-none">
                     <div className="nav-block nav-block-center">
                       <ul className="level0 row">
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="do-choi-me-be.html" title="Đồ Chơi - Mẹ & Bé">
+                          <Link href="/do-choi-me-be" className="h-mega" title="Đồ Chơi - Mẹ & Bé">
                             <span>Đồ Chơi - Mẹ & Bé</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="ta-bim.html" title="Tã, Bỉm">
+                              <Link href="/ta-bim" title="Tã, Bỉm">
                                 <span>Tã, Bỉm</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="dinh-duong-cho-be.html" title="Dinh dưỡng cho bé">
+                              <Link href="/dinh-duong-cho-be" title="Dinh dưỡng cho bé">
                                 <span>Dinh dưỡng cho bé</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="thuc-pham-an-dam.html" title="Thực phẩm ăn dặm">
+                              <Link href="/thuc-pham-an-dam" title="Thực phẩm ăn dặm">
                                 <span>Thực phẩm ăn dặm</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="dinh-duong-cho-me.html" title="Dinh dưỡng cho mẹ">
+                              <Link href="/dinh-duong-cho-me" title="Dinh dưỡng cho mẹ">
                                 <span>Dinh dưỡng cho mẹ</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="do-dung-cho-be.html" title="Đồ dùng cho bé">
+                              <Link href="/do-dung-cho-be" title="Đồ dùng cho bé">
                                 <span>Đồ dùng cho bé</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="dien-thoai-may-tinh-bang.html" title="Điện Thoại - Máy Tính Bảng">
+                          <Link
+                            href="/dien-thoai-may-tinh-bang"
+                            className="h-mega"
+                            title="Điện Thoại - Máy Tính Bảng"
+                          >
                             <span>Điện Thoại - Máy Tính Bảng</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="dien-thoai-smartphone.html" title="Điện thoại Smartphone">
+                              <Link href="/dien-thoai-smartphone" title="Điện thoại Smartphone">
                                 <span>Điện thoại Smartphone</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="may-tinh-bang.html" title="Máy tính bảng">
+                              <Link href="/may-tinh-bang" title="Máy tính bảng">
                                 <span>Máy tính bảng</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="may-doc-sach.html" title="Máy đọc sách">
+                              <Link href="/may-doc-sach" title="Máy đọc sách">
                                 <span>Máy đọc sách</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="dien-thoai-pho-thong.html" title="Điện thoại phổ thông">
+                              <Link href="/dien-thoai-pho-thong" title="Điện thoại phổ thông">
                                 <span>Điện thoại phổ thông</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="dien-thoai-ban.html" title="Điện thoại bàn">
+                              <Link href="/dien-thoai-ban" title="Điện thoại bàn">
                                 <span>Điện thoại bàn</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="lam-dep-suc-khoe.html" title="Làm Đẹp - Sức Khỏe">
+                          <Link href="/lam-dep-suc-khoe" className="h-mega" title="Làm Đẹp - Sức Khỏe">
                             <span>Làm Đẹp - Sức Khỏe</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="cham-soc-da-mat.html" title="Chăm sóc da mặt">
+                              <Link href="/cham-soc-da-mat" title="Chăm sóc da mặt">
                                 <span>Chăm sóc da mặt</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="trang-diem.html" title="Trang điểm">
+                              <Link href="/trang-diem" title="Trang điểm">
                                 <span>Trang điểm</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="cham-soc-ca-nhan.html" title="Chăm sóc cá nhân">
+                              <Link href="/cham-soc-ca-nhan" title="Chăm sóc cá nhân">
                                 <span>Chăm sóc cá nhân</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="cham-soc-co-the.html" title="Chăm sóc cơ thể">
+                              <Link href="/cham-soc-co-the" title="Chăm sóc cơ thể">
                                 <span>Chăm sóc cơ thể</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="duoc-my-pham.html" title="Dược mỹ phẩm">
+                              <Link href="/duoc-my-pham" title="Dược mỹ phẩm">
                                 <span>Dược mỹ phẩm</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="dien-gia-dung.html" title="Điện Gia Dụng">
+                          <Link href="/dien-gia-dung" className="h-mega" title="Điện Gia Dụng">
                             <span>Điện Gia Dụng</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="do-dung-nha-bep.html" title="Đồ dùng nhà bếp">
+                              <Link href="/do-dung-nha-bep" title="Đồ dùng nhà bếp">
                                 <span>Đồ dùng nhà bếp</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="thiet-bi-gia-dinh.html" title="Thiết bị gia đình">
+                              <Link href="/thiet-bi-gia-dinh" title="Thiết bị gia đình">
                                 <span>Thiết bị gia đình</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="phu-kien-thoi-trang.html" title="Phụ kiện thời trang">
+                          <Link href="/phu-kien-thoi-trang" className="h-mega" title="Phụ kiện thời trang">
                             <span>Phụ kiện thời trang</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="mat-kinh.html" title="Mắt kính">
+                              <Link href="/mat-kinh" title="Mắt kính">
                                 <span>Mắt kính</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="phu-kien-thoi-trang-nu.html" title="Phụ kiện thời trang nữ">
+                              <Link href="/phu-kien-thoi-trang-nu" title="Phụ kiện thời trang nữ">
                                 <span>Phụ kiện thời trang nữ</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="phu-kien-thoi-trang-nam.html" title="Phụ kiện thời trang nam">
+                              <Link href="/phu-kien-thoi-trang-nam" title="Phụ kiện thời trang nam">
                                 <span>Phụ kiện thời trang nam</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="dong-ho-va-trang-suc.html" title="Đồng hồ và Trang sức">
+                          <Link
+                            href="/dong-ho-va-trang-suc"
+                            className="h-mega"
+                            title="Đồng hồ và Trang sức"
+                          >
                             <span>Đồng hồ và Trang sức</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="dong-ho-nam.html" title="Đồng hồ nam">
+                              <Link href="/dong-ho-nam" title="Đồng hồ nam">
                                 <span>Đồng hồ nam</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="dong-ho-nu.html" title="Đồng hồ nữ">
+                              <Link href="/dong-ho-nu" title="Đồng hồ nữ">
                                 <span>Đồng hồ nữ</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="dong-ho-tre-em.html" title="Đồng hồ trẻ em">
+                              <Link href="/dong-ho-tre-em" title="Đồng hồ trẻ em">
                                 <span>Đồng hồ trẻ em</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="phu-kien-dong-ho.html" title="Phụ kiện đồng hồ">
+                              <Link href="/phu-kien-dong-ho" title="Phụ kiện đồng hồ">
                                 <span>Phụ kiện đồng hồ</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="trang-suc.html" title="Trang sức">
+                              <Link href="/trang-suc" title="Trang sức">
                                 <span>Trang sức</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="laptop-may-vi-tinh-linh-kien.html" title="Laptop - Máy Vi Tính - Linh kiện">
+                          <Link
+                            href="/laptop-may-vi-tinh-linh-kien"
+                            className="h-mega"
+                            title="Laptop - Máy Vi Tính - Linh kiện"
+                          >
                             <span>Laptop - Máy Vi Tính - Linh kiện</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="laptop.html" title="Laptop">
+                              <Link href="/laptop" title="Laptop">
                                 <span>Laptop</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="thiet-bi-van-phong-thiet-bi-ngoai-vi.html" title="Thiết Bị Văn Phòng - Thiết Bị Ngoại Vi">
+                              <Link
+                                href="/thiet-bi-van-phong-thiet-bi-ngoai-vi"
+                                title="Thiết Bị Văn Phòng - Thiết Bị Ngoại Vi"
+                              >
                                 <span>Thiết Bị Văn Phòng - Thiết Bị Ngoại Vi</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="thiet-bi-luu-tru.html" title="Thiết Bị Lưu Trữ">
+                              <Link href="/thiet-bi-luu-tru" title="Thiết Bị Lưu Trữ">
                                 <span>Thiết Bị Lưu Trữ</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="thiet-bi-mang.html" title="Thiết Bị Mạng">
+                              <Link href="/thiet-bi-mang" title="Thiết Bị Mạng">
                                 <span>Thiết Bị Mạng</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="pc-may-tinh-bo.html" title="PC - Máy Tính Bộ">
+                              <Link href="/pc-may-tinh-bo" title="PC - Máy Tính Bộ">
                                 <span>PC - Máy Tính Bộ</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="linh-kien-may-tinh-phu-kien-may-tinh.html" title="Linh Kiện Máy Tính - Phụ Kiện Máy Tính">
+                              <Link
+                                href="/linh-kien-may-tinh-phu-kien-may-tinh"
+                                title="Linh Kiện Máy Tính - Phụ Kiện Máy Tính"
+                              >
                                 <span>Linh Kiện Máy Tính - Phụ Kiện Máy Tính</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 parent item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="nha-cua-doi-song.html" title="Nhà cửa & Đời sống">
+                          <Link href="/nha-cua-doi-song" className="h-mega" title="Nhà cửa & Đời sống">
                             <span>Nhà cửa & Đời sống</span>
-                          </a>
+                          </Link>
                           <ul className="level1">
                             <li className="level2">
-                              <a href="dung-cu-nha-bep.html" title="Dụng cụ nhà bếp">
+                              <Link href="/dung-cu-nha-bep" title="Dụng cụ nhà bếp">
                                 <span>Dụng cụ nhà bếp</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="do-dung-phong-an.html" title="Đồ dùng phòng ăn">
+                              <Link href="/do-dung-phong-an" title="Đồ dùng phòng ăn">
                                 <span>Đồ dùng phòng ăn</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="do-dung-phong-ngu.html" title="Đồ dùng phòng ngủ">
+                              <Link href="/do-dung-phong-ngu" title="Đồ dùng phòng ngủ">
                                 <span>Đồ dùng phòng ngủ</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="noi-that.html" title="Nội thất">
+                              <Link href="/noi-that" title="Nội thất">
                                 <span>Nội thất</span>
-                              </a>
+                              </Link>
                             </li>
                             <li className="level2">
-                              <a href="trang-tri-nha-cua.html" title="Trang trí nhà cửa">
+                              <Link href="/trang-tri-nha-cua" title="Trang trí nhà cửa">
                                 <span>Trang trí nhà cửa</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </li>
                         <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="bach-hoa-online.html" title="Bách Hóa Online">
+                          <Link href="/bach-hoa-online" className="h-mega" title="Bách Hóa Online">
                             <span>Bách Hóa Online</span>
-                          </a>
+                          </Link>
                         </li>
                         <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="thiet-bi-so-phu-kien-so.html" title="Thiết Bị Số - Phụ Kiện Số">
+                          <Link
+                            href="/thiet-bi-so-phu-kien-so"
+                            className="h-mega"
+                            title="Thiết Bị Số - Phụ Kiện Số"
+                          >
                             <span>Thiết Bị Số - Phụ Kiện Số</span>
-                          </a>
+                          </Link>
                         </li>
                         <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="dien-tu-dien-lanh-tv.html" title="Điện Tử - Điện Lạnh - TV">
+                          <Link
+                            href="/dien-tu-dien-lanh-tv"
+                            className="h-mega"
+                            title="Điện Tử - Điện Lạnh - TV"
+                          >
                             <span>Điện Tử - Điện Lạnh - TV</span>
-                          </a>
+                          </Link>
                         </li>
                         <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                          <a className="h-mega" href="the-thao-da-ngoai.html" title="Thể Thao - Dã Ngoại">
+                          <Link href="/the-thao-da-ngoai" className="h-mega" title="Thể Thao - Dã Ngoại">
                             <span>Thể Thao - Dã Ngoại</span>
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </div>
                   </div>
                   <ul className="item_small d-lg-none">
                     <li>
-                      <a className="caret-down" href="do-choi-me-be.html" title="Đồ Chơi - Mẹ & Bé">
+                      <Link href="/do-choi-me-be" className="caret-down" title="Đồ Chơi - Mẹ & Bé">
                         Đồ Chơi - Mẹ & Bé
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="ta-bim.html" title="Tã, Bỉm" className="a3">
+                          <Link href="/ta-bim" title="Tã, Bỉm" className="a3">
                             Tã, Bỉm
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="dinh-duong-cho-be.html" title="Dinh dưỡng cho bé" className="a3">
+                          <Link href="/dinh-duong-cho-be" title="Dinh dưỡng cho bé" className="a3">
                             Dinh dưỡng cho bé
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="thuc-pham-an-dam.html" title="Thực phẩm ăn dặm" className="a3">
+                          <Link href="/thuc-pham-an-dam" title="Thực phẩm ăn dặm" className="a3">
                             Thực phẩm ăn dặm
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="dinh-duong-cho-me.html" title="Dinh dưỡng cho mẹ" className="a3">
+                          <Link href="/dinh-duong-cho-me" title="Dinh dưỡng cho mẹ" className="a3">
                             Dinh dưỡng cho mẹ
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="do-dung-cho-be.html" title="Đồ dùng cho bé" className="a3">
+                          <Link href="/do-dung-cho-be" title="Đồ dùng cho bé" className="a3">
                             Đồ dùng cho bé
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
                     <li>
-                      <a className="caret-down" href="dien-thoai-may-tinh-bang.html" title="Điện Thoại - Máy Tính Bảng">
+                      <Link
+                        href="/dien-thoai-may-tinh-bang"
+                        className="caret-down"
+                        title="Điện Thoại - Máy Tính Bảng"
+                      >
                         Điện Thoại - Máy Tính Bảng
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="dien-thoai-smartphone.html" title="Điện thoại Smartphone" className="a3">
+                          <Link href="/dien-thoai-smartphone" title="Điện thoại Smartphone" className="a3">
                             Điện thoại Smartphone
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="may-tinh-bang.html" title="Máy tính bảng" className="a3">
+                          <Link href="/may-tinh-bang" title="Máy tính bảng" className="a3">
                             Máy tính bảng
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="may-doc-sach.html" title="Máy đọc sách" className="a3">
+                          <Link href="/may-doc-sach" title="Máy đọc sách" className="a3">
                             Máy đọc sách
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="dien-thoai-pho-thong.html" title="Điện thoại phổ thông" className="a3">
+                          <Link href="/dien-thoai-pho-thong" title="Điện thoại phổ thông" className="a3">
                             Điện thoại phổ thông
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="dien-thoai-ban.html" title="Điện thoại bàn" className="a3">
+                          <Link href="/dien-thoai-ban" title="Điện thoại bàn" className="a3">
                             Điện thoại bàn
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
                     <li>
-                      <a className="caret-down" href="lam-dep-suc-khoe.html" title="Làm Đẹp - Sức Khỏe">
+                      <Link href="/lam-dep-suc-khoe" className="caret-down" title="Làm Đẹp - Sức Khỏe">
                         Làm Đẹp - Sức Khỏe
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="cham-soc-da-mat.html" title="Chăm sóc da mặt" className="a3">
+                          <Link href="/cham-soc-da-mat" title="Chăm sóc da mặt" className="a3">
                             Chăm sóc da mặt
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="trang-diem.html" title="Trang điểm" className="a3">
+                          <Link href="/trang-diem" title="Trang điểm" className="a3">
                             Trang điểm
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="cham-soc-ca-nhan.html" title="Chăm sóc cá nhân" className="a3">
+                          <Link href="/cham-soc-ca-nhan" title="Chăm sóc cá nhân" className="a3">
                             Chăm sóc cá nhân
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="cham-soc-co-the.html" title="Chăm sóc cơ thể" className="a3">
+                          <Link href="/cham-soc-co-the" title="Chăm sóc cơ thể" className="a3">
                             Chăm sóc cơ thể
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="duoc-my-pham.html" title="Dược mỹ phẩm" className="a3">
+                          <Link href="/duoc-my-pham" title="Dược mỹ phẩm" className="a3">
                             Dược mỹ phẩm
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
                     <li>
-                      <a className="caret-down" href="dien-gia-dung.html" title="Điện Gia Dụng">
+                      <Link href="/dien-gia-dung" className="caret-down" title="Điện Gia Dụng">
                         Điện Gia Dụng
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="do-dung-nha-bep.html" title="Đồ dùng nhà bếp" className="a3">
+                          <Link href="/do-dung-nha-bep" title="Đồ dùng nhà bếp" className="a3">
                             Đồ dùng nhà bếp
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="thiet-bi-gia-dinh.html" title="Thiết bị gia đình" className="a3">
+                          <Link href="/thiet-bi-gia-dinh" title="Thiết bị gia đình" className="a3">
                             Thiết bị gia đình
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
                     <li>
-                      <a className="caret-down" href="phu-kien-thoi-trang.html" title="Phụ kiện thời trang">
+                      <Link href="/phu-kien-thoi-trang" className="caret-down" title="Phụ kiện thời trang">
                         Phụ kiện thời trang
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="mat-kinh.html" title="Mắt kính" className="a3">
+                          <Link href="/mat-kinh" title="Mắt kính" className="a3">
                             Mắt kính
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="phu-kien-thoi-trang-nu.html" title="Phụ kiện thời trang nữ" className="a3">
+                          <Link href="/phu-kien-thoi-trang-nu" title="Phụ kiện thời trang nữ" className="a3">
                             Phụ kiện thời trang nữ
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="phu-kien-thoi-trang-nam.html" title="Phụ kiện thời trang nam" className="a3">
+                          <Link href="/phu-kien-thoi-trang-nam" title="Phụ kiện thời trang nam" className="a3">
                             Phụ kiện thời trang nam
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
                     <li>
-                      <a className="caret-down" href="dong-ho-va-trang-suc.html" title="Đồng hồ và Trang sức">
+                      <Link
+                        href="/dong-ho-va-trang-suc"
+                        className="caret-down"
+                        title="Đồng hồ và Trang sức"
+                      >
                         Đồng hồ và Trang sức
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="dong-ho-nam.html" title="Đồng hồ nam" className="a3">
+                          <Link href="/dong-ho-nam" title="Đồng hồ nam" className="a3">
                             Đồng hồ nam
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="dong-ho-nu.html" title="Đồng hồ nữ" className="a3">
+                          <Link href="/dong-ho-nu" title="Đồng hồ nữ" className="a3">
                             Đồng hồ nữ
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="dong-ho-tre-em.html" title="Đồng hồ trẻ em" className="a3">
+                          <Link href="/dong-ho-tre-em" title="Đồng hồ trẻ em" className="a3">
                             Đồng hồ trẻ em
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="phu-kien-dong-ho.html" title="Phụ kiện đồng hồ" className="a3">
+                          <Link href="/phu-kien-dong-ho" title="Phụ kiện đồng hồ" className="a3">
                             Phụ kiện đồng hồ
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="trang-suc.html" title="Trang sức" className="a3">
+                          <Link href="/trang-suc" title="Trang sức" className="a3">
                             Trang sức
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
                     <li>
-                      <a className="caret-down" href="laptop-may-vi-tinh-linh-kien.html" title="Laptop - Máy Vi Tính - Linh kiện">
+                      <Link
+                        href="/laptop-may-vi-tinh-linh-kien"
+                        className="caret-down"
+                        title="Laptop - Máy Vi Tính - Linh kiện"
+                      >
                         Laptop - Máy Vi Tính - Linh kiện
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="laptop.html" title="Laptop" className="a3">
+                          <Link href="/laptop" title="Laptop" className="a3">
                             Laptop
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="thiet-bi-van-phong-thiet-bi-ngoai-vi.html" title="Thiết Bị Văn Phòng - Thiết Bị Ngoại Vi" className="a3">
+                          <Link
+                            href="/thiet-bi-van-phong-thiet-bi-ngoai-vi"
+                            title="Thiết Bị Văn Phòng - Thiết Bị Ngoại Vi"
+                            className="a3"
+                          >
                             Thiết Bị Văn Phòng - Thiết Bị Ngoại Vi
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="thiet-bi-luu-tru.html" title="Thiết Bị Lưu Trữ" className="a3">
+                          <Link href="/thiet-bi-luu-tru" title="Thiết Bị Lưu Trữ" className="a3">
                             Thiết Bị Lưu Trữ
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="thiet-bi-mang.html" title="Thiết Bị Mạng" className="a3">
+                          <Link href="/thiet-bi-mang" title="Thiết Bị Mạng" className="a3">
                             Thiết Bị Mạng
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="pc-may-tinh-bo.html" title="PC - Máy Tính Bộ" className="a3">
+                          <Link href="/pc-may-tinh-bo" title="PC - Máy Tính Bộ" className="a3">
                             PC - Máy Tính Bộ
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="linh-kien-may-tinh-phu-kien-may-tinh.html" title="Linh Kiện Máy Tính - Phụ Kiện Máy Tính" className="a3">
+                          <Link
+                            href="/linh-kien-may-tinh-phu-kien-may-tinh"
+                            title="Linh Kiện Máy Tính - Phụ Kiện Máy Tính"
+                            className="a3"
+                          >
                             Linh Kiện Máy Tính - Phụ Kiện Máy Tính
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
                     <li>
-                      <a className="caret-down" href="nha-cua-doi-song.html" title="Nhà cửa & Đời sống">
+                      <Link href="/nha-cua-doi-song" className="caret-down" title="Nhà cửa & Đời sống">
                         Nhà cửa & Đời sống
-                      </a>
+                      </Link>
                       <i className="fa fa-caret-down"></i>
                       <ul>
                         <li>
-                          <a href="dung-cu-nha-bep.html" title="Dụng cụ nhà bếp" className="a3">
+                          <Link href="/dung-cu-nha-bep" title="Dụng cụ nhà bếp" className="a3">
                             Dụng cụ nhà bếp
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="do-dung-phong-an.html" title="Đồ dùng phòng ăn" className="a3">
+                          <Link href="/do-dung-phong-an" title="Đồ dùng phòng ăn" className="a3">
                             Đồ dùng phòng ăn
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="do-dung-phong-ngu.html" title="Đồ dùng phòng ngủ" className="a3">
+                          <Link href="/do-dung-phong-ngu" title="Đồ dùng phòng ngủ" className="a3">
                             Đồ dùng phòng ngủ
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="noi-that.html" title="Nội thất" className="a3">
+                          <Link href="/noi-that" title="Nội thất" className="a3">
                             Nội thất
-                          </a>
+                          </Link>
                         </li>
                         <li>
-                          <a href="trang-tri-nha-cua.html" title="Trang trí nhà cửa" className="a3">
+                          <Link href="/trang-tri-nha-cua" title="Trang trí nhà cửa" className="a3">
                             Trang trí nhà cửa
-                          </a>
+                          </Link>
                         </li>
                       </ul>
                     </li>
-                    <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                      <a className="h-mega" href="bach-hoa-online.html" title="Bách Hóa Online">
+                    <li>
+                      <Link href="/bach-hoa-online" className="caret-down" title="Bách Hóa Online">
                         Bách Hóa Online
-                      </a>
+                      </Link>
                     </li>
-                    <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                      <a className="h-mega" href="thiet-bi-so-phu-kien-so.html" title="Thiết Bị Số - Phụ Kiện Số">
+                    <li>
+                      <Link
+                        href="/thiet-bi-so-phu-kien-so"
+                        className="caret-down"
+                        title="Thiết Bị Số - Phụ Kiện Số"
+                      >
                         Thiết Bị Số - Phụ Kiện Số
-                      </a>
+                      </Link>
                     </li>
-                    <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                      <a className="h-mega" href="dien-tu-dien-lanh-tv.html" title="Điện Tử - Điện Lạnh - TV">
+                    <li>
+                      <Link
+                        href="/dien-tu-dien-lanh-tv"
+                        className="caret-down"
+                        title="Điện Tử - Điện Lạnh - TV"
+                      >
                         Điện Tử - Điện Lạnh - TV
-                      </a>
+                      </Link>
                     </li>
-                    <li className="level1 item col-lg-3 col-md-3 col-sm-3">
-                      <a className="h-mega" href="the-thao-da-ngoai.html" title="Thể Thao - Dã Ngoại">
+                    <li>
+                      <Link href="/the-thao-da-ngoai" className="caret-down" title="Thể Thao - Dã Ngoại">
                         Thể Thao - Dã Ngoại
-                      </a>
+                      </Link>
                     </li>
                   </ul>
                 </li>
                 <li className="nav-item">
-                  <a className="a-img" href="yeu-thich.html" title="Yêu thích">
+                  <Link href="/yeu-thich" className="a-img" title="Yêu thích">
                     Yêu thích
-                  </a>
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <a className="a-img" href="lien-he.html" title="Liên hệ">
+                  <Link href="/lien-he" className="a-img" title="Liên hệ">
                     Liên hệ
-                  </a>
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <a className="a-img" href="tin-tuc.html" title="Tin tức">
+                  <Link href="/tin-tuc" className="a-img" title="Tin tức">
                     Tin tức
-                  </a>
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <a className="a-img" href="he-thong-cua-hang.html" title="Hệ thống cửa hàng">
+                  <Link href="/he-thong-cua-hang" className="a-img" title="Hệ thống cửa hàng">
                     Hệ thống cửa hàng
-                  </a>
+                  </Link>
                 </li>
                 <li className="nav-item">
-                  <a className="a-img" href="apps/affiliate-v2.html" title="Đăng ký Affiliate">
+                  <Link href="/apps/affiliate-v2" className="a-img" title="Đăng ký Affiliate">
                     Đăng ký Affiliate
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </nav>
