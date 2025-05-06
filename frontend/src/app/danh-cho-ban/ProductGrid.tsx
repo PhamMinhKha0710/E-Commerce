@@ -101,7 +101,7 @@ const ProductGrid: React.FC = () => {
             pageSize: 20,
           }),
         });
-
+  
         if (!response.ok) {
           console.error(`API error: Status ${response.status}, StatusText: ${response.statusText}`);
           try {
@@ -112,11 +112,12 @@ const ProductGrid: React.FC = () => {
           }
           throw new Error("Failed to fetch products");
         }
-
+  
         const data: SearchResponse = await response.json();
         setProducts(data.results);
         // Xóa dữ liệu tìm kiếm hình ảnh khi thực hiện tìm kiếm văn bản
         localStorage.removeItem("imageSearchResults");
+        localStorage.removeItem("isImageSearch");
       } catch (err) {
         setError("Không thể tải sản phẩm. Vui lòng thử lại sau.");
         console.error("Error fetching products:", err);
@@ -124,8 +125,10 @@ const ProductGrid: React.FC = () => {
         setIsLoading(false);
       }
     };
-
-    if (isImageSearch) {
+  
+    const isImageSearchStored = localStorage.getItem("isImageSearch") === "true";
+  
+    if (isImageSearch || isImageSearchStored) {
       loadImageSearchResults();
     } else if (query) {
       fetchProducts();

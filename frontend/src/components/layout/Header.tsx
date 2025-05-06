@@ -188,6 +188,9 @@ const Header = () => {
       // Lưu kết quả tìm kiếm hình ảnh mới vào localStorage
       localStorage.setItem("imageSearchResults", JSON.stringify(data.results));
   
+      // Lưu trạng thái tìm kiếm hình ảnh
+      localStorage.setItem("isImageSearch", "true");
+  
       // Dispatch custom event để thông báo có dữ liệu mới
       const event = new CustomEvent("imageSearchUpdated", {
         detail: { results: data.results },
