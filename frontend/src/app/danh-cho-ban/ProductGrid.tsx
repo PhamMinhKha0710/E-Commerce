@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductItem from "./ProductItem";
@@ -41,6 +42,40 @@ const ProductGrid: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Hàm tải dữ liệu từ localStorage
+  const loadImageSearchResults = () => {
+    const storedResults = localStorage.getItem("imageSearchResults");
+    if (storedResults) {
+      try {
+        const results = JSON.parse(storedResults) as Product[];
+        setProducts(results);
+      } catch (err) {
+        console.error("Error parsing image search results:", err);
+        setError("Không thể tải kết quả tìm kiếm bằng hình ảnh.");
+      }
+    } else {
+      setError("Không tìm thấy kết quả tìm kiếm bằng hình ảnh.");
+    }
+    setIsLoading(false);
+  };
+
+  // Lắng nghe custom event từ Header
+  useEffect(() => {
+    const handleImageSearchUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ results: Product[] }>;
+      setProducts(customEvent.detail.results);
+      setIsLoading(false);
+      setError(null);
+    };
+
+    window.addEventListener("imageSearchUpdated", handleImageSearchUpdate);
+
+    return () => {
+      window.removeEventListener("imageSearchUpdated", handleImageSearchUpdate);
+    };
+  }, []);
+
+  // Xử lý tìm kiếm và tải dữ liệu
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -80,6 +115,8 @@ const ProductGrid: React.FC = () => {
 
         const data: SearchResponse = await response.json();
         setProducts(data.results);
+        // Xóa dữ liệu tìm kiếm hình ảnh khi thực hiện tìm kiếm văn bản
+        localStorage.removeItem("imageSearchResults");
       } catch (err) {
         setError("Không thể tải sản phẩm. Vui lòng thử lại sau.");
         console.error("Error fetching products:", err);
@@ -88,30 +125,13 @@ const ProductGrid: React.FC = () => {
       }
     };
 
-    const loadImageSearchResults = () => {
-      const storedResults = localStorage.getItem("imageSearchResults");
-      if (storedResults) {
-        try {
-          const results = JSON.parse(storedResults) as Product[];
-          setProducts(results);
-          localStorage.removeItem("imageSearchResults"); // Xóa sau khi sử dụng
-        } catch (err) {
-          console.error("Error parsing image search results:", err);
-          setError("Không thể tải kết quả tìm kiếm bằng hình ảnh.");
-        }
-      } else {
-        setError("Không tìm thấy kết quả tìm kiếm bằng hình ảnh.");
-      }
-      setIsLoading(false);
-    };
-
     if (isImageSearch) {
       loadImageSearchResults();
     } else if (query) {
       fetchProducts();
     } else {
-      setProducts([]);
-      setIsLoading(false);
+      // Kiểm tra localStorage ngay cả khi không có query hoặc imageSearch
+      loadImageSearchResults();
     }
   }, [query, isImageSearch]);
 
