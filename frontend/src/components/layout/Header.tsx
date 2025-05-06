@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -103,14 +102,34 @@ const Header = () => {
   const handleSuggestionClick = (suggestion: string) => {
     setInputValue(suggestion);
     setIsSearchOpen(false);
-    window.location.href = `https://nd-mall.mysapo.net/search?query=${encodeURIComponent(suggestion)}&type=product`;
+    window.location.href = `/danh-cho-ban?query=${encodeURIComponent(suggestion)}`;
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputValue.trim()) {
+      window.location.href = `/danh-cho-ban?query=${encodeURIComponent(inputValue)}`;
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (inputValue.trim()) {
+        window.location.href = `/danh-cho-ban?query=${encodeURIComponent(inputValue)}`;
+      }
+    }
+  };
+
+  const handleCameraClick = () => {
+    // Assuming camera icon triggers an image search
+    window.location.href = `/danh-cho-ban?imageSearch=true`;
   };
 
   const handleLogout = async () => {
     await logout();
     window.location.href = "/auth/login";
   };
-
 
   return (
     <header className="header">
@@ -162,7 +181,7 @@ const Header = () => {
               </div>
               <div className="header-search" ref={searchRef}>
                 <form
-                  action="https://nd-mall.mysapo.net/search"
+                  onSubmit={handleSearchSubmit}
                   className="input-group search-bar theme-header-search-form ultimate-search"
                   role="search"
                 >
@@ -171,6 +190,7 @@ const Header = () => {
                     name="query"
                     value={inputValue}
                     onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
                     autoComplete="off"
                     placeholder="Tìm kiếm sản phẩm..."
                     className="search-auto input-group-field auto-search"
@@ -178,7 +198,23 @@ const Header = () => {
                   />
                   <input type="hidden" name="type" value="product" />
                   <span className="input-group-btn">
-                    <button className="btn icon-fallback-text" aria-label="Search">
+                    <span className="camera-icon" onClick={handleCameraClick} style={{ cursor: "pointer" }}>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={20}
+                        height={20}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                    </span>
+                    <button className="btn icon-fallback-text" aria-label="Search" type="submit">
                       Tìm kiếm
                     </button>
                   </span>
@@ -230,7 +266,6 @@ const Header = () => {
                                   </h3>
                                   <div className="price-box">
                                     <span className="price">Liên hệ</span>
-                                    {/* Add price if available from API */}
                                   </div>
                                 </div>
                               </div>
@@ -256,7 +291,7 @@ const Header = () => {
                             ))}
                             {(suggestions.length > 0 || productNames.length > 0) && (
                               <a
-                                href={`https://nd-mall.mysapo.net/search?query=${encodeURIComponent(inputValue)}&type=product`}
+                                href={`/danh-cho-ban?query=${encodeURIComponent(inputValue)}`}
                                 className="see-more"
                               >
                                 Xem thêm
@@ -269,7 +304,6 @@ const Header = () => {
                         className="list-search2 list-search-style"
                         id="tab-search-2"
                       >
-                        {/* Tin tức suggestions can be added here if API supports */}
                       </div>
                     </div>
                   </div>

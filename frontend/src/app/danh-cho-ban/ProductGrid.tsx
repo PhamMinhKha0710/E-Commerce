@@ -57,12 +57,12 @@ const ProductGrid: React.FC = () => {
             filters: {
               category: [],
               subCategory: [],
-              priceRange: { min: 0, max: 0 },
+              priceRange: { min: 0, max: 100000000 },
               brand: [],
               variations: [],
             },
-            sort: "popularityScore-desc",
-            page: 0,
+            sort: "",
+            page: 1,
             pageSize: 20,
           }),
         });
