@@ -235,6 +235,7 @@ header.header .header-middle .header-cart .cart-head:hover svg {
     justify-content: end;
 }
 .search-suggest {
+    margin-top: 10px;
     position: absolute;
     top: 40px;
     right: 0;
@@ -276,6 +277,7 @@ header.header .header-middle .header-cart .cart-head:hover svg {
     background: var(--maincolor);
     color: #fff;
     opacity: 1;
+    margin-right: 10px;
 }
 .list-search-style {
     text-align: center;

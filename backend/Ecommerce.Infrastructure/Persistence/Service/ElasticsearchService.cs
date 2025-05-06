@@ -259,12 +259,11 @@ namespace Ecommerce.Infrastructure.Elasticsearch
                 )
             );
 
-            // Gỡ lỗi chi tiết
             if (!suggestResponse.Suggest.ContainsKey("product-suggest"))
             {
-                var suggestRawResponse = JsonSerializer.Serialize(suggestResponse.ApiCall.ResponseBodyInBytes != null 
+                var suggestRawResponse = suggestResponse.ApiCall.ResponseBodyInBytes != null 
                     ? System.Text.Encoding.UTF8.GetString(suggestResponse.ApiCall.ResponseBodyInBytes) 
-                    : "No response body");
+                    : "No response body";
                 var debugInfo = new
                 {
                     Query = query,
@@ -280,7 +279,7 @@ namespace Ecommerce.Infrastructure.Elasticsearch
                 .Select(o => o.Text)
                 .ToList();
 
-            // Truy vấn riêng để lấy productNames
+            // Truy vấn riêng để lấy productNames và URLs
             var searchResponse = await _client.SearchAsync<ProductItemDto>(s => s
                 .Index(IndexName)
                 .Query(q => q
@@ -305,11 +304,13 @@ namespace Ecommerce.Infrastructure.Elasticsearch
                         .MinimumShouldMatch(1)
                     )
                 )
-                .Source(src => src.Includes(f => f.Field("name")))
+                .Source(src => src.Includes(f => f
+                    .Field("name")
+                    .Field("image_url") // Include image_url in the source
+                ))
                 .Size(5)
             );
 
-            // Gỡ lỗi chi tiết
             var searchRawResponse = searchResponse.ApiCall.ResponseBodyInBytes != null 
                 ? System.Text.Encoding.UTF8.GetString(searchResponse.ApiCall.ResponseBodyInBytes) 
                 : "No response body";
@@ -322,10 +323,16 @@ namespace Ecommerce.Infrastructure.Elasticsearch
                 .Where(name => !string.IsNullOrEmpty(name))
                 .ToList();
 
+            var urls = searchResponse.Hits
+                .Select(h => h.Source.ImageUrl)
+                .Where(url => !string.IsNullOrEmpty(url))
+                .ToList();
+
             return new SuggestResponseDto
             {
                 Suggestions = suggestions,
-                ProductNames = productNames
+                ProductNames = productNames,
+                Urls = urls
             };
         }
     }

@@ -108,6 +108,7 @@ namespace Ecommerce.Application.Common.DTOs
     {
         public List<string> Suggestions { get; set; }
         public List<string> ProductNames { get; set; }
+        public List<string> Urls { get; set; } // New field for URLs
     }
 
     public class ErrorResponseDto
