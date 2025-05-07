@@ -161,7 +161,7 @@ const ProductGrid: React.FC = () => {
             key={product.productId}
             id={product.productId.toString()}
             title={product.name}
-            href={`/products/${product.sku}`}
+            href={`/products/${product.productId}`}
             imgSrc={product.imageUrl}
             alt={product.name}
             price={product.price.toLocaleString("vi-VN") + "₫"}

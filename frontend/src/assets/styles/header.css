@@ -935,3 +935,7 @@ header.header .header-middle .header-cart .cart-head:hover svg {
         width: 100%;
     }
 }
+.camera-icon {
+    cursor: pointer;
+    margin-right: 10px;
+}

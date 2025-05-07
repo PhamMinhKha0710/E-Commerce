@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ["bizweb.dktcdn.net", "example.com", 'salt.tikicdn.com', 'frontend.tikicdn.com'],
+    domains: ["bizweb.dktcdn.net", "example.com", 'salt.tikicdn.com', 'frontend.tikicdn.com', 'down-vn.img.susercontent.com'],
   }
   /* config options here */
 };

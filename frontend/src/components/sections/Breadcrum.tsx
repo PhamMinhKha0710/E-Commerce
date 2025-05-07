@@ -15,7 +15,7 @@ interface BreadcrumbProps {
 
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
   return (
-    <section className="bread-crumb">
+    <section className="bread-crumb" style={{marginTop: '-30px'}}>
       <div className="container">
         <ul className="breadcrumb">
           {items.map((item, index) => (

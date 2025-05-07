@@ -8,7 +8,7 @@ import Breadcrumb from "@/components/sections/Breadcrum";
 export default function DanhChoBan() {
     return (
     
-        <div className="bodywrap">
+        <div className="bodywrap" style={{marginTop: '-30px'}}>
             <div className="layout-collection">
                 <Breadcrumb items={[
                     { label: "Trang chủ", href: "/" },

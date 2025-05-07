@@ -4,6 +4,7 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import '@/styles/userProfileStyles.css';
+import Breadcrumb from '@/components/sections/Breadcrum';
 
 // Định nghĩa type cho formData
 interface FormData {
@@ -67,10 +68,15 @@ export default function UserProfile() {
 
   return (
     <main className="container">
-      <div className="container-fluid sc-6d96a9af-0 eTnNSC" style={{ marginBottom: '30px' }}>
+      <div className="container-fluid sc-6d96a9af-0 eTnNSC" style={{ marginBottom: '30px'}}>
         {/* Breadcrumb */}
         <div className="sc-33a27214-0 gOqQTE">
-          <div data-view-id="breadcrumb_container" className="sc-d53003fc-0 hKGNKY">
+        <Breadcrumb items={[
+                    { label: "Trang chủ", href: "/" },
+                    { label: "Hồ sơ", href: "/userProfile" },
+                    { label: "Thông tin tài khoản", isActive: true }
+                ]} />
+          {/* <div data-view-id="breadcrumb_container" className="sc-d53003fc-0 hKGNKY">
             <div className="sc-6d96a9af-0 eTnNSC">
               <div className="breadcrumb">
                 <Link href="/" className="breadcrumb-item" data-view-id="breadcrumb_item" data-view-index="0">
@@ -91,7 +97,7 @@ export default function UserProfile() {
                 </Link>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Sidebar và Main Content */}
           <div className="row">
@@ -99,8 +105,9 @@ export default function UserProfile() {
             <aside className="col-lg-3 col-md-4 col-sm-12 sc-33a27214-2 jIYTAs" style={{ backgroundColor: '#e7eef6' }}>
               <div className="sc-33a27214-3 bThJSs">
                 <Image src="https://salt.tikicdn.com/desktop/img/avatar.png" alt="avatar" width={40} height={40} />
-                <div className="info">
-                  Tài khoản của <strong>Nguyễn Ngọc Tiếp</strong>
+                <div>
+                  <p style={{marginBottom: '0px'}}>Tài khoản của</p>
+                  <strong>Nguyễn Ngọc Tiệp</strong> 
                 </div>
               </div>
               <ul className="sc-33a27214-4 iXwMON">
@@ -254,96 +261,6 @@ export default function UserProfile() {
                       <path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4V6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"></path>
                     </svg>
                     <span>Nhận xét của tôi</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/chia-se-co-loi">
-                    <Image
-                      className="icon"
-                      src="https://frontend.tikicdn.com/_desktop-next/static/img/share-to-earn/icon-s2e.svg"
-                      alt="share to earn"
-                      width={20}
-                      height={20}
-                    />
-                    <span>Chia sẻ có lời</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/bao-hiem-so/hop-dong?source_screen=my_account">
-                    <Image
-                      className="icon"
-                      src="https://frontend.tikicdn.com/_desktop-next/static/img/account/insurance.png"
-                      alt="insurance icon"
-                      width={20}
-                      height={20}
-                    />
-                    <span>Hợp đồng bảo hiểm</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/customer/coupons">
-                    <Image
-                      className="icon"
-                      src="https://frontend.tikicdn.com/_desktop-next/static/img/mycoupon/coupon_code.svg"
-                      alt="coupon code"
-                      width={20}
-                      height={20}
-                    />
-                    <span>Mã giảm giá</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/customer/astra?checkout_flow=my_account">
-                    <Image
-                      src="https://salt.tikicdn.com/ts/upload/4b/4d/c3/05e31a32a296bd21da7d0403e6e2c87b.png"
-                      className="icon"
-                      alt="astra"
-                      width={20}
-                      height={20}
-                    />
-                    <div className="group-info">
-                      <span>Astra của bạn</span>
-                      <span>1,96 ASA</span>
-                    </div>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/customer/reward?checkout_flow=my_account">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M14.4502 1.04387C12.7301 0.179997 10.7547 -0.155053 8.8445 0.0662299C5.15543 0.450037 1.83253 3.08668 0.598636 6.58095C-0.25034 8.90254 -0.195333 11.5417 0.757405 13.8245C1.64114 15.9761 3.30758 17.7926 5.37158 18.8665C7.23943 19.8479 9.42581 20.208 11.5098 19.8842C13.3552 19.6116 15.1115 18.7965 16.5205 17.5776C18.1307 16.2011 19.2832 14.2983 19.7495 12.2305C20.256 10.0265 19.9897 7.65236 18.9932 5.62205C18.037 3.65176 16.4118 2.01652 14.4502 1.04387Z"
-                        fill="#FDD835"
-                      />
-                      <path
-                        opacity="0.5"
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M13.9817 1.98661C12.4427 1.21366 10.6753 0.913881 8.96611 1.11187C5.66537 1.45528 2.69225 3.81438 1.58823 6.94083C0.828624 9.01805 0.87784 11.3794 1.73029 13.4219C2.521 15.347 4.01203 16.9723 5.85876 17.9332C7.53 18.8113 9.48624 19.1334 11.3509 18.8437C13.002 18.5999 14.5734 17.8705 15.8341 16.7799C17.2748 15.5484 18.306 13.8459 18.7233 11.9957C19.1764 10.0237 18.9381 7.89946 18.0465 6.08287C17.191 4.31998 15.7368 2.85687 13.9817 1.98661Z"
-                        stroke="#FFB500"
-                        strokeWidth="0.685714"
-                      />
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M16.842 10C16.842 6.22059 13.7794 3.1579 9.99994 3.1579C6.22422 3.1579 3.15784 6.22059 3.15784 10C3.15784 13.7757 6.22422 16.8421 9.99994 16.8421C13.7794 16.8421 16.842 13.7757 16.842 10ZM15.7894 10.0082C15.7894 13.1987 13.2009 15.7895 9.99994 15.7895C6.80307 15.7895 4.21047 13.1987 4.21047 10.0082C4.21047 9.45737 4.29212 8.93105 4.43502 8.42105H15.5608C15.7078 8.93105 15.7894 9.45737 15.7894 10.0082Z"
-                        fill="#FFB500"
-                      />
-                    </svg>
-                    <span>Quản lý Tiki Xu của tôi</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/customer/bookcare">
-                    <Image
-                      className="icon"
-                      src="https://frontend.tikicdn.com/_desktop-next/static/img/icons/bookcare.svg"
-                      alt="bookcare"
-                      width={20}
-                      height={20}
-                    />
-                    <span>BookCare của tôi</span>
                   </Link>
                 </li>
                 <li>
