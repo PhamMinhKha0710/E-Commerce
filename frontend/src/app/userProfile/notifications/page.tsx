@@ -1,16 +1,25 @@
 'use client';
-
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Swiper, SwiperSlide, SwiperClass } from 'swiper/react';
 import 'swiper/css';
 import '@/styles/userProfileStyles.css';
+
+// Định nghĩa kiểu dữ liệu cho Notification
+interface Notification {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  type?: 'general' | 'promotion' | 'order' | 'system';
+}
 
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState<string>('general'); // Mặc định tab "Thông báo chung" active
   const swiperRef = useRef<SwiperClass | null>(null);
 
-  const handleTabClick = (tab: string, index: number) => {
+  const handleTabClick = (tab: string) => {
     setActiveTab(tab);
   };
 
@@ -23,7 +32,7 @@ export default function Notifications() {
   }, [activeTab]);
 
   // Dữ liệu mẫu cho các tab (hiện tại để rỗng, bạn có thể thêm dữ liệu thực tế sau)
-  const notificationData: { [key: string]: any[] } = {
+  const notificationData: { [key: string]: Notification[] } = {
     general: [], // Thông báo chung
     promotions: [], // Thông báo khuyến mãi
     orders: [], // Thông báo đơn hàng
@@ -55,7 +64,7 @@ export default function Notifications() {
             <li
               className={activeTab === 'general' ? 'is-active' : ''}
               title="Thông báo chung"
-              onClick={() => handleTabClick('general', 0)}
+              onClick={() => handleTabClick('general')}
             >
               <svg
                 stroke="currentColor"
@@ -72,7 +81,7 @@ export default function Notifications() {
             <li
               className={activeTab === 'promotions' ? 'is-active' : ''}
               title="Thông báo khuyến mãi"
-              onClick={() => handleTabClick('promotions', 1)}
+              onClick={() => handleTabClick('promotions')}
             >
               <svg
                 stroke="currentColor"
@@ -89,7 +98,7 @@ export default function Notifications() {
             <li
               className={activeTab === 'orders' ? 'is-active' : ''}
               title="Thông báo đơn hàng"
-              onClick={() => handleTabClick('orders', 2)}
+              onClick={() => handleTabClick('orders')}
             >
               <svg
                 stroke="currentColor"
@@ -106,7 +115,7 @@ export default function Notifications() {
             <li
               className={activeTab === 'system' ? 'is-active' : ''}
               title="Thông báo hệ thống"
-              onClick={() => handleTabClick('system', 3)}
+              onClick={() => handleTabClick('system')}
             >
               <svg
                 stroke="currentColor"
@@ -147,16 +156,19 @@ export default function Notifications() {
             speed={500}
             className="react-swipe-container carousel"
           >
-            {Object.keys(notificationData).map((tab, index) => (
-              <SwiperSlide key={index} data-index={index}>
+            {Object.keys(notificationData).map((tab) => (
+              <SwiperSlide key={tab}>
                 <div
                   className="infinite-scroll-component"
                   style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 110px)' }}
                 >
                   {notificationData[tab].length > 0 ? (
-                    notificationData[tab].map((notification, index: number) => (
-                      <div key={index}>
+                    notificationData[tab].map((notification) => (
+                      <div key={notification.id}>
                         {/* Thêm nội dung thông báo nếu có dữ liệu */}
+                        <h3>{notification.title}</h3>
+                        <p>{notification.content}</p>
+                        <p>{notification.date}</p>
                       </div>
                     ))
                   ) : (
@@ -168,9 +180,9 @@ export default function Notifications() {
                         height={100}
                       />
                       <p className="message">Bạn chưa có thông báo</p>
-                      <a href="/" className="back">
+                      <Link href="/" className="back">
                         Tiếp tục mua sắm
-                      </a>
+                      </Link>
                     </div>
                   )}
                 </div>

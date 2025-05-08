@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import '@/styles/userProfileStyles.css';
 
 // Định nghĩa kiểu dữ liệu cho AddressItem
@@ -61,7 +60,7 @@ export default function Address() {
             </Link>
           </div>
           {addresses.map((address) => (
-            <div key={address.id} className="item">
+            <div key={address.id} className="items">
               <div className="info">
                 <div className="name">
                   {address.name}

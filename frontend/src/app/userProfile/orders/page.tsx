@@ -31,7 +31,7 @@ export default function Orders() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const swiperRef = useRef<SwiperClass | null>(null);
 
-  const handleTabClick = (tab: string, index: number) => {
+  const handleTabClick = (tab: string) => {
     setActiveTab(tab);
   };
 
@@ -536,37 +536,37 @@ export default function Orders() {
         <div className="sc-b446ca32-2 iEyIQx">
           <div
             className={activeTab === 'all' ? 'sc-b446ca32-3 fwJLeL' : 'sc-b446ca32-3 jDDrpU'}
-            onClick={() => handleTabClick('all', 0)}
+            onClick={() => handleTabClick('all')}
           >
             Tất cả đơn
           </div>
           <div
             className={activeTab === 'pending' ? 'sc-b446ca32-3 fwJLeL' : 'sc-b446ca32-3 jDDrpU'}
-            onClick={() => handleTabClick('pending', 1)}
+            onClick={() => handleTabClick('pending')}
           >
             Chờ thanh toán
           </div>
           <div
             className={activeTab === 'processing' ? 'sc-b446ca32-3 fwJLeL' : 'sc-b446ca32-3 jDDrpU'}
-            onClick={() => handleTabClick('processing', 2)}
+            onClick={() => handleTabClick('processing')}
           >
             Đang xử lý
           </div>
           <div
             className={activeTab === 'shipping' ? 'sc-b446ca32-3 fwJLeL' : 'sc-b446ca32-3 jDDrpU'}
-            onClick={() => handleTabClick('shipping', 3)}
+            onClick={() => handleTabClick('shipping')}
           >
             Đang vận chuyển
           </div>
           <div
             className={activeTab === 'delivered' ? 'sc-b446ca32-3 fwJLeL' : 'sc-b446ca32-3 jDDrpU'}
-            onClick={() => handleTabClick('delivered', 4)}
+            onClick={() => handleTabClick('delivered')}
           >
             Đã giao
           </div>
           <div
             className={activeTab === 'canceled' ? 'sc-b446ca32-3 fwJLeL' : 'sc-b446ca32-3 jDDrpU'}
-            onClick={() => handleTabClick('canceled', 5)}
+            onClick={() => handleTabClick('canceled')}
           >
             Đã huỷ
           </div>
@@ -607,8 +607,8 @@ export default function Orders() {
           speed={500} // Tốc độ chuyển slide (500ms)
           className="react-swipe-container carousel"
         >
-          {Object.keys(orderData).map((tab, index) => (
-            <SwiperSlide key={index} data-index={index}>
+          {Object.keys(orderData).map((tab) => (
+            <SwiperSlide key={tab}>
               <div
                 className="infinite-scroll-component"
                 style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 110px)' }}

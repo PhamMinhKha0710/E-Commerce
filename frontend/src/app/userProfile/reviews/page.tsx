@@ -31,7 +31,7 @@ export default function Reviews() {
   const [activeTab, setActiveTab] = useState<string>('reviewed'); // Mặc định tab "Đã đánh giá" active
   const swiperRef = useRef<SwiperClass | null>(null);
 
-  const handleTabClick = (tab: string, index: number) => {
+  const handleTabClick = (tab: string) => {
     setActiveTab(tab);
   };
 
@@ -168,13 +168,13 @@ export default function Reviews() {
         <div className="sc-716e004a-3 fCTRFW">
           <div
             className={activeTab === 'pending' ? 'tab tab--active' : 'tab'}
-            onClick={() => handleTabClick('pending', 0)}
+            onClick={() => handleTabClick('pending')}
           >
             Chờ đánh giá
           </div>
           <div
             className={activeTab === 'reviewed' ? 'tab tab--active' : 'tab'}
-            onClick={() => handleTabClick('reviewed', 1)}
+            onClick={() => handleTabClick('reviewed')}
           >
             Đã đánh giá
           </div>

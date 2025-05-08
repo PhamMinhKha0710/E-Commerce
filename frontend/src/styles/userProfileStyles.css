@@ -1130,7 +1130,7 @@
     height: 16px;
 }
 
-.item {
+.items {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1143,16 +1143,16 @@
     transition: all 0.3s ease;
 }
 
-.item:hover {
+.items:hover {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
 }
 
-.item .info {
+.items .info {
     flex: 1;
 }
 
-.item .name {
+.items .name {
     font-size: 16px;
     font-weight: 600;
     color: #333;
@@ -1162,7 +1162,7 @@
     gap: 8px;
 }
 
-.item .name span {
+.items .name span {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1171,38 +1171,38 @@
     color: #28a745;
 }
 
-.item .name span svg {
+.items .name span svg {
     width: 16px;
     height: 16px;
 }
 
-.item .address {
+.items .address {
     font-size: 14px;
     color: #666;
     margin-bottom: 6px;
 }
 
-.item .address span {
+.items .address span {
     font-weight: 500;
     color: #333;
 }
 
-.item .phone {
+.items .phone {
     font-size: 14px;
     color: #666;
 }
 
-.item .phone span {
+.items .phone span {
     font-weight: 500;
     color: #333;
 }
 
-.item .action {
+.items .action {
     display: flex;
     gap: 10px;
 }
 
-.item .action .edit {
+.items .action .edit {
     padding: 8px 16px;
     background-color: #e6f0ff;
     color: #0a68ff;
@@ -1212,11 +1212,11 @@
     transition: all 0.3s ease;
 }
 
-.item .action .edit:hover {
+.items .action .edit:hover {
     background-color: #d5e4ff;
 }
 
-.item .action .delete {
+.items .action .delete {
     padding: 8px 16px;
     background-color: #ffe6e6;
     color: #ff4d4f;
@@ -1227,7 +1227,7 @@
     transition: all 0.3s ease;
 }
 
-.item .action .delete:hover {
+.items .action .delete:hover {
     background-color: #ffd5d5;
 }
 
@@ -1917,19 +1917,19 @@ select {
         margin-left: 40px;
     }
 
-    .item {
+    .items {
         flex-direction: column;
         align-items: flex-start;
         gap: 15px;
     }
 
-    .item .action {
+    .items .action {
         width: 100%;
         justify-content: flex-end;
     }
 
-    .item .action .edit,
-    .item .action .delete {
+    .items .action .edit,
+    .items .action .delete {
         flex: 1;
         text-align: center;
     }

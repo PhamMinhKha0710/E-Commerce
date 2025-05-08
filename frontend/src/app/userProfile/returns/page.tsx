@@ -22,7 +22,7 @@ export default function Returns() {
   const [activeTab, setActiveTab] = useState<string>('all'); // Mặc định tab "Tất cả" active
   const swiperRef = useRef<SwiperClass | null>(null);
 
-  const handleTabClick = (tab: string, index: number) => {
+  const handleTabClick = (tab: string) => {
     setActiveTab(tab);
   };
 
@@ -125,19 +125,19 @@ export default function Returns() {
         <div className="sc-276ef7ec-1 kJDuxw">
           <div
             className={activeTab === 'all' ? 'sc-276ef7ec-2 dPxpxF' : 'sc-276ef7ec-2 eYjPfG'}
-            onClick={() => handleTabClick('all', 0)}
+            onClick={() => handleTabClick('all')}
           >
             Tất cả
           </div>
           <div
             className={activeTab === 'inProgress' ? 'sc-276ef7ec-2 dPxpxF' : 'sc-276ef7ec-2 eYjPfG'}
-            onClick={() => handleTabClick('inProgress', 1)}
+            onClick={() => handleTabClick('inProgress')}
           >
             Đang tiến hành
           </div>
           <div
             className={activeTab === 'completed' ? 'sc-276ef7ec-2 dPxpxF' : 'sc-276ef7ec-2 eYjPfG'}
-            onClick={() => handleTabClick('completed', 2)}
+            onClick={() => handleTabClick('completed')}
           >
             Đã xong
           </div>
@@ -152,8 +152,8 @@ export default function Returns() {
             speed={500}
             className="react-swipe-container carousel"
           >
-            {Object.entries(returnData).map(([tab], index) => (
-              <SwiperSlide key={tab} data-index={index}>
+            {Object.entries(returnData).map(([tab]) => (
+              <SwiperSlide key={tab}>
                 <div
                   className="infinite-scroll-component"
                   style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 110px)' }}
