@@ -35,6 +35,11 @@ public class ProductCategoryConfiguration : IEntityTypeConfiguration<ProductCate
               .WithOne(pc => pc.ProductCategory)
               .HasForeignKey(pc => pc.ProductCategoryId)
               .OnDelete(DeleteBehavior.Cascade);
+              
+       builder.HasMany(p => p.PopularityStats)
+              .WithOne(pc => pc.ProductCategory)
+              .HasForeignKey(pc => pc.CategoryId)
+              .OnDelete(DeleteBehavior.Cascade);
 
        builder.HasIndex(pc => pc.Name);
     }

@@ -22,6 +22,41 @@ namespace Ecommerce.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Ecommerce.Domain.Entitie.UserSearch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("SearchTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserId1")
+                        .HasColumnType("int");
+
+                    b.Property<string>("keyWord")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SearchTime");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
+
+                    b.HasIndex("keyWord");
+
+                    b.ToTable("UserSearches");
+                });
+
             modelBuilder.Entity("Ecommerce.Domain.Entities.Address", b =>
                 {
                     b.Property<int>("Id")
@@ -273,6 +308,44 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("paymentMethods");
+                });
+
+            modelBuilder.Entity("Ecommerce.Domain.Entities.PopularityStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PurchaseCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("TimePeriod")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("ViewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("TimePeriod");
+
+                    b.ToTable("PopularityStats");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.Product", b =>
@@ -789,6 +862,21 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.ToTable("UserReviews");
                 });
 
+            modelBuilder.Entity("Ecommerce.Domain.Entities.UserViewHistory", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "ProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("UserViewHistories");
+                });
+
             modelBuilder.Entity("Ecommerce.Domain.Entities.Variation", b =>
                 {
                     b.Property<int>("Id")
@@ -833,6 +921,21 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.HasIndex("VariationId");
 
                     b.ToTable("VariationOptions");
+                });
+
+            modelBuilder.Entity("Ecommerce.Domain.Entitie.UserSearch", b =>
+                {
+                    b.HasOne("Ecommerce.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ecommerce.Domain.Entities.User", null)
+                        .WithMany("UserSearches")
+                        .HasForeignKey("UserId1");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.OrderLine", b =>
@@ -901,6 +1004,25 @@ namespace Ecommerce.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Ecommerce.Domain.Entities.PopularityStat", b =>
+                {
+                    b.HasOne("Ecommerce.Domain.Entities.ProductCategory", "ProductCategory")
+                        .WithMany("PopularityStats")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ecommerce.Domain.Entities.Product", "Product")
+                        .WithMany("PopularityStats")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ProductCategory");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.Product", b =>
@@ -1098,6 +1220,25 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Ecommerce.Domain.Entities.UserViewHistory", b =>
+                {
+                    b.HasOne("Ecommerce.Domain.Entities.Product", "Product")
+                        .WithMany("UserViewHistories")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Ecommerce.Domain.Entities.User", "User")
+                        .WithMany("UserViewHistories")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Ecommerce.Domain.Entities.VariationOption", b =>
                 {
                     b.HasOne("Ecommerce.Domain.Entities.Variation", "Variation")
@@ -1141,14 +1282,20 @@ namespace Ecommerce.Infrastructure.Migrations
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.Product", b =>
                 {
+                    b.Navigation("PopularityStats");
+
                     b.Navigation("ProductImages");
 
                     b.Navigation("ProductItems");
+
+                    b.Navigation("UserViewHistories");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.ProductCategory", b =>
                 {
                     b.Navigation("Children");
+
+                    b.Navigation("PopularityStats");
 
                     b.Navigation("Products");
 
@@ -1199,6 +1346,10 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.Navigation("ShoppingCarts");
 
                     b.Navigation("UserAddresses");
+
+                    b.Navigation("UserSearches");
+
+                    b.Navigation("UserViewHistories");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.Variation", b =>

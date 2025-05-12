@@ -9,6 +9,7 @@ public class OrderResponseDto
     public decimal DiscountAmount { get; set; }
     public string Note { get; set; }
     public string Status { get; set; }
+    public int? PromotionId {get; set;}
     public AddressDto ShippingAddress { get; set; }
     public List<OrderLineDto> OrderLines { get; set; }
 }

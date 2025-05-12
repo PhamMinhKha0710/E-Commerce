@@ -22,4 +22,6 @@ public class Product
     public Brand Brand { get; set; } 
     public List<ProductItem> ProductItems { get; set; } 
     public List<ProductImage> ProductImages { get; set; } 
+    public List<PopularityStat> PopularityStats { get; set; }
+    public List<UserViewHistory> UserViewHistories { get; set; }
 }

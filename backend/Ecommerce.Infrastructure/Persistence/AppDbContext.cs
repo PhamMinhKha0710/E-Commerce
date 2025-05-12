@@ -1,3 +1,4 @@
+using Ecommerce.Domain.Entitie;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Infrastructure.Persistence.Data.Configurations;
 using Microsoft.EntityFrameworkCore;
@@ -35,7 +36,9 @@ public class AppDbContext : DbContext
     public DbSet<UserReview> UserReviews { get; set; }
     public DbSet<Variation> Variations { get; set; }
     public DbSet<VariationOption> VariationOptions { get; set; }
-
+    public DbSet<UserSearch> UserSearches {get; set;}
+    public DbSet<UserViewHistory> UserViewHistories {get; set;}
+    public DbSet<PopularityStat> PopularityStats {get; set;}
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Áp dụng các configuration 
@@ -47,6 +50,7 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new PaymentMethodConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentLogConfiguration());
         modelBuilder.ApplyConfiguration(new Data.Configurations.ProductConfiguration());
+        modelBuilder.ApplyConfiguration(new PopularityStatConfiguration());
         modelBuilder.ApplyConfiguration(new ProductCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new ProductConfigurationConfiguration());
         modelBuilder.ApplyConfiguration(new ProductImageConfiguration());
@@ -61,6 +65,8 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new UserAddressConfiguration());
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new UserReviewConfiguration());
+        modelBuilder.ApplyConfiguration(new UserSearchConfiguration());
+        modelBuilder.ApplyConfiguration(new UserViewHistoryConfiguration());
         modelBuilder.ApplyConfiguration(new VariationConfiguration());
         modelBuilder.ApplyConfiguration(new VariationOptionConfiguration());
     }

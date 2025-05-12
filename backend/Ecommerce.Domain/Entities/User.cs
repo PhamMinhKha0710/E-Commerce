@@ -1,3 +1,5 @@
+using Ecommerce.Domain.Entitie;
+
 namespace Ecommerce.Domain.Entities;
 public class User
 {
@@ -17,4 +19,6 @@ public class User
     public List<ShoppingCart> ShoppingCarts { get; set; } 
     public List<ShopOrder> ShopOrders { get; set; } 
     public List<RefreshToken> RefreshTokens { get; set; } 
+    public List<UserSearch> UserSearches { get; set; }
+    public List<UserViewHistory> UserViewHistories { get; set; }
 }

@@ -10,4 +10,5 @@ public class ProductCategory
     public List<Product> Products { get; set; }
     public List<ProductCategory> Children { get; set; }
     public List<PromotionCategory> PromotionCategories { get; set; }
+    public List<PopularityStat> PopularityStats { get; set; }
 }

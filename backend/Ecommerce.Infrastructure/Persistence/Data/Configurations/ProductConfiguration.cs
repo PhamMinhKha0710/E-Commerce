@@ -63,6 +63,16 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
               .HasForeignKey(pi => pi.ProductId)
               .OnDelete(DeleteBehavior.Cascade);
 
+       builder.HasMany(p => p.PopularityStats)
+              .WithOne(pi => pi.Product)
+              .HasForeignKey(pi => pi.ProductId)
+              .OnDelete(DeleteBehavior.Cascade);
+              
+       builder.HasMany(p => p.UserViewHistories)
+              .WithOne(pi => pi.Product)
+              .HasForeignKey(p => p.ProductId)
+              .OnDelete(DeleteBehavior.Restrict);
+
        builder.HasIndex(p => p.Name);
     }
 }
