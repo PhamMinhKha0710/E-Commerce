@@ -52,6 +52,33 @@ namespace Ecommerce.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ProductSimilarity",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ProductId1 = table.Column<int>(type: "int", nullable: false),
+                    ProductId2 = table.Column<int>(type: "int", nullable: false),
+                    Similarity = table.Column<double>(type: "float", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductSimilarity", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductSimilarity_Products_ProductId1",
+                        column: x => x.ProductId1,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ProductSimilarity_Products_ProductId2",
+                        column: x => x.ProductId2,
+                        principalTable: "Products",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UserSearches",
                 columns: table => new
                 {
@@ -118,6 +145,21 @@ namespace Ecommerce.Infrastructure.Migrations
                 column: "TimePeriod");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductSimilarity_ProductId1",
+                table: "ProductSimilarity",
+                column: "ProductId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductSimilarity_ProductId1_ProductId2",
+                table: "ProductSimilarity",
+                columns: new[] { "ProductId1", "ProductId2" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductSimilarity_ProductId2",
+                table: "ProductSimilarity",
+                column: "ProductId2");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserSearches_keyWord",
                 table: "UserSearches",
                 column: "keyWord");
@@ -148,6 +190,9 @@ namespace Ecommerce.Infrastructure.Migrations
         {
             migrationBuilder.DropTable(
                 name: "PopularityStats");
+
+            migrationBuilder.DropTable(
+                name: "ProductSimilarity");
 
             migrationBuilder.DropTable(
                 name: "UserSearches");

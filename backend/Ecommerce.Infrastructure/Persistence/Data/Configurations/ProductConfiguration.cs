@@ -67,11 +67,20 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
               .WithOne(pi => pi.Product)
               .HasForeignKey(pi => pi.ProductId)
               .OnDelete(DeleteBehavior.Cascade);
-              
+
        builder.HasMany(p => p.UserViewHistories)
               .WithOne(pi => pi.Product)
               .HasForeignKey(p => p.ProductId)
               .OnDelete(DeleteBehavior.Restrict);
+
+       builder.HasMany(p => p.ProductSimilaritiesAsProduct1)
+              .WithOne(ps => ps.Product1)
+              .HasForeignKey(ps => ps.ProductId1);
+
+       builder.HasMany(p => p.ProductSimilaritiesAsProduct2)
+              .WithOne(ps => ps.Product2)
+              .HasForeignKey(ps => ps.ProductId2);
+
 
        builder.HasIndex(p => p.Name);
     }

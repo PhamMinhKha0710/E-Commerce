@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ecommerce.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250512155933_v2")]
+    [Migration("20250513182327_v2")]
     partial class v2
     {
         /// <inheritdoc />
@@ -543,6 +543,34 @@ namespace Ecommerce.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("ProductItems");
+                });
+
+            modelBuilder.Entity("Ecommerce.Domain.Entities.ProductSimilarity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ProductId1")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId2")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Similarity")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId1");
+
+                    b.HasIndex("ProductId2");
+
+                    b.HasIndex("ProductId1", "ProductId2");
+
+                    b.ToTable("ProductSimilarity");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.Promotion", b =>
@@ -1098,6 +1126,25 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Ecommerce.Domain.Entities.ProductSimilarity", b =>
+                {
+                    b.HasOne("Ecommerce.Domain.Entities.Product", "Product1")
+                        .WithMany("ProductSimilaritiesAsProduct1")
+                        .HasForeignKey("ProductId1")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Ecommerce.Domain.Entities.Product", "Product2")
+                        .WithMany("ProductSimilaritiesAsProduct2")
+                        .HasForeignKey("ProductId2")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Product1");
+
+                    b.Navigation("Product2");
+                });
+
             modelBuilder.Entity("Ecommerce.Domain.Entities.PromotionCategory", b =>
                 {
                     b.HasOne("Ecommerce.Domain.Entities.ProductCategory", "ProductCategory")
@@ -1290,6 +1337,10 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.Navigation("ProductImages");
 
                     b.Navigation("ProductItems");
+
+                    b.Navigation("ProductSimilaritiesAsProduct1");
+
+                    b.Navigation("ProductSimilaritiesAsProduct2");
 
                     b.Navigation("UserViewHistories");
                 });

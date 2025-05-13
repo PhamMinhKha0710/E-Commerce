@@ -51,6 +51,7 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new PaymentLogConfiguration());
         modelBuilder.ApplyConfiguration(new Data.Configurations.ProductConfiguration());
         modelBuilder.ApplyConfiguration(new PopularityStatConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductSimilarityConfiguration());
         modelBuilder.ApplyConfiguration(new ProductCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new ProductConfigurationConfiguration());
         modelBuilder.ApplyConfiguration(new ProductImageConfiguration());

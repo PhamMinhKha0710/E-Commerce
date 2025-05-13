@@ -24,4 +24,6 @@ public class Product
     public List<ProductImage> ProductImages { get; set; } 
     public List<PopularityStat> PopularityStats { get; set; }
     public List<UserViewHistory> UserViewHistories { get; set; }
+    public List<ProductSimilarity> ProductSimilaritiesAsProduct1 { get; set; } 
+    public List<ProductSimilarity> ProductSimilaritiesAsProduct2 { get; set; }
 }
