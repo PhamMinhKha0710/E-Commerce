@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ecommerce.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250513182327_v2")]
+    [Migration("20250514162414_v2")]
     partial class v2
     {
         /// <inheritdoc />
@@ -560,17 +560,16 @@ namespace Ecommerce.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<double>("Similarity")
-                        .HasColumnType("float");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("float(18)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ProductId1");
 
                     b.HasIndex("ProductId2");
 
                     b.HasIndex("ProductId1", "ProductId2");
 
-                    b.ToTable("ProductSimilarity");
+                    b.ToTable("ProductSimilarities");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.Promotion", b =>
@@ -895,15 +894,28 @@ namespace Ecommerce.Infrastructure.Migrations
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.UserViewHistory", b =>
                 {
-                    b.Property<int>("UserId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
-                    b.HasKey("UserId", "ProductId");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ViewTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ViewTime");
 
                     b.ToTable("UserViewHistories");
                 });

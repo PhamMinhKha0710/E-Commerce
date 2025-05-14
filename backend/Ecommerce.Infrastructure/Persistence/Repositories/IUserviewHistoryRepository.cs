@@ -1,4 +1,5 @@
 using Ecommerce.Application.Interfaces.Repositories;
+using Ecommerce.Domain.Entities;
 using Ecommerce.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,5 +32,29 @@ public class UserViewHistoryRepository : IUserViewHistoryRepository
     public async Task<int> GetCountAsync()
     {
         return await _dbContext.UserViewHistories.CountAsync();
+    }
+
+    public async Task<UserViewHistory> GetOldestViewAsync(int userId)
+    {
+        return await _dbContext.UserViewHistories
+               .Where(uvh => uvh.UserId == userId)
+               .OrderBy(uvh => uvh.ViewTime)
+               .FirstOrDefaultAsync();
+    } 
+
+    public async Task AddAsync(UserViewHistory viewHistory)
+    {
+        await _dbContext.UserViewHistories.AddAsync(viewHistory);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var viewHistory = await _dbContext.UserViewHistories.FindAsync(id);
+        if (viewHistory != null)
+        {
+            _dbContext.UserViewHistories.Remove(viewHistory);
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }

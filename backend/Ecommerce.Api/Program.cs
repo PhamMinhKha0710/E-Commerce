@@ -7,6 +7,7 @@ using Ecommerce.Application.Interfaces.Repositories;
 using Ecommerce.Application.Interfaces.Services;
 using Ecommerce.Application.Queries.Categories;
 using Ecommerce.Application.QueryHandlers;
+using Ecommerce.Application.Services;
 using Ecommerce.Infrastructure.Elasticsearch;
 using Ecommerce.Infrastructure.Messaging;
 using Ecommerce.Infrastructure.Persistence;
@@ -116,6 +117,13 @@ builder.Services.AddScoped<IProductItemRepository, ProductItemRepository>();
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(GetAllCategoriesQuery).Assembly);
 });
+
+// Register Recommendation
+builder.Services.AddScoped<IPopularityStatRepository, PopularityStatRepository>();
+builder.Services.AddScoped<IUserViewHistoryRepository, UserViewHistoryRepository>();
+builder.Services.AddScoped<IUserSearchRepository, UserSearchRepository>();
+builder.Services.AddScoped<IProductSimilarityRepository, ProductSimilarityRepository>();
+builder.Services.AddScoped<ProductSimilarityService>();
 
 // Register Elastichsearch
 builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();

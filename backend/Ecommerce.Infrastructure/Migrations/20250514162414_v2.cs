@@ -52,26 +52,26 @@ namespace Ecommerce.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductSimilarity",
+                name: "ProductSimilarities",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ProductId1 = table.Column<int>(type: "int", nullable: false),
                     ProductId2 = table.Column<int>(type: "int", nullable: false),
-                    Similarity = table.Column<double>(type: "float", nullable: false)
+                    Similarity = table.Column<double>(type: "float(18)", precision: 18, scale: 4, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProductSimilarity", x => x.Id);
+                    table.PrimaryKey("PK_ProductSimilarities", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProductSimilarity_Products_ProductId1",
+                        name: "FK_ProductSimilarities_Products_ProductId1",
                         column: x => x.ProductId1,
                         principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_ProductSimilarity_Products_ProductId2",
+                        name: "FK_ProductSimilarities_Products_ProductId2",
                         column: x => x.ProductId2,
                         principalTable: "Products",
                         principalColumn: "Id",
@@ -109,12 +109,15 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "UserViewHistories",
                 columns: table => new
                 {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    ProductId = table.Column<int>(type: "int", nullable: false)
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    ViewTime = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserViewHistories", x => new { x.UserId, x.ProductId });
+                    table.PrimaryKey("PK_UserViewHistories", x => x.Id);
                     table.ForeignKey(
                         name: "FK_UserViewHistories_Products_ProductId",
                         column: x => x.ProductId,
@@ -145,18 +148,13 @@ namespace Ecommerce.Infrastructure.Migrations
                 column: "TimePeriod");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductSimilarity_ProductId1",
-                table: "ProductSimilarity",
-                column: "ProductId1");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ProductSimilarity_ProductId1_ProductId2",
-                table: "ProductSimilarity",
+                name: "IX_ProductSimilarities_ProductId1_ProductId2",
+                table: "ProductSimilarities",
                 columns: new[] { "ProductId1", "ProductId2" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProductSimilarity_ProductId2",
-                table: "ProductSimilarity",
+                name: "IX_ProductSimilarities_ProductId2",
+                table: "ProductSimilarities",
                 column: "ProductId2");
 
             migrationBuilder.CreateIndex(
@@ -183,6 +181,16 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "IX_UserViewHistories_ProductId",
                 table: "UserViewHistories",
                 column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserViewHistories_UserId",
+                table: "UserViewHistories",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserViewHistories_ViewTime",
+                table: "UserViewHistories",
+                column: "ViewTime");
         }
 
         /// <inheritdoc />
@@ -192,7 +200,7 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "PopularityStats");
 
             migrationBuilder.DropTable(
-                name: "ProductSimilarity");
+                name: "ProductSimilarities");
 
             migrationBuilder.DropTable(
                 name: "UserSearches");
