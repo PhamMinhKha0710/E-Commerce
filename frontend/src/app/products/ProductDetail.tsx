@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import useSWR, { SWRResponse } from 'swr';
 import { Product, VariantCombination } from '@/app/products/ProductType';
 import ProductImageCarousel from './ProductImageCarousel';
@@ -7,6 +8,8 @@ import ProductInfo from './ProductInfo';
 import ProductRelated from './ProductRelated';
 import NewsSidebar from './NewsSidebar';
 import { useAddToCart } from '@/hooks/useAddToCart';
+import { useAuth } from '@/context/AuthContext';
+
 
 const fetcher = async (url: string) => {
   const res = await fetch(url, { headers: { accept: 'application/json' } });
@@ -25,6 +28,7 @@ interface ProductDetailProps {
 
 export default function ProductDetail({ initialProduct, productId, slug }: ProductDetailProps) {
   const handleAddToCart = useAddToCart();
+  const { isLoggedIn } = useAuth(); // Lấy isLoggedIn từ AuthContext
 
   // API 1: Lấy thông tin sản phẩm và variantGroups
   const { data: product, error: productError }: SWRResponse<Product, Error> = useSWR(
@@ -49,12 +53,44 @@ export default function ProductDetail({ initialProduct, productId, slug }: Produ
     }
   );
 
+  // Gọi API ViewHistory khi người dùng đã đăng nhập
+  useEffect(() => {
+    if (isLoggedIn && product && !productError) {
+      const saveViewHistory = async () => {
+        try {
+          const accessToken = localStorage.getItem('accessToken') || '';
+          const response = await fetch('http://localhost:5130/api/ViewHistory', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ productId: parseInt(productId) }),
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to save view history: ${errorText}`);
+          }
+        } catch (error) {
+          console.error('Error saving view history:', error);
+        }
+      };
+
+      // Trì hoãn gọi API để ưu tiên tải trang
+      const timer = setTimeout(() => {
+        saveViewHistory();
+      }, 1000); // Trì hoãn 1 giây
+
+      return () => clearTimeout(timer); // Xóa timer nếu component unmount
+    }
+  }, [isLoggedIn, product, productError, productId]);
+
   if (productError) return <div>Error: {productError.message}</div>;
   if (!product) return <div>Loading...</div>;
 
   // Đảm bảo variantCombinationsData luôn là mảng
   const variantCombinationsData: VariantCombination[] = product.hasVariations
-    ? variantCombinations ?? [] // Nếu variantCombinations là undefined, trả về mảng rỗng
+    ? variantCombinations ?? []
     : [];
 
   if (product.hasVariations && variantsError) return <div>Error: {variantsError.message}</div>;

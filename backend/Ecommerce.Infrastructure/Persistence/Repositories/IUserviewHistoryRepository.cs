@@ -44,7 +44,16 @@ public class UserViewHistoryRepository : IUserViewHistoryRepository
 
     public async Task AddAsync(UserViewHistory viewHistory)
     {
-        await _dbContext.UserViewHistories.AddAsync(viewHistory);
+        var existingViewHistory = await _dbContext.UserViewHistories
+                .FirstOrDefaultAsync(p => p.UserId == viewHistory.UserId && p.ProductId == viewHistory.ProductId);
+        if (existingViewHistory != null)
+        {
+            // Cập nhật ViewTime nếu bản ghi đã tồn tại
+            existingViewHistory.ViewTime = viewHistory.ViewTime; 
+            _dbContext.UserViewHistories.Update(existingViewHistory);
+        }
+        else
+            await _dbContext.UserViewHistories.AddAsync(viewHistory);
         await _dbContext.SaveChangesAsync();
     }
 
@@ -56,5 +65,14 @@ public class UserViewHistoryRepository : IUserViewHistoryRepository
             _dbContext.UserViewHistories.Remove(viewHistory);
             await _dbContext.SaveChangesAsync();
         }
+    }
+    public async Task CleanOldViewsAsync(TimeSpan age)
+    {
+        var cutoffDate = DateTime.UtcNow - age;
+        var oldViews = await _dbContext.UserViewHistories
+            .Where(uvh => uvh.ViewTime < cutoffDate)
+            .ToListAsync();
+        _dbContext.UserViewHistories.RemoveRange(oldViews);
+        await _dbContext.SaveChangesAsync();
     }
 }

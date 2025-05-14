@@ -9,4 +9,5 @@ public interface IUserViewHistoryRepository
     Task<UserViewHistory> GetOldestViewAsync(int userId);
     Task AddAsync(UserViewHistory viewHistory);
     Task DeleteAsync(int id);
+    Task CleanOldViewsAsync(TimeSpan age);
 }
