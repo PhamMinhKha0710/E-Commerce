@@ -80,4 +80,30 @@ public class ProductRepository : IProductRepository
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
+    public async Task<List<Product>> GetByCategoryIdAsync(int categoryId, int limit)
+    {
+        return await _dbContext.Products
+            .Where(p => p.ProductCategoryId == categoryId)
+            .Take(limit)
+            .ToListAsync();
+    }
+
+    public async Task<Product> GetByIdAsync(int id)
+    {
+        return await _dbContext.Products
+            .Include(p => p.ProductItems.Where(pi => pi.IsDefault))
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public async Task<List<Product>> GetTopByPriceAsync(int? categoryId, int limit)
+    {
+        var query = _dbContext.Products
+            .Include(p => p.ProductItems.Where(pi => pi.IsDefault))
+            .Where(p => categoryId == null || p.ProductCategoryId == categoryId);
+
+        return await query
+            .OrderByDescending(p => p.ProductItems.FirstOrDefault().Price)
+            .Take(limit)
+            .ToListAsync();
+    }
 }

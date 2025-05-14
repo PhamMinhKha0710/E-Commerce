@@ -21,13 +21,10 @@ public class ProductSimilarityConfiguration : IEntityTypeConfiguration<ProductSi
                .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(ps => ps.Similarity)
-               .IsRequired();
+               .IsRequired()
+               .HasPrecision(18, 4);
 
-        // Đánh index cho ProductId1 và ProductId2 (tách biệt)
-        builder.HasIndex(ps => ps.ProductId1);
         builder.HasIndex(ps => ps.ProductId2);
-
-        // tạo index khi truy vấn hai product cùng lúc
         builder.HasIndex(ps => new { ps.ProductId1, ps.ProductId2 });
     }
 }

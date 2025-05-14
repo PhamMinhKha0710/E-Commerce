@@ -9,4 +9,6 @@ public interface IRedisService
     Task IncrementOtpAttemptAsync(string email);
     Task ResetOtpAttemptsAsync(string email);
     Task<int> GetOtpAttemptsAsync(string email); // Thêm để lấy số lần nhập sai hiện tại
+    Task<string> GetAsync(string key);
+    Task SetAsync(string key, string value, TimeSpan expiry);
 }

@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<PaymentMethod> paymentMethods {get; set;}
     public DbSet<PaymentLog> paymentLogs {get; set;}
     public DbSet<Product> Products { get; set; }
+    public DbSet<ProductSimilarity> ProductSimilarities { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<Domain.Entities.ProductConfiguration> ProductConfigurations { get; set; }
     public DbSet<ProductImage> ProductImages { get; set; }

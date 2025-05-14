@@ -1,0 +1,7 @@
+namespace Ecommerce.Application.Interfaces.Repositories;
+public interface IUserViewHistoryRepository
+{
+    Task<List<int>> GetViewedProductIdsAsync(int userId);
+    Task<List<int>> GetDistinctProductIdsAsync();
+    Task<int> GetCountAsync();
+}

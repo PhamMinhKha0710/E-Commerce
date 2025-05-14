@@ -13,4 +13,7 @@ public interface IProductRepository
     Task<ProductItem> GetProductItemByIdAsync(int productItemId);
     Task<List<ProductItem>> GetProductItemsByProductIdAsync(int productId);
     Task<Product> GetProductByIdAsync(int id);
+    Task<List<Product>> GetByCategoryIdAsync(int categoryId, int limit);
+    Task<Product> GetByIdAsync(int id);
+    Task<List<Product>> GetTopByPriceAsync(int? categoryId, int limit);
 }

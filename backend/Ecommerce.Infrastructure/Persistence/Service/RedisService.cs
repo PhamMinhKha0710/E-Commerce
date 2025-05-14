@@ -175,4 +175,29 @@ public class RedisService : IRedisService
             throw;
         }
     }
+    public async Task<string> GetAsync(string key)
+    {
+        try
+        {
+            return await _redis.StringGetAsync(key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting value from Redis for key: {Key}", key);
+            throw;
+        }
+    }
+
+    public async Task SetAsync(string key, string value, TimeSpan expiry)
+    {
+        try
+        {
+            await _redis.StringSetAsync(key, value, expiry);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting value in Redis for key: {Key}", key);
+            throw;
+        }
+    }
 }
