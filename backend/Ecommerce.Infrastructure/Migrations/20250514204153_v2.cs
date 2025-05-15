@@ -15,12 +15,25 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "ImageEmbedding",
                 table: "Products");
 
+            migrationBuilder.AddColumn<DateTime>(
+                name: "CreateAt",
+                table: "ShopOrders",
+                type: "datetime2",
+                nullable: true);
+
             migrationBuilder.AddColumn<string>(
                 name: "ElasticsearchId",
                 table: "Products",
                 type: "nvarchar(max)",
                 nullable: false,
                 defaultValue: "");
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "OrderDate",
+                table: "OrderLines",
+                type: "datetime2",
+                nullable: false,
+                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
 
             migrationBuilder.CreateTable(
                 name: "PopularityStats",
@@ -209,8 +222,16 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "UserViewHistories");
 
             migrationBuilder.DropColumn(
+                name: "CreateAt",
+                table: "ShopOrders");
+
+            migrationBuilder.DropColumn(
                 name: "ElasticsearchId",
                 table: "Products");
+
+            migrationBuilder.DropColumn(
+                name: "OrderDate",
+                table: "OrderLines");
 
             migrationBuilder.AddColumn<byte[]>(
                 name: "ImageEmbedding",

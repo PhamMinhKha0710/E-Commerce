@@ -4,7 +4,7 @@ public class OrderLine
     public int Id { get; set; }
     public int Qty { get; set; }
     public decimal Price { get; set; }
-
+    public DateTime OrderDate {get; set;}
     // Khóa ngoại
     public int ShopOrderId { get; set; }
     public int ProductItemId { get; set; }

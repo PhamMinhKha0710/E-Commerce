@@ -1,4 +1,3 @@
-// Ecommerce.Application/Services/ProductSimilarityService.cs
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.Interfaces.Repositories;
 using Ecommerce.Domain.Entities;

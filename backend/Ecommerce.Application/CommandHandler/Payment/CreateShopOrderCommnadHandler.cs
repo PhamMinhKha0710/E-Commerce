@@ -95,7 +95,8 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
                 {
                     ProductItemId = item.ProductItemId,
                     Qty = item.Quantity,
-                    Price = productItem.Price
+                    Price = productItem.Price,
+                    OrderDate = DateTime.UtcNow
                 };
                 orderLines.Add(orderLine);
                 orderTotal += item.Quantity * item.Price;
@@ -133,6 +134,7 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
                 ShippingMethodId = shippingMethod.Id,
                 UserId = UserId.Value,
                 OrderLines = orderLines,
+                CreateAt = DateTime.UtcNow,
                 OrderStatusHistories = new List<OrderStatusHistory>
                 {
                     new OrderStatusHistory { OrderStatusId = orderStatus.Id }

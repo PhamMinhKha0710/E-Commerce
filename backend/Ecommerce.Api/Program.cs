@@ -9,12 +9,14 @@ using Ecommerce.Application.Queries.Categories;
 using Ecommerce.Application.QueryHandlers;
 using Ecommerce.Application.Services;
 using Ecommerce.Infrastructure.Elasticsearch;
+using Ecommerce.Infrastructure.Jobs;
 using Ecommerce.Infrastructure.Messaging;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Infrastructure.Persistence.Repositories;
 using Ecommerce.Infrastructure.Repositories;
 using Ecommerce.Infrastructure.Services;
 using Ecommere.Application.Common;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -125,6 +127,18 @@ builder.Services.AddScoped<IUserSearchRepository, UserSearchRepository>();
 builder.Services.AddScoped<IProductSimilarityRepository, ProductSimilarityRepository>();
 builder.Services.AddScoped<ProductSimilarityService>();
 
+// Register Hangfire
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfireServer();
+
+// Register Background job popularityStat
+builder.Services.AddScoped<PopularityStatUpdateJob>();
+
+
 // Register Elastichsearch
 builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
 var elasticUri = builder.Configuration["Elasticsearch:Uri"];
@@ -220,7 +234,15 @@ using (var scope = app.Services.CreateScope())
     await adminInitializer.InitializeAsync();
 }
 
+app.UseHangfireDashboard("/hangfire");
 
+// đăng ký background chạy định kỳ cho cập nhật bảng popularity chạy lúc 0h để tránh trường hợp người dùng mua nhiều
+RecurringJob.AddOrUpdate<PopularityStatUpdateJob>(
+    "update-popularity-stats",
+    job => job.ExecuteAsync(),
+    "0 59 23 * * *"); // Chạy hàng ngày lúc 23:59
+    // "*/5 * * * * *"); // -- Chạy mỗi 5 phút dùng để test 
+    
 app.UseCors("AllowAll");
 if (app.Environment.IsDevelopment())
 {

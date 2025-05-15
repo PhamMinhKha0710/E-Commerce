@@ -10,4 +10,5 @@ public class Promotion
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public List<PromotionCategory> PromotionCategories { get; set; } 
+    public List<ShopOrder> ShopOrders {get; set;}
 }
