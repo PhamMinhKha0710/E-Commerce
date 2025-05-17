@@ -9,6 +9,9 @@ public class Promotion
     public decimal DiscountRate { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public decimal LimitDiscountPrice { get; set; } = 0;
+    public int TotalQuantity { get; set; } = 0; 
+    public int UsedQuantity { get; set; } = 0; 
     public List<PromotionCategory> PromotionCategories { get; set; } 
     public List<ShopOrder> ShopOrders {get; set;}
 }

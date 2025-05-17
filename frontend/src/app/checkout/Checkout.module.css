@@ -10,12 +10,12 @@
     margin: 0 auto;
 }
 
-.left {
-    flex: 2;
+.left1 {
+    width: 840px;
 }
 
-.right {
-    flex: 0.8;
+.right1 {
+    width: 360px;
 }
 
 /* Section Styling */

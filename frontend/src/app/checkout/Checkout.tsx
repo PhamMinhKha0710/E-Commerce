@@ -382,7 +382,7 @@ export default function Checkout() {
     <main className={styles.main}>
       <div className={styles.container}>
         {/* Left Section */}
-        <div className={styles.left}>
+        <div className={styles.left1}>
           {/* Shipping Method Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Chọn hình thức giao hàng</h3>
@@ -588,7 +588,7 @@ export default function Checkout() {
         </div>
 
         {/* Right Section */}
-        <div className={styles.right}>
+        <div className={styles.right1}>
           {/* Delivery Info */}
           <div style={{ position: 'sticky', top: '0px' }}>
             <div className={styles.deliveryInfo}>
