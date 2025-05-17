@@ -36,7 +36,8 @@ public class RecommendationsController : ControllerBase
     }
 
     [HttpPost("update-similarities")]
-    [Authorize(Roles = "Admin")]
+    // [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     public async Task<IActionResult> UpdateSimilarities([FromServices] ProductSimilarityService productSimilarityService)
     {
         await productSimilarityService.UpdateSimilaritiesAsync();

@@ -11,18 +11,19 @@ import { toast } from 'react-toastify';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 
+interface Coupon {
+  code: string;
+  discountPercent: number;
+  limitDiscountPrice: number;
+  image?: string;
+}
+
 interface PaymentMethod {
   value: string;
   label: string;
   icon: string;
   subLabel?: string;
   checked?: boolean;
-}
-
-interface Coupon {
-  code: string;
-  discount: string;
-  image?: string;
 }
 
 interface Banner {
@@ -60,6 +61,15 @@ interface AddressType {
   address: string;
   phone: string;
   isDefault: boolean;
+}
+
+interface PromotionResponseDto {
+  discountRate: number;
+  limitDiscountPrice: number;
+  isAvailable: boolean;
+  remainingQuantity: number;
+  startDate: string;
+  endDate: string;
 }
 
 const paymentMethods: PaymentMethod[] = [
@@ -123,14 +133,6 @@ const banks: Bank[] = [
   { name: 'lienvietpostbank', image: 'https://salt.tikicdn.com/desktop/img/new-bank/LPB.png', alt: 'LienVietPostBank' },
 ];
 
-const coupons: Coupon[] = [
-  {
-    code: 'XTRA2470QCC0',
-    discount: 'Giảm 70K',
-    image: 'https://salt.tikicdn.com/cache/128x128/ts/upload/11/b7/94/0ea7a1742603abb1f645e0147fe1dd17.jpg',
-  },
-];
-
 const paymentOffers: PaymentOffer[] = [
   { title: 'Freeship', subtitle: 'Thẻ Shinhan Platinum', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
   { title: 'Freeship', subtitle: 'Thẻ Shinhan Classic', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
@@ -164,6 +166,11 @@ export default function Checkout() {
   const [address, setAddress] = useState<AddressType | null>(null);
   const [loadingAddress, setLoadingAddress] = useState<boolean>(true);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [isCouponInputVisible, setIsCouponInputVisible] = useState<boolean>(false);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState<boolean>(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const { cart } = useCart();
   const router = useRouter();
 
@@ -172,21 +179,25 @@ export default function Checkout() {
     const loadCheckoutItems = () => {
       setLoading(true);
       try {
-        // Read selectedCartItems from localStorage
         const savedItems = localStorage.getItem('selectedCartItems');
         if (savedItems) {
-          const items = JSON.parse(savedItems) as CartItem[];
-          // Validate items
-          if (!items.every(item => typeof item.price === 'number' && typeof item.quantity === 'number' && item.price >= 0 && item.quantity > 0)) {
+          const items = JSON.parse(savedItems);
+          if (!Array.isArray(items) || !items.every(item => 
+            typeof item.productId === 'number' &&
+            typeof item.productName === 'string' &&
+            typeof item.imageUrl === 'string' &&
+            typeof item.price === 'number' &&
+            typeof item.quantity === 'number' &&
+            item.price >= 0 &&
+            item.quantity > 0
+          )) {
             throw new Error('Dữ liệu sản phẩm không hợp lệ.');
           }
           setCheckoutItems(items);
-          console.log('Loaded checkoutItems:', items); // Debug
           setLoading(false);
           return;
         }
 
-        // Fallback: Use selectedItems (array of indices) and CartContext
         const selectedIndices = JSON.parse(localStorage.getItem('selectedItems') || '[]') as number[];
         if (selectedIndices.length === 0) {
           toast.error("Không có sản phẩm nào để thanh toán!");
@@ -194,7 +205,6 @@ export default function Checkout() {
           return;
         }
 
-        // Get cart from localStorage or CartContext
         const cartItems = JSON.parse(localStorage.getItem('cart') || '[]') as CartItem[];
         if (cartItems.length === 0) {
           toast.error("Giỏ hàng trống!");
@@ -202,9 +212,8 @@ export default function Checkout() {
           return;
         }
 
-        // Filter cart items based on selectedIndices
         const items = selectedIndices
-          .filter(index => index >= 0 && index < cartItems.length) // Ensure valid indices
+          .filter(index => index >= 0 && index < cartItems.length)
           .map(index => ({
             productId: cartItems[index].productId,
             productName: cartItems[index].productName,
@@ -222,17 +231,14 @@ export default function Checkout() {
           return;
         }
 
-        // Validate items
         if (!items.every(item => typeof item.price === 'number' && typeof item.quantity === 'number' && item.price >= 0 && item.quantity > 0)) {
           throw new Error('Dữ liệu sản phẩm không hợp lệ.');
         }
 
         setCheckoutItems(items);
         localStorage.setItem('selectedCartItems', JSON.stringify(items));
-        console.log('Reconstructed checkoutItems:', items); // Debug
-      } catch (error) {
+      } catch {
         toast.error("Lỗi khi tải danh sách sản phẩm!");
-        console.error("Error loading checkout items:", error);
         router.push('/cart');
       } finally {
         setLoading(false);
@@ -277,7 +283,8 @@ export default function Checkout() {
           setAddressError('Không tìm thấy địa chỉ mặc định.');
           setAddress(null);
         } else {
-          throw new Error('Lỗi khi lấy địa chỉ mặc định.');
+          setAddressError(`Lỗi không xác định: ${response.status}`);
+          setAddress(null);
         }
       } catch {
         setAddressError('Lỗi khi lấy địa chỉ mặc định.');
@@ -307,6 +314,111 @@ export default function Checkout() {
     if (value !== 'pay123') {
       setSelectedBank(null);
     }
+  };
+
+  // Toggle coupon input visibility
+  const handleToggleCouponInput = () => {
+    setIsCouponInputVisible(!isCouponInputVisible);
+    setCouponError(null);
+  };
+
+  // Check coupon validity
+  const checkCoupon = async (code: string): Promise<PromotionResponseDto | null> => {
+    try {
+      const response = await fetch(`http://localhost:5130/api/Promotion/${code}`, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*',
+        },
+      });
+
+      if (response.ok) {
+        const data: PromotionResponseDto = await response.json();
+        const now = new Date();
+        const startDate = new Date(data.startDate);
+        const endDate = new Date(data.endDate);
+
+        if (!data.isAvailable) {
+          setCouponError('Mã khuyến mãi hiện không khả dụng.');
+          toast.error('Mã khuyến mãi hiện không khả dụng.');
+          return null;
+        }
+
+        if (data.remainingQuantity <= 0) {
+          setCouponError('Mã khuyến mãi đã hết lượt sử dụng.');
+          toast.error('Mã khuyến mãi đã hết lượt sử dụng.');
+          return null;
+        }
+
+        if (now < startDate) {
+          setCouponError('Mã khuyến mãi chưa bắt đầu.');
+          toast.error(`Mã khuyến mãi chưa bắt đầu. Hiệu lực từ ${startDate.toLocaleDateString('vi-VN')}.`);
+          return null;
+        }
+
+        if (now > endDate) {
+          setCouponError('Mã khuyến mãi đã hết hạn.');
+          toast.error(`Mã khuyến mãi đã hết hạn vào ${endDate.toLocaleDateString('vi-VN')}.`);
+          return null;
+        }
+
+        return data;
+      } else if (response.status === 404) {
+        setCouponError('Mã khuyến mãi không hợp lệ.');
+        toast.error('Mã khuyến mãi không hợp lệ.');
+        return null;
+      } else {
+        throw new Error(`Lỗi không xác định: ${response.status}`);
+      }
+    } catch {
+      setCouponError('Lỗi khi kiểm tra mã khuyến mãi.');
+      toast.error('Lỗi khi kiểm tra mã khuyến mãi.');
+      return null;
+    }
+  };
+
+  // Apply coupon
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Vui lòng nhập mã khuyến mãi.');
+      toast.error('Vui lòng nhập mã khuyến mãi.');
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponError(null);
+
+    try {
+      // Kiểm tra mã trước khi áp dụng
+      const couponData = await checkCoupon(couponCode.trim());
+      if (!couponData) {
+        return; // Đã hiển thị lỗi trong checkCoupon
+      }
+
+      // Không gọi API /api/coupons/apply, chỉ sử dụng dữ liệu từ checkCoupon
+      const newCoupon: Coupon = {
+        code: couponCode.trim(),
+        discountPercent: couponData.discountRate,
+        limitDiscountPrice: couponData.limitDiscountPrice,
+        image: 'https://salt.tikicdn.com/cache/128x128/ts/upload/11/b7/94/0ea7a1742603abb1f645e0147fe1dd17.jpg',
+      };
+
+      setCoupons([newCoupon]);
+      setCouponCode('');
+      setIsCouponInputVisible(false);
+      toast.success(`Áp dụng mã khuyến mãi thành công! Còn ${couponData.remainingQuantity} lượt.`);
+    } catch {
+      setCouponError('Lỗi khi áp dụng mã khuyến mãi.');
+      toast.error('Lỗi khi áp dụng mã khuyến mãi.');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  // Remove coupon
+  const handleRemoveCoupon = (code: string) => {
+    setCoupons(coupons.filter(coupon => coupon.code !== code));
+    toast.info('Đã bỏ mã khuyến mãi.');
   };
 
   // Handle place order
@@ -341,6 +453,7 @@ export default function Checkout() {
           paymentMethod: selectedPaymentMethod,
           bank: selectedBank,
           addressId: address.id,
+          couponCode: coupons.length > 0 ? coupons[0].code : null,
         }),
       });
 
@@ -351,27 +464,31 @@ export default function Checkout() {
       }
 
       if (!response.ok) {
-        throw new Error('Không thể tạo đơn hàng');
+        throw new Error(`Lỗi không xác định: ${response.status}`);
       }
 
       const { orderId } = await response.json();
-
-      // Clear localStorage after successful order
       localStorage.removeItem('selectedItems');
       localStorage.removeItem('selectedCartItems');
-
       toast.success('Đặt hàng thành công!');
       router.push(`/order/success?orderId=${orderId}`);
-    } catch (error) {
+    } catch {
       toast.error('Không thể đặt hàng!');
-      console.error('Error creating order:', error);
     }
   };
 
   // Calculate totals
   const totalPrice = checkoutItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const shippingFee = 32200; // Hardcode
-  const discount = 32200; // Hardcode, set to 32,000 VNĐ as requested
+  let discount = 32200;
+  if (coupons.length > 0) {
+    const coupon = coupons[0];
+    const discountAmount = Math.min(
+      (totalPrice * coupon.discountPercent) / 100,
+      coupon.limitDiscountPrice
+    );
+    discount += discountAmount;
+  }
+  const shippingFee = 32200;
   const finalTotal = totalPrice + shippingFee - discount;
 
   if (loading) {
@@ -607,8 +724,7 @@ export default function Checkout() {
                     <p>{address.phone}</p>
                   </div>
                   <div className={styles.address}>
-                    <span className={styles.addressType}>Nhà</span>
-                    {address.address}
+                    <span className={styles.address}>{address.address}</span>
                   </div>
                 </>
               ) : (
@@ -623,37 +739,39 @@ export default function Checkout() {
             <div className={styles.couponSection}>
               <div className={styles.blockHeader}>
                 <h3>Smile-Mart Khuyến Mãi</h3>
-                <span>Có thể chọn 2</span>
+                <span>{coupons.length > 0 ? 'Đã áp dụng 1 mã' : 'Chưa áp dụng mã'}</span>
               </div>
-              <div className={styles.couponList}>
-                {coupons.map((coupon: Coupon) => (
-                  <div key={coupon.code} className={styles.coupon}>
-                    <div className={styles.couponWrapper} style={{ position: 'relative' }}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 456 60"
-                        width="456"
-                        height="60"
-                        preserveAspectRatio="none"
-                        className={styles.couponBg}
-                      >
-                        <g fill="none" fillRule="evenodd">
-                          <g stroke="#017FFF">
-                            <g>
+              {coupons.length > 0 && (
+                <div className={styles.couponList}>
+                  {coupons.map((coupon: Coupon) => (
+                    <div key={coupon.code} className={styles.coupon}>
+                      <div className={styles.couponWrapper} style={{ position: 'relative' }}>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 456 60"
+                          width="456"
+                          height="60"
+                          preserveAspectRatio="none"
+                          className={styles.couponBg}
+                        >
+                          <g fill="none" fillRule="evenodd">
+                            <g stroke="#017FFF">
                               <g>
                                 <g>
                                   <g>
                                     <g>
-                                      <path
-                                        fill="#E5F2FF"
-                                        d="M 443.412 0.5 c 2.071 0 3.946 0.84 5.303 2.197 c 1.358 1.357 2.197 3.232 2.197 5.303 h 0 v 44 c 0 2.071 -0.84 3.946 -2.197 5.303 c -1.357 1.358 -3.232 2.197 -5.303 2.197 h 0 H 103.531 c -0.116 -1.043 -0.587 -1.978 -1.291 -2.682 c -0.814 -0.814 -1.94 -1.318 -3.182 -1.318 c -1.243 0 -2.368 0.504 -3.182 1.318 c -0.704 0.704 -1.175 1.64 -1.29 2.682 h 0 h -48.028 c -2.071 0 -3.946 -0.84 -5.303 -2.197 c -1.358 -1.357 -2.197 -3.232 -2.197 -5.303 h 0 V 8 c 0 -2.071 0.84 -3.946 2.197 -5.303 c 1.357 -1.358 3.232 -2.197 5.303 -2.197 h 48.027 c 0.116 1.043 0.587 1.978 1.291 2.682 c 0.814 0.814 1.94 1.318 3.182 1.318 c 1.243 0 2.368 -0.504 3.182 -1.318 c 0.704 -0.704 1.175 -1.64 1.29 -2.682 H 103.530 z"
-                                        transform="translate(-1024 -2912) translate(80 2252) translate(0 460) translate(464) translate(480) translate(0 200)"
-                                      />
-                                      <g strokeDasharray="2 4" strokeLinecap="square">
+                                      <g>
                                         <path
-                                          d="M0.5 0L0.5 48"
-                                          transform="translate(-1024 -2912) translate(80 2252) translate(0 460) translate(464) translate(480) translate(0 200) translate(115.608 8)"
+                                          fill="#E5F2FF"
+                                          d="M 443.412 0.5 c 2.071 0 3.946 0.84 5.303 2.197 c 1.358 1.357 2.197 3.232 2.197 5.303 h 0 v 44 c 0 2.071 -0.84 3.946 -2.197 5.303 c -1.357 1.358 -3.232 2.197 -5.303 2.197 h 0 H 103.531 c -0.116 -1.043 -0.587 -1.978 -1.291 -2.682 c -0.814 -0.814 -1.94 -1.318 -3.182 -1.318 c -1.243 0 -2.368 0.504 -3.182 1.318 c -0.704 0.704 -1.175 1.64 -1.29 2.682 h 0 h -48.028 c -2.071 0 -3.946 -0.84 -5.303 -2.197 c -1.358 -1.357 -2.197 -3.232 -2.197 -5.303 h 0 V 8 c 0 -2.071 0.84 -3.946 2.197 -5.303 c 1.357 -1.358 3.232 -2.197 5.303 -2.197 h 48.027 c 0.116 1.043 0.587 1.978 1.291 2.682 c 0.814 0.814 1.94 1.318 3.182 1.318 c 1.243 0 2.368 -0.504 3.182 -1.318 c 0.704 -0.704 1.175 -1.64 1.29 -2.682 H 103.530 z"
+                                          transform="translate(-1024 -2912) translate(80 2252) translate(0 460) translate(464) translate(480) translate(0 200)"
                                         />
+                                        <g strokeDasharray="2 4" strokeLinecap="square">
+                                          <path
+                                            d="M0.5 0L0.5 48"
+                                            transform="translate(-1024 -2912) translate(80 2252) translate(0 460) translate(464) translate(480) translate(0 200) translate(115.608 8)"
+                                          />
+                                        </g>
                                       </g>
                                     </g>
                                   </g>
@@ -661,41 +779,57 @@ export default function Checkout() {
                               </g>
                             </g>
                           </g>
-                        </g>
-                      </svg>
-                      <div className={styles.couponContent}>
-                        {coupon.image && (
-                          <div className={styles.couponImageWrapper}>
-                            <Image
-                              src={coupon.image}
-                              alt="Coupon Logo"
-                              width={32}
-                              height={32}
-                              className={styles.couponImage}
-                            />
+                        </svg>
+                        <div className={styles.couponContent}>
+                          {coupon.image && (
+                            <div className={styles.couponImageWrapper}>
+                              <Image
+                                src={coupon.image}
+                                alt="Coupon Logo"
+                                width={32}
+                                height={32}
+                                className={styles.couponImage}
+                              />
+                            </div>
+                          )}
+                          <h4 className={styles.couponDiscount}>
+                            Giảm {coupon.discountPercent}% tối đa {coupon.limitDiscountPrice.toLocaleString()} ₫
+                          </h4>
+                          <div className={styles.couponActions}>
+                            <button className={styles.couponInfoButton}>
+                              <Image
+                                src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%3E%20%20%20%20%3Cdefs%3E%20%20%20%20%20%20%20%20%3Cpath%20id%3D%224gg7gqe5ua%22%20d%3D%22M8.333%200C3.738%200%200%203.738%200%208.333c0%204.595%203.738%208.334%208.333%208.334%204.595%200%208.334-3.739%208.334-8.334S12.928%200%208.333%200zm0%201.026c4.03%200%207.308%203.278%207.308%207.307%200%204.03-3.278%207.308-7.308%207.308-4.03%200-7.307-3.278-7.307-7.308%200-4.03%203.278-7.307%207.307-7.307zm.096%206.241c-.283%200-.512.23-.512.513v4.359c0%20.283.23.513.512.513.284%200%20.513-.23.513-.513V7.78c0-.283-.23-.513-.513-.513zm.037-3.114c-.474%200-.858.384-.858.858%200%20.473.384.857.858.857s.858-.384.858-.857c0-.474-.384-.858-.858-.858z%22%2F%3E%20%20%20%20%3C%2Fdefs%3E%20%20%20%20%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%20transform%3D%22translate%28-2808%20-4528%29%20translate%282708%2080%29%20translate%2852%204304%29%20translate%2848%20144%29%20translate%281.667%201.667%29%22%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cuse%20fill%3D%22%23017FFF%22%20xlink%3Ahref%3D%22%234gg7gqe5ua%22%2F%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%3C%2Fg%3E%3C%2Fsvg%3E"
+                                alt="info-icon"
+                                width={16}
+                                height={16}
+                                className={styles.couponInfoIcon}
+                              />
+                            </button>
+                            <button
+                              className={styles.couponButton}
+                              onClick={() => handleRemoveCoupon(coupon.code)}
+                            >
+                              Bỏ Chọn
+                            </button>
                           </div>
-                        )}
-                        <h4 className={styles.couponDiscount}>{coupon.discount}</h4>
-                        <div className={styles.couponActions}>
-                          <button className={styles.couponInfoButton}>
-                            <Image
-                              src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%3E%20%20%20%20%3Cdefs%3E%20%20%20%20%20%20%20%20%3Cpath%20id%3D%224gg7gqe5ua%22%20d%3D%22M8.333%200C3.738%200%200%203.738%200%208.333c0%204.595%203.738%208.334%208.333%208.334%204.595%200%208.334-3.739%208.334-8.334S12.928%200%208.333%200zm0%201.026c4.03%200%207.308%203.278%207.308%207.307%200%204.03-3.278%207.308-7.308%207.308-4.03%200-7.307-3.278-7.307-7.308%200-4.03%203.278-7.307%207.307-7.307zm.096%206.241c-.283%200-.512.23-.512.513v4.359c0%20.283.23.513.512.513.284%200%20.513-.23.513-.513V7.78c0-.283-.23-.513-.513-.513zm.037-3.114c-.474%200-.858.384-.858.858%200%20.473.384.857.858.857s.858-.384.858-.857c0-.474-.384-.858-.858-.858z%22%2F%3E%20%20%20%20%3C%2Fdefs%3E%20%20%20%20%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%20transform%3D%22translate%28-2808%20-4528%29%20translate%282708%2080%29%20translate%2852%204304%29%20translate%2848%20144%29%20translate%281.667%201.667%29%22%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cuse%20fill%3D%22%23017FFF%22%20xlink%3Ahref%3D%22%234gg7gqe5ua%22%2F%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%3C%2Fg%3E%3C%2Fsvg%3E"
-                              alt="info-icon"
-                              width={16}
-                              height={16}
-                              className={styles.couponInfoIcon}
-                            />
-                          </button>
-                          <button className={styles.couponButton}>Bỏ Chọn</button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                <div className={styles.couponMore}>
+                  ))}
+                </div>
+              )}
+              <div className={styles.couponInputSection}>
+                <div
+                  className={styles.couponMore}
+                  onClick={handleToggleCouponInput}
+                >
                   <span>Chọn hoặc nhập mã khác</span>
                   <svg
                     className={styles.couponMoreIcon}
+                    style={{
+                      transform: isCouponInputVisible ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s ease',
+                    }}
                     width="20"
                     height="20"
                     viewBox="0 0 24 24"
@@ -709,6 +843,32 @@ export default function Checkout() {
                       fill="#0A68FF"
                     />
                   </svg>
+                </div>
+                <div
+                  className={`${styles.couponInputWrapper} ${
+                    isCouponInputVisible ? styles.show : styles.hide
+                  }`}
+                >
+                  <div className={styles.couponInputContainer}>
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="Nhập mã khuyến mãi"
+                      className={styles.couponInput}
+                      disabled={isApplyingCoupon}
+                    />
+                    <button
+                      className={styles.couponApplyButton}
+                      onClick={handleApplyCoupon}
+                      disabled={isApplyingCoupon}
+                    >
+                      {isApplyingCoupon ? 'Đang áp dụng...' : 'Áp dụng'}
+                    </button>
+                  </div>
+                  {couponError && (
+                    <div className={styles.couponError}>{couponError}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -732,7 +892,7 @@ export default function Checkout() {
                   <span>{shippingFee.toLocaleString()} ₫</span>
                 </div>
                 <div className={styles.summaryRow}>
-                  <span>Giảm giá vận chuyển</span>
+                  <span>Giảm giá</span>
                   <span className={styles.positive}>-{discount.toLocaleString()} ₫</span>
                 </div>
                 <div className={styles.total}>

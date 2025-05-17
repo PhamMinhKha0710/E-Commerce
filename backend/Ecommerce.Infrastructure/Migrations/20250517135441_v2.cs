@@ -21,6 +21,33 @@ namespace Ecommerce.Infrastructure.Migrations
                 type: "datetime2",
                 nullable: true);
 
+            migrationBuilder.AddColumn<int>(
+                name: "PromotionId",
+                table: "ShopOrders",
+                type: "int",
+                nullable: true);
+
+            migrationBuilder.AddColumn<decimal>(
+                name: "LimitDiscountPrice",
+                table: "Promotions",
+                type: "decimal(18,2)",
+                nullable: false,
+                defaultValue: 0m);
+
+            migrationBuilder.AddColumn<int>(
+                name: "TotalQuantity",
+                table: "Promotions",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<int>(
+                name: "UsedQuantity",
+                table: "Promotions",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
             migrationBuilder.AddColumn<string>(
                 name: "ElasticsearchId",
                 table: "Products",
@@ -146,6 +173,11 @@ namespace Ecommerce.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ShopOrders_PromotionId",
+                table: "ShopOrders",
+                column: "PromotionId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PopularityStats_CategoryId",
                 table: "PopularityStats",
                 column: "CategoryId");
@@ -204,11 +236,23 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "IX_UserViewHistories_ViewTime",
                 table: "UserViewHistories",
                 column: "ViewTime");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_ShopOrders_Promotions_PromotionId",
+                table: "ShopOrders",
+                column: "PromotionId",
+                principalTable: "Promotions",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_ShopOrders_Promotions_PromotionId",
+                table: "ShopOrders");
+
             migrationBuilder.DropTable(
                 name: "PopularityStats");
 
@@ -221,9 +265,29 @@ namespace Ecommerce.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "UserViewHistories");
 
+            migrationBuilder.DropIndex(
+                name: "IX_ShopOrders_PromotionId",
+                table: "ShopOrders");
+
             migrationBuilder.DropColumn(
                 name: "CreateAt",
                 table: "ShopOrders");
+
+            migrationBuilder.DropColumn(
+                name: "PromotionId",
+                table: "ShopOrders");
+
+            migrationBuilder.DropColumn(
+                name: "LimitDiscountPrice",
+                table: "Promotions");
+
+            migrationBuilder.DropColumn(
+                name: "TotalQuantity",
+                table: "Promotions");
+
+            migrationBuilder.DropColumn(
+                name: "UsedQuantity",
+                table: "Promotions");
 
             migrationBuilder.DropColumn(
                 name: "ElasticsearchId",

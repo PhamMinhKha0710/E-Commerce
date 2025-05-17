@@ -104,6 +104,9 @@ builder.Services.AddScoped<IPaymentService, VnPayService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
+// Register Promotion
+builder.Services.AddScoped<IPromotionRepository, PromotionRepository>();
+
 // Register rabitmq
 builder.Services.AddScoped<IRabbitMQService,  RabbitMQService>();
 builder.Services.AddHostedService<EmailConsumerWorker>();
@@ -240,8 +243,8 @@ app.UseHangfireDashboard("/hangfire");
 RecurringJob.AddOrUpdate<PopularityStatUpdateJob>(
     "update-popularity-stats",
     job => job.ExecuteAsync(),
-    "0 59 23 * * *"); // Chạy hàng ngày lúc 23:59
-    // "*/5 * * * * *"); // -- Chạy mỗi 5 phút dùng để test 
+    // "0 59 23 * * *"); // Chạy hàng ngày lúc 23:59
+    "*/5 * * * * *"); // -- Chạy mỗi 5 phút dùng để test 
     
 app.UseCors("AllowAll");
 if (app.Environment.IsDevelopment())

@@ -599,6 +599,9 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<decimal>("LimitDiscountPrice")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -606,6 +609,12 @@ namespace Ecommerce.Infrastructure.Migrations
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("TotalQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsedQuantity")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -715,6 +724,9 @@ namespace Ecommerce.Infrastructure.Migrations
                     b.Property<decimal>("OrderTotal")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("PromotionId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ShippingAddressId")
                         .HasColumnType("int");
 
@@ -731,6 +743,8 @@ namespace Ecommerce.Infrastructure.Migrations
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
+
+                    b.HasIndex("PromotionId");
 
                     b.HasIndex("ShippingAddressId");
 
@@ -1192,6 +1206,11 @@ namespace Ecommerce.Infrastructure.Migrations
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.ShopOrder", b =>
                 {
+                    b.HasOne("Ecommerce.Domain.Entities.Promotion", "Promotion")
+                        .WithMany("ShopOrders")
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Ecommerce.Domain.Entities.Address", "ShippingAddress")
                         .WithMany()
                         .HasForeignKey("ShippingAddressId")
@@ -1209,6 +1228,8 @@ namespace Ecommerce.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Promotion");
 
                     b.Navigation("ShippingAddress");
 
@@ -1383,6 +1404,8 @@ namespace Ecommerce.Infrastructure.Migrations
             modelBuilder.Entity("Ecommerce.Domain.Entities.Promotion", b =>
                 {
                     b.Navigation("PromotionCategories");
+
+                    b.Navigation("ShopOrders");
                 });
 
             modelBuilder.Entity("Ecommerce.Domain.Entities.ShippingMethod", b =>

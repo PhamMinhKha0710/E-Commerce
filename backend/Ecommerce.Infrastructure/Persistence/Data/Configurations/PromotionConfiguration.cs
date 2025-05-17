@@ -32,6 +32,7 @@ public class PromotionConfiguration : IEntityTypeConfiguration<Promotion>
               builder.Property(p => p.EndDate)
                      .IsRequired();
 
+
               builder.HasMany(p => p.PromotionCategories)
                      .WithOne(pc => pc.Promotion)
                      .HasForeignKey(pc => pc.PromotionId)
