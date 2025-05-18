@@ -130,6 +130,10 @@ builder.Services.AddScoped<IUserSearchRepository, UserSearchRepository>();
 builder.Services.AddScoped<IProductSimilarityRepository, ProductSimilarityRepository>();
 builder.Services.AddScoped<ProductSimilarityService>();
 
+
+// Register ShippingMethod 
+builder.Services.AddScoped<IShippingMethodRepository, ShippingMethodRepository>();
+
 // Register Hangfire
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)

@@ -38,57 +38,77 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
 
     public async Task<CreateOrderResponseDto> Handle(CreateShopOrderCommnad request, CancellationToken cancellationToken)
     {
-        var UserId = _currentUserService.GetUserId();
-        if (!UserId.HasValue)
+        var userId = _currentUserService.GetUserId();
+        if (!userId.HasValue)
         {
-            _logger.LogWarning("User not authenticated - Chưa xác thực người dùng");
-            throw new UnauthorizedAccessException("User not authenticated - người dùng chưa được xác thực");
+            _logger.LogWarning("User not authenticated");
+            throw new UnauthorizedAccessException("User not authenticated");
         }
 
         if (!request.Request.CartPayments.Any())
         {
-            _logger.LogWarning("No items selected for order - chưa có sản phẩm nào được chọn trong giỏ hàng");
-            throw new InvalidOperationException("No items selected for order - giỏ hàng trống");
+            _logger.LogWarning("No items selected for order");
+            throw new InvalidOperationException("No items selected for order");
         }
 
-        var shippingAddress = await _orderRepository.GetDefaultAddressAsync(UserId);
+        var shippingAddress = await _orderRepository.GetDefaultAddressAsync(userId);
         if (shippingAddress == null)
         {
-            _logger.LogWarning($"No default address found for user {UserId}. - người dùng chưa có địa chỉ mặc định");
-            throw new InvalidOperationException("No default address found. - không có địa chỉ mặc định cho người dùng này");
+            _logger.LogWarning($"No default address found for user {userId}");
+            throw new InvalidOperationException("No default address found");
         }
 
         var shippingMethod = await _orderRepository.GetShippingMethodByIdAsync(request.Request.ShippingMethodId);
         if (shippingMethod == null)
         {
             _logger.LogWarning($"Invalid shipping method: {request.Request.ShippingMethodId}");
-            throw new InvalidOperationException("Invalid shipping method - phương thức thanh toán này chưa có");
+            throw new InvalidOperationException("Invalid shipping method");
         }
 
         var paymentMethod = await _orderRepository.GetPaymentMethodByNameAsync(request.Request.PaymentMethod);
         if (paymentMethod == null || !paymentMethod.IsActive)
         {
-            _logger.LogWarning($"Invalid payment method - không có phương thức thanh toán hoặc chưa kích hoạt");
-            throw new InvalidOperationException("Invalid payment method - không có phương thức thanh toán hoặc chưa kích hoạt");
+            _logger.LogWarning($"Invalid payment method: {request.Request.PaymentMethod}");
+            throw new InvalidOperationException("Invalid payment method");
         }
+
         _logger.LogInformation("CartPayments received: {CartPayments}", JsonSerializer.Serialize(request.Request.CartPayments));
         return await _orderRepository.ExecuteInTransactionAsync<CreateOrderResponseDto>(async () =>
         {
             var orderLines = new List<OrderLine>();
             decimal orderTotal = 0;
+            decimal discountAmount = 0;
+            Promotion promotion = null;
 
+            // Xử lý mã khuyến mãi
+            if (!string.IsNullOrEmpty(request.Request.CodePromotion))
+            {
+                promotion = await _orderRepository.GetPromotionByCodeAsync(request.Request.CodePromotion);
+                if (promotion == null)
+                {
+                    _logger.LogWarning($"Invalid promotion code: {request.Request.CodePromotion}");
+                    // Không throw exception, chỉ bỏ qua mã khuyến mãi
+                }
+                else if (promotion.UsedQuantity >= promotion.TotalQuantity && promotion.TotalQuantity > 0)
+                {
+                    _logger.LogWarning($"Promotion {request.Request.CodePromotion} has reached usage limit");
+                    promotion = null; // Bỏ qua nếu đã hết số lượng
+                }
+            }
+
+            // Tạo OrderLines và tính tổng giá
             foreach (var item in request.Request.CartPayments)
             {
                 var productItem = await _orderRepository.GetProductItemByIdAsync(item.ProductItemId);
                 if (productItem == null)
                 {
-                    _logger.LogWarning($"Product item {item.ProductItemId} not found.");
-                    throw new InvalidOperationException($"Product item {item.ProductItemId} not found.");
+                    _logger.LogWarning($"Product item {item.ProductItemId} not found");
+                    throw new InvalidOperationException($"Product item {item.ProductItemId} not found");
                 }
                 if (productItem.QtyInStock < item.Quantity)
                 {
-                    _logger.LogWarning($"Insufficient stock for product item {item.ProductItemId}.");
-                    throw new InvalidOperationException($"Insufficient stock for product {item.ProductItemId}.");
+                    _logger.LogWarning($"Insufficient stock for product item {item.ProductItemId}");
+                    throw new InvalidOperationException($"Insufficient stock for product {item.ProductItemId}");
                 }
 
                 var orderLine = new OrderLine
@@ -99,12 +119,12 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
                     OrderDate = DateTime.UtcNow
                 };
                 orderLines.Add(orderLine);
-                orderTotal += item.Quantity * item.Price;
+                orderTotal += item.Quantity * productItem.Price;
 
                 productItem.QtyInStock -= item.Quantity;
                 await _orderRepository.UpdateProductItemAsync(productItem);
 
-                var cartItem = await _orderRepository.GetCartItemByProductItemIdAsync(UserId.Value, item.ProductItemId);
+                var cartItem = await _orderRepository.GetCartItemByProductItemIdAsync(userId.Value, item.ProductItemId);
                 if (cartItem != null)
                 {
                     cartItem.Qty -= item.Quantity;
@@ -115,24 +135,58 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
                 }
             }
 
+            // Áp dụng khuyến mãi nếu hợp lệ
+            if (promotion != null)
+            {
+                bool hasEligibleProduct = false;
+                foreach (var orderLine in orderLines)
+                {
+                    var productItem = await _orderRepository.GetProductItemByIdAsync(orderLine.ProductItemId);
+                    if (await _orderRepository.IsProductInPromotionCategoryAsync(productItem.ProductId, promotion.Id))
+                    {
+                        hasEligibleProduct = true;
+                        break;
+                    }
+                }
+
+                if (hasEligibleProduct)
+                {
+                    // Tính toán giảm giá
+                    decimal discount = orderTotal * promotion.DiscountRate / 100;
+                    if (promotion.LimitDiscountPrice > 0 && discount > promotion.LimitDiscountPrice)
+                    {
+                        discount = promotion.LimitDiscountPrice; // Giới hạn giảm giá tối đa
+                    }
+                    discountAmount = discount;
+                    promotion.UsedQuantity += 1; // Tăng số lượng đã sử dụng
+                    await _orderRepository.UpdatePromotionAsync(promotion);
+                }
+                else
+                {
+                    _logger.LogWarning($"No eligible products for promotion {request.Request.CodePromotion}");
+                    promotion = null; // Không có sản phẩm phù hợp
+                }
+            }
+
             var orderStatus = await _orderRepository.GetOrderStatusByNameAsync("Pending");
             if (orderStatus == null)
             {
-                _logger.LogWarning("Order status 'Pending' not found.");
-                throw new InvalidOperationException("Order status not found.");
+                _logger.LogWarning("Order status 'Pending' not found");
+                throw new InvalidOperationException("Order status not found");
             }
 
             var order = new ShopOrder
             {
                 OrderNumber = $"ORD-{DateTime.Now.Ticks}",
                 OrderDate = DateTime.UtcNow,
-                OrderTotal = orderTotal,
+                OrderTotal = orderTotal - discountAmount, // Trừ giảm giá
                 ShippingAmount = 32000,
-                DiscountAmount = 32000,
+                DiscountAmount = discountAmount,
                 Note = request.Request.Note,
                 ShippingAddressId = shippingAddress.AddressId,
                 ShippingMethodId = shippingMethod.Id,
-                UserId = UserId.Value,
+                UserId = userId.Value,
+                PromotionId = promotion?.Id, // Liên kết PromotionId
                 OrderLines = orderLines,
                 CreateAt = DateTime.UtcNow,
                 OrderStatusHistories = new List<OrderStatusHistory>
@@ -146,7 +200,7 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
             {
                 ShopOrder = order,
                 PaymentMethodId = paymentMethod.Id,
-                Amount = orderTotal,
+                Amount = order.OrderTotal, // Số tiền sau khi giảm giá
                 PaymentStatus = request.Request.PaymentMethod == "COD" ? "COD" : "Pending",
                 ResponseCode = "",
                 ResponseMessage = "",
@@ -187,8 +241,8 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
                 var confirmedStatus = await _orderRepository.GetOrderStatusByNameAsync("Confirmed");
                 if (confirmedStatus == null)
                 {
-                    _logger.LogWarning("Order status 'Confirmed' not found.");
-                    throw new InvalidOperationException("Confirmed status not found.");
+                    _logger.LogWarning("Order status 'Confirmed' not found");
+                    throw new InvalidOperationException("Confirmed status not found");
                 }
                 order.OrderStatusHistories.Add(new OrderStatusHistory { OrderStatusId = confirmedStatus.Id });
                 await _orderRepository.UpdateOrderAsync(order);

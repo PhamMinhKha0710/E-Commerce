@@ -27,6 +27,7 @@ public class AppDbContext : DbContext
     public DbSet<ProductImage> ProductImages { get; set; }
     public DbSet<ProductItem> ProductItems { get; set; }
     public DbSet<Promotion> Promotions { get; set; }
+    public DbSet<PromotionCategory> PromotionCategories { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<ShopOrder> ShopOrders { get; set; }
     public DbSet<ShoppingCart> ShoppingCarts { get; set; }

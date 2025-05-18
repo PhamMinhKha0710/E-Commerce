@@ -7,6 +7,7 @@ import debounce from "lodash/debounce";
 export interface CartItem {
   productId: number;
   productName: string;
+  categoryId: string | null;
   imageUrl: string;
   price: number;
   quantity: number;

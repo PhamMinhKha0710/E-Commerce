@@ -72,6 +72,12 @@ interface PromotionResponseDto {
   endDate: string;
 }
 
+interface ShippingMethod {
+  shippingId: number;
+  name: string;
+  fee: number;
+}
+
 const paymentMethods: PaymentMethod[] = [
   { value: 'cod', label: 'Thanh toán tiền mặt', icon: 'https://salt.tikicdn.com/ts/upload/92/b2/78/1b3b9cda5208b323eb9ec56b84c7eb87.png' },
   { value: 'viettelpay', label: 'Viettel Money', icon: 'https://salt.tikicdn.com/ts/upload/5f/f9/75/d7ac8660aae903818dd7da8e4772e145.png' },
@@ -134,26 +140,26 @@ const banks: Bank[] = [
 ];
 
 const paymentOffers: PaymentOffer[] = [
-  { title: 'Freeship', subtitle: 'Thẻ Shinhan Platinum', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Freeship', subtitle: 'Thẻ Shinhan Classic', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 30k', subtitle: 'Đơn từ 200k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 50k', subtitle: 'Đơn từ 300k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 50k', subtitle: 'Đơn từ 300k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 70k', subtitle: 'Đơn từ 500k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 100k', subtitle: 'Đơn từ 700k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 150k', subtitle: 'Đơn từ 1 triệu', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 30k', subtitle: 'Đơn từ 200k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 50k', subtitle: 'Đơn từ 300k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Giảm 70k', subtitle: 'Đơn từ 500k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
-  { title: 'Freeship', subtitle: 'SMILECARD', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Freeship', subtitle: 'Thẻ Shinhan Platinum', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Freeship', subtitle: 'Thẻ Shinhan Classic', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 30k', subtitle: 'Đơn từ 200k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 50k', subtitle: 'Đơn từ 300k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 50k', subtitle: 'Đơn từ 300k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 70k', subtitle: 'Đơn từ 500k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 100k', subtitle: 'Đơn từ 700k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 150k', subtitle: 'Đơn từ 1 triệu', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 30k', subtitle: 'Đơn từ 200k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 50k', subtitle: 'Đơn từ 300k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Giảm 70k', subtitle: 'Đơn từ 500k', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
+{ title: 'Freeship', subtitle: 'SMILECARD', condition: 'Không giới hạn', image: 'https://salt.tikicdn.com/cache/w144/ts/upload/82/7e/9c/71b1c0645d326924f53c6329ecd2bf2a.png.webp' },
 ];
 
 const banners: Banner[] = [
-  { url: 'https://tiki.vn/khuyen-mai/cong-nghe-gia-hoi', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/7f/0b/d3/95916a0bd08a84d64206ce6ef9e72010.png' },
-  { url: 'https://tiki.vn/khuyen-mai/dien-tu-dien-gia-dung-dien-lanh', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/99/ce/6a/9c0a7990ddba5207da7cc37b85bdc2f0.png' },
-  { url: 'https://tiki.vn/khuyen-mai/top-dien-thoai-may-tinh-bang', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/a9/ec/4f/e95b916999b2dd40b3a8e2af30e704e8.png' },
-  { url: 'https://tiki.vn/khuyen-mai/xe-phu-kien-sieu-sale', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/45/7b/70/fb7c0e1414d55ae6ea43af2883f2d842.png' },
-  { url: 'https://tiki.vn/khuyen-mai/hang-nhap-khau-chinh-hang', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/46/b7/ac/46f02024b577c3e3a825a0c955bda0ea.png' },
+{ url: 'https://tiki.vn/khuyen-mai/cong-nghe-gia-hoi', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/7f/0b/d3/95916a0bd08a84d64206ce6ef9e72010.png' },
+{ url: 'https://tiki.vn/khuyen-mai/dien-tu-dien-gia-dung-dien-lanh', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/99/ce/6a/9c0a7990ddba5207da7cc37b85bdc2f0.png' },
+{ url: 'https://tiki.vn/khuyen-mai/top-dien-thoai-may-tinh-bang', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/a9/ec/4f/e95b916999b2dd40b3a8e2af30e704e8.png' },
+{ url: 'https://tiki.vn/khuyen-mai/xe-phu-kien-sieu-sale', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/45/7b/70/fb7c0e1414d55ae6ea43af2883f2d842.png' },
+{ url: 'https://tiki.vn/khuyen-mai/hang-nhap-khau-chinh-hang', image: 'https://salt.tikicdn.com/cache/w720/ts/tka/46/b7/ac/46f02024b577c3e3a825a0c955bda0ea.png' },
 ];
 
 export default function Checkout() {
@@ -171,8 +177,41 @@ export default function Checkout() {
   const [isCouponInputVisible, setIsCouponInputVisible] = useState<boolean>(false);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState<boolean>(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<number | null>(null);
   const { cart } = useCart();
   const router = useRouter();
+
+  // Fetch shipping methods from API
+  useEffect(() => {
+    const fetchShippingMethods = async () => {
+      try {
+        const response = await fetch('http://localhost:5130/api/ShippingMethod/GetAll', {
+          method: 'GET',
+          headers: {
+            'Accept': '*/*',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Lỗi khi lấy danh sách phương thức giao hàng.');
+        }
+
+        const data: ShippingMethod[] = await response.json();
+        setShippingMethods(data);
+
+        // Select the first shipping method by default
+        if (data.length > 0) {
+          setSelectedShippingMethod(data[0].shippingId);
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error('Không thể tải phương thức giao hàng.');
+      }
+    };
+
+    fetchShippingMethods();
+  }, []);
 
   // Load checkout items from localStorage or CartContext
   useEffect(() => {
@@ -182,15 +221,19 @@ export default function Checkout() {
         const savedItems = localStorage.getItem('selectedCartItems');
         if (savedItems) {
           const items = JSON.parse(savedItems);
-          if (!Array.isArray(items) || !items.every(item => 
-            typeof item.productId === 'number' &&
-            typeof item.productName === 'string' &&
-            typeof item.imageUrl === 'string' &&
-            typeof item.price === 'number' &&
-            typeof item.quantity === 'number' &&
-            item.price >= 0 &&
-            item.quantity > 0
-          )) {
+          if (
+            !Array.isArray(items) ||
+            !items.every(
+              (item) =>
+                typeof item.productId === 'number' &&
+                typeof item.productName === 'string' &&
+                typeof item.imageUrl === 'string' &&
+                typeof item.price === 'number' &&
+                typeof item.quantity === 'number' &&
+                item.price >= 0 &&
+                item.quantity > 0
+            )
+          ) {
             throw new Error('Dữ liệu sản phẩm không hợp lệ.');
           }
           setCheckoutItems(items);
@@ -200,21 +243,21 @@ export default function Checkout() {
 
         const selectedIndices = JSON.parse(localStorage.getItem('selectedItems') || '[]') as number[];
         if (selectedIndices.length === 0) {
-          toast.error("Không có sản phẩm nào để thanh toán!");
+          toast.error('Không có sản phẩm nào để thanh toán!');
           router.push('/cart');
           return;
         }
 
         const cartItems = JSON.parse(localStorage.getItem('cart') || '[]') as CartItem[];
         if (cartItems.length === 0) {
-          toast.error("Giỏ hàng trống!");
+          toast.error('Giỏ hàng trống!');
           router.push('/cart');
           return;
         }
 
         const items = selectedIndices
-          .filter(index => index >= 0 && index < cartItems.length)
-          .map(index => ({
+          .filter((index) => index >= 0 && index < cartItems.length)
+          .map((index) => ({
             productId: cartItems[index].productId,
             productName: cartItems[index].productName,
             imageUrl: cartItems[index].imageUrl,
@@ -226,19 +269,27 @@ export default function Checkout() {
           }));
 
         if (items.length === 0) {
-          toast.error("Không tìm thấy sản phẩm được chọn trong giỏ hàng!");
+          toast.error('Không tìm thấy sản phẩm đượcを選 trong giỏ hàng!');
           router.push('/cart');
           return;
         }
 
-        if (!items.every(item => typeof item.price === 'number' && typeof item.quantity === 'number' && item.price >= 0 && item.quantity > 0)) {
+        if (
+          !items.every(
+            (item) =>
+              typeof item.price === 'number' &&
+              typeof item.quantity === 'number' &&
+              item.price >= 0 &&
+              item.quantity > 0
+          )
+        ) {
           throw new Error('Dữ liệu sản phẩm không hợp lệ.');
         }
 
         setCheckoutItems(items);
         localStorage.setItem('selectedCartItems', JSON.stringify(items));
       } catch {
-        toast.error("Lỗi khi tải danh sách sản phẩm!");
+        toast.error('Lỗi khi tải danh sách sản phẩm!');
         router.push('/cart');
       } finally {
         setLoading(false);
@@ -389,13 +440,11 @@ export default function Checkout() {
     setCouponError(null);
 
     try {
-      // Kiểm tra mã trước khi áp dụng
       const couponData = await checkCoupon(couponCode.trim());
       if (!couponData) {
-        return; // Đã hiển thị lỗi trong checkCoupon
+        return;
       }
 
-      // Không gọi API /api/coupons/apply, chỉ sử dụng dữ liệu từ checkCoupon
       const newCoupon: Coupon = {
         code: couponCode.trim(),
         discountPercent: couponData.discountRate,
@@ -417,20 +466,25 @@ export default function Checkout() {
 
   // Remove coupon
   const handleRemoveCoupon = (code: string) => {
-    setCoupons(coupons.filter(coupon => coupon.code !== code));
+    setCoupons(coupons.filter((coupon) => coupon.code !== code));
     toast.info('Đã bỏ mã khuyến mãi.');
   };
 
   // Handle place order
   const handlePlaceOrder = async () => {
     if (checkoutItems.length === 0) {
-      toast.error("Không có sản phẩm để thanh toán!");
+      toast.error('Không có sản phẩm để thanh toán!');
       return;
     }
 
     if (!address) {
-      toast.error("Vui lòng chọn địa chỉ giao hàng!");
+      toast.error('Vui lòng chọn địa chỉ giao hàng!');
       router.push('/address');
+      return;
+    }
+
+    if (!selectedShippingMethod) {
+      toast.error('Vui lòng chọn phương thức giao hàng!');
       return;
     }
 
@@ -454,6 +508,7 @@ export default function Checkout() {
           bank: selectedBank,
           addressId: address.id,
           couponCode: coupons.length > 0 ? coupons[0].code : null,
+          shippingMethodId: selectedShippingMethod,
         }),
       });
 
@@ -478,17 +533,15 @@ export default function Checkout() {
   };
 
   // Calculate totals
+  const selectedMethod = shippingMethods.find((method) => method.shippingId === selectedShippingMethod);
+  const shippingFee = selectedMethod ? selectedMethod.fee * 1000 : 0; // Assuming API returns fee in thousands
   const totalPrice = checkoutItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  let discount = 32200;
+  let discount = 0;
   if (coupons.length > 0) {
     const coupon = coupons[0];
-    const discountAmount = Math.min(
-      (totalPrice * coupon.discountPercent) / 100,
-      coupon.limitDiscountPrice
-    );
+    const discountAmount = Math.min((totalPrice * coupon.discountPercent) / 100, coupon.limitDiscountPrice);
     discount += discountAmount;
   }
-  const shippingFee = 32200;
   const finalTotal = totalPrice + shippingFee - discount;
 
   if (loading) {
@@ -504,30 +557,46 @@ export default function Checkout() {
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Chọn hình thức giao hàng</h3>
             <div className={styles.shippingMethod}>
-              <label className={styles.radioLabel}>
-                <input type="radio" name="shipping-method" value="1" defaultChecked />
-                <span className={styles.radioFake}></span>
-                <span className={styles.label}>
-                  <div className={styles.methodText}>
-                    <span>Giao tiết kiệm</span>
-                    <span className={styles.freeshipBadge}>-32K</span>
-                  </div>
-                </span>
-              </label>
+              {shippingMethods.length > 0 ? (
+                shippingMethods.map((method) => (
+                  <label key={method.shippingId} className={styles.radioLabel}>
+                    <input
+                      type="radio"
+                      name="shipping-method"
+                      value={method.shippingId}
+                      checked={selectedShippingMethod === method.shippingId}
+                      onChange={() => setSelectedShippingMethod(method.shippingId)}
+                    />
+                    <span className={styles.radioFake}></span>
+                    <span className={styles.label}>
+                      <div className={styles.methodText}>
+                        <span>{method.name}</span>
+                        <span className={styles.freeshipBadge}>
+                          {method.fee === 0 ? 'MIỄN PHÍ' : `${(method.fee * 1000).toLocaleString()} ₫`}
+                        </span>
+                      </div>
+                    </span>
+                  </label>
+                ))
+              ) : (
+                <div>Không có phương thức giao hàng nào.</div>
+              )}
             </div>
-            <ShippingPackage
-              deliveryDate="Giao thứ 7, trước 19h, 19/04"
-              method="Giao tiết kiệm"
-              originalFee="32.200 ₫"
-              currentFee="MIỄN PHÍ"
-              items={checkoutItems.map(item => ({
-                image: item.imageUrl,
-                name: item.productName,
-                quantity: item.quantity,
-                price: `${item.price.toLocaleString()} ₫`,
-              }))}
-              fulfillmentText="Được giao bởi SmileNOW Smart Logistics (giao từ Hồ Chí Minh)"
-            />
+            {selectedMethod && (
+              <ShippingPackage
+                deliveryDate="Giao thứ 7, trước 19h, 19/04" // Consider fetching from API
+                method={selectedMethod.name}
+                originalFee={`${(selectedMethod.fee * 1000).toLocaleString()} ₫`}
+                currentFee={selectedMethod.fee === 0 ? 'MIỄN PHÍ' : `${(selectedMethod.fee * 1000).toLocaleString()} ₫`}
+                items={checkoutItems.map((item) => ({
+                  image: item.imageUrl,
+                  name: item.productName,
+                  quantity: item.quantity,
+                  price: `${item.price.toLocaleString()} ₫`,
+                }))}
+                fulfillmentText="Được giao bởi SmileNOW Smart Logistics (giao từ Hồ Chí Minh)"
+              />
+            )}
           </div>
 
           {/* Payment Method Section */}
@@ -635,7 +704,6 @@ export default function Checkout() {
                   ))}
                 </div>
               </div>
-              {/* Thẻ ATM */}
               <label className={styles.radioLabel}>
                 <input
                   type="radio"
@@ -661,7 +729,6 @@ export default function Checkout() {
                   </div>
                 </span>
               </label>
-              {/* Danh sách ngân hàng với hiệu ứng slide */}
               <div
                 className={`${styles.bankSelection} ${
                   selectedPaymentMethod === 'pay123' ? styles.show : styles.hide
@@ -706,7 +773,6 @@ export default function Checkout() {
 
         {/* Right Section */}
         <div className={styles.right1}>
-          {/* Delivery Info */}
           <div style={{ position: 'sticky', top: '0px' }}>
             <div className={styles.deliveryInfo}>
               <div className={styles.blockHeader}>
@@ -735,7 +801,6 @@ export default function Checkout() {
               )}
             </div>
 
-            {/* Coupons Section */}
             <div className={styles.couponSection}>
               <div className={styles.blockHeader}>
                 <h3>Smile-Mart Khuyến Mãi</h3>
@@ -819,10 +884,7 @@ export default function Checkout() {
                 </div>
               )}
               <div className={styles.couponInputSection}>
-                <div
-                  className={styles.couponMore}
-                  onClick={handleToggleCouponInput}
-                >
+                <div className={styles.couponMore} onClick={handleToggleCouponInput}>
                   <span>Chọn hoặc nhập mã khác</span>
                   <svg
                     className={styles.couponMoreIcon}
@@ -845,9 +907,7 @@ export default function Checkout() {
                   </svg>
                 </div>
                 <div
-                  className={`${styles.couponInputWrapper} ${
-                    isCouponInputVisible ? styles.show : styles.hide
-                  }`}
+                  className={`${styles.couponInputWrapper} ${isCouponInputVisible ? styles.show : styles.hide}`}
                 >
                   <div className={styles.couponInputContainer}>
                     <input
@@ -866,14 +926,11 @@ export default function Checkout() {
                       {isApplyingCoupon ? 'Đang áp dụng...' : 'Áp dụng'}
                     </button>
                   </div>
-                  {couponError && (
-                    <div className={styles.couponError}>{couponError}</div>
-                  )}
+                  {couponError && <div className={styles.couponError}>{couponError}</div>}
                 </div>
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className={styles.orderSummary}>
               <div className={styles.blockHeader}>
                 <h3>Đơn hàng</h3>
@@ -899,7 +956,7 @@ export default function Checkout() {
                   <span>Tổng tiền thanh toán</span>
                   <div>
                     <span className={styles.totalAmount}>{finalTotal.toLocaleString()} ₫</span>
-                    <span className={styles.saving}>Tiết kiệm {discount.toLocaleString()} ₫</span>
+                    <span className={styles.saving}>Tiết kiệm { discount.toLocaleString()} ₫</span>
                   </div>
                 </div>
                 <div className={styles.additionalText}>
@@ -911,7 +968,6 @@ export default function Checkout() {
               </button>
             </div>
 
-            {/* Banners */}
             <div className={styles.banners}>
               <div className={styles.bannerSlider}>
                 {banners.map((banner: Banner, index: number) => (

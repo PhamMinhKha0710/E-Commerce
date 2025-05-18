@@ -11,9 +11,30 @@ namespace Ecommerce.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_PromotionCategory_ProductCategories_ProductCategoryId",
+                table: "PromotionCategory");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_PromotionCategory_Promotions_PromotionId",
+                table: "PromotionCategory");
+
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_PromotionCategory",
+                table: "PromotionCategory");
+
             migrationBuilder.DropColumn(
                 name: "ImageEmbedding",
                 table: "Products");
+
+            migrationBuilder.RenameTable(
+                name: "PromotionCategory",
+                newName: "PromotionCategories");
+
+            migrationBuilder.RenameIndex(
+                name: "IX_PromotionCategory_ProductCategoryId",
+                table: "PromotionCategories",
+                newName: "IX_PromotionCategories_ProductCategoryId");
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "CreateAt",
@@ -26,6 +47,13 @@ namespace Ecommerce.Infrastructure.Migrations
                 table: "ShopOrders",
                 type: "int",
                 nullable: true);
+
+            migrationBuilder.AddColumn<decimal>(
+                name: "Fee",
+                table: "ShippingMethods",
+                type: "decimal(18,2)",
+                nullable: false,
+                defaultValue: 0m);
 
             migrationBuilder.AddColumn<decimal>(
                 name: "LimitDiscountPrice",
@@ -61,6 +89,11 @@ namespace Ecommerce.Infrastructure.Migrations
                 type: "datetime2",
                 nullable: false,
                 defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_PromotionCategories",
+                table: "PromotionCategories",
+                columns: new[] { "PromotionId", "ProductCategoryId" });
 
             migrationBuilder.CreateTable(
                 name: "PopularityStats",
@@ -238,6 +271,22 @@ namespace Ecommerce.Infrastructure.Migrations
                 column: "ViewTime");
 
             migrationBuilder.AddForeignKey(
+                name: "FK_PromotionCategories_ProductCategories_ProductCategoryId",
+                table: "PromotionCategories",
+                column: "ProductCategoryId",
+                principalTable: "ProductCategories",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_PromotionCategories_Promotions_PromotionId",
+                table: "PromotionCategories",
+                column: "PromotionId",
+                principalTable: "Promotions",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
                 name: "FK_ShopOrders_Promotions_PromotionId",
                 table: "ShopOrders",
                 column: "PromotionId",
@@ -249,6 +298,14 @@ namespace Ecommerce.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_PromotionCategories_ProductCategories_ProductCategoryId",
+                table: "PromotionCategories");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_PromotionCategories_Promotions_PromotionId",
+                table: "PromotionCategories");
+
             migrationBuilder.DropForeignKey(
                 name: "FK_ShopOrders_Promotions_PromotionId",
                 table: "ShopOrders");
@@ -269,6 +326,10 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "IX_ShopOrders_PromotionId",
                 table: "ShopOrders");
 
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_PromotionCategories",
+                table: "PromotionCategories");
+
             migrationBuilder.DropColumn(
                 name: "CreateAt",
                 table: "ShopOrders");
@@ -276,6 +337,10 @@ namespace Ecommerce.Infrastructure.Migrations
             migrationBuilder.DropColumn(
                 name: "PromotionId",
                 table: "ShopOrders");
+
+            migrationBuilder.DropColumn(
+                name: "Fee",
+                table: "ShippingMethods");
 
             migrationBuilder.DropColumn(
                 name: "LimitDiscountPrice",
@@ -297,12 +362,42 @@ namespace Ecommerce.Infrastructure.Migrations
                 name: "OrderDate",
                 table: "OrderLines");
 
+            migrationBuilder.RenameTable(
+                name: "PromotionCategories",
+                newName: "PromotionCategory");
+
+            migrationBuilder.RenameIndex(
+                name: "IX_PromotionCategories_ProductCategoryId",
+                table: "PromotionCategory",
+                newName: "IX_PromotionCategory_ProductCategoryId");
+
             migrationBuilder.AddColumn<byte[]>(
                 name: "ImageEmbedding",
                 table: "Products",
                 type: "VARBINARY(MAX)",
                 nullable: false,
                 defaultValue: new byte[0]);
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_PromotionCategory",
+                table: "PromotionCategory",
+                columns: new[] { "PromotionId", "ProductCategoryId" });
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_PromotionCategory_ProductCategories_ProductCategoryId",
+                table: "PromotionCategory",
+                column: "ProductCategoryId",
+                principalTable: "ProductCategories",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_PromotionCategory_Promotions_PromotionId",
+                table: "PromotionCategory",
+                column: "PromotionId",
+                principalTable: "Promotions",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
         }
     }
 }

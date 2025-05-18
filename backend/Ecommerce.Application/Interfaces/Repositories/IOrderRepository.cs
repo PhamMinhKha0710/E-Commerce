@@ -19,5 +19,10 @@ namespace Ecommerce.Application.Interfaces.Repositories
         Task DeleteCartItemAsync(ShoppingCartItem cartItem);
         Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action);
         Task<string> GetUserEmailByShopOrderIdAsync(int shopOrderId);
+
+        // Phương thức cho khuyến mãi khi order
+        Task<Promotion> GetPromotionByCodeAsync(string code);
+        Task<bool> IsProductInPromotionCategoryAsync(int productId, int promotionId);
+        Task UpdatePromotionAsync(Promotion promotion);
     }
 }

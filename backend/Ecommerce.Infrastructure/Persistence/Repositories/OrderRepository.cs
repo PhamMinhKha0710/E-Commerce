@@ -130,12 +130,35 @@ namespace Ecommerce.Infrastructure.Repositories
                 throw new Exception($"Order with Id {shopOrderId} not found.");
             }
 
-            if(order.User == null)
+            if (order.User == null)
             {
                 throw new Exception($"User not found for order with ID {shopOrderId}.");
             }
 
             return order.User.Email;
+        }
+        public async Task<Promotion> GetPromotionByCodeAsync(string code)
+        {
+            return await _context.Promotions
+                .Include(p => p.PromotionCategories)
+                .FirstOrDefaultAsync(p => p.Code == code && p.IsActive && p.StartDate <= DateTime.UtcNow && p.EndDate >= DateTime.UtcNow);
+        }
+
+        public async Task<bool> IsProductInPromotionCategoryAsync(int productId, int promotionId)
+        {
+            return await _context.Products
+                .Where(p => p.Id == productId)
+                .Join(_context.PromotionCategories,
+                    p => p.ProductCategoryId,
+                    pc => pc.ProductCategoryId,
+                    (p, pc) => pc)
+                .AnyAsync(pc => pc.PromotionId == promotionId);
+        }
+
+        public async Task UpdatePromotionAsync(Promotion promotion)
+        {
+            _context.Promotions.Update(promotion);
+            await _context.SaveChangesAsync();
         }
     }
 }
