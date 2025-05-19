@@ -163,7 +163,7 @@ export function CategoryDetail({
 
     setEditedCategory({
       ...editedCategory,
-      attributes: [...editedCategory.attributes, attribute],
+      attributes: [...(editedCategory?.attributes || []), attribute],
     });
 
     setNewAttribute({
@@ -185,7 +185,7 @@ export function CategoryDetail({
 
     setEditedCategory({
       ...editedCategory,
-      attributes: editedCategory.attributes.filter((attr) => attr.id !== attributeId),
+      attributes: editedCategory?.attributes?.filter((attr) => attr.id !== attributeId) || [],
     });
 
     toast({
@@ -247,16 +247,16 @@ export function CategoryDetail({
                     <AlertDialogTitle>Xác nhận xóa danh mục</AlertDialogTitle>
                     <AlertDialogDescription>
                       Bạn có chắc chắn muốn xóa danh mục này? Hành động này không thể hoàn tác.
-                      {category.children.length > 0 && (
+                      {category?.children && category.children.length > 0 && (
                         <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md flex items-start gap-2">
                           <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                           <span>
-                            Danh mục này có {category.children.length} danh mục con. Nếu xóa, tất cả danh mục con sẽ bị
+                            Danh mục này có {category?.children?.length} danh mục con. Nếu xóa, tất cả danh mục con sẽ bị
                             xóa theo.
                           </span>
                         </div>
                       )}
-                      {category.productCount > 0 && (
+                      {category?.productCount > 0 && (
                         <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md flex items-start gap-2">
                           <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                           <span>
@@ -440,7 +440,7 @@ export function CategoryDetail({
                     <Layers className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Số lượng sản phẩm</span>
                   </div>
-                  <div className="text-sm text-muted-foreground">{category.productCount} sản phẩm</div>
+                  <div className="text-sm text-muted-foreground">{category?.productCount || 0} sản phẩm</div>
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -448,13 +448,13 @@ export function CategoryDetail({
                     <span className="font-medium">Ngày tạo</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {new Date(category.createdAt).toLocaleDateString("vi-VN", {
+                    {category?.createdAt ? new Date(category.createdAt).toLocaleDateString("vi-VN", {
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
-                    })}
+                    }) : "N/A"}
                   </div>
                 </div>
                 <div>
@@ -463,13 +463,13 @@ export function CategoryDetail({
                     <span className="font-medium">Cập nhật lần cuối</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {new Date(category.updatedAt).toLocaleDateString("vi-VN", {
+                    {category?.updatedAt ? new Date(category.updatedAt).toLocaleDateString("vi-VN", {
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
-                    })}
+                    }) : "N/A"}
                   </div>
                 </div>
               </div>
@@ -492,7 +492,7 @@ export function CategoryDetail({
               )}
             </CardHeader>
             <CardContent>
-              {category.children.length === 0 ? (
+              {category?.children?.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <FolderPlus className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium">Chưa có danh mục con</h3>
@@ -509,7 +509,7 @@ export function CategoryDetail({
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {category.children.map((subcategory) => (
+                    {category?.children?.map((subcategory) => (
                       <div
                         key={subcategory.id}
                         className="border rounded-lg p-4 hover:border-primary/50 transition-colors"
@@ -633,7 +633,7 @@ export function CategoryDetail({
             </CardContent>
             <CardFooter className="flex justify-between">
               <div className="text-sm text-muted-foreground">
-                Hiển thị {products.length} / {category.productCount} sản phẩm
+                Hiển thị {products?.length || 0} / {category?.productCount || 0} sản phẩm
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" disabled>
@@ -655,7 +655,7 @@ export function CategoryDetail({
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {category.attributes.length === 0 ? (
+                {category?.attributes?.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Settings className="h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium">Chưa có thuộc tính</h3>
@@ -676,7 +676,7 @@ export function CategoryDetail({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {editedCategory.attributes.map((attribute) => (
+                        {editedCategory?.attributes?.map((attribute) => (
                           <TableRow key={attribute.id}>
                             <TableCell className="font-medium">{attribute.name}</TableCell>
                             <TableCell>
@@ -801,14 +801,14 @@ export function CategoryDetail({
                 <Label htmlFor="metaTitle">Tiêu đề Meta</Label>
                 <Input
                   id="metaTitle"
-                  value={editedCategory?.metaTitle ?? category.metaTitle}
+                  value={editedCategory?.metaTitle ?? category?.metaTitle ?? ""}
                   onChange={(e) => handleInputChange("metaTitle", e.target.value)}
                   disabled={editedCategory === category}
                 />
                 <div className="text-xs text-muted-foreground flex justify-between">
                   <span>Tiêu đề hiển thị trên kết quả tìm kiếm</span>
-                  <span className={`${(editedCategory?.metaTitle.length || 0) > 60 ? "text-red-500" : ""}`}>
-                    {(editedCategory?.metaTitle.length || 0)}/60
+                  <span className={`${(editedCategory?.metaTitle?.length || 0) > 60 ? "text-red-500" : ""}`}>
+                    {(editedCategory?.metaTitle?.length || 0)}/60
                   </span>
                 </div>
               </div>
@@ -818,14 +818,14 @@ export function CategoryDetail({
                 <Textarea
                   id="metaDescription"
                   rows={3}
-                  value={editedCategory?.metaDescription ?? category.metaDescription}
+                  value={editedCategory?.metaDescription ?? category?.metaDescription ?? ""}
                   onChange={(e) => handleInputChange("metaDescription", e.target.value)}
                   disabled={editedCategory === category}
                 />
                 <div className="text-xs text-muted-foreground flex justify-between">
                   <span>Mô tả hiển thị trên kết quả tìm kiếm</span>
-                  <span className={`${(editedCategory?.metaDescription.length || 0) > 160 ? "text-red-500" : ""}`}>
-                    {(editedCategory?.metaDescription.length || 0)}/160
+                  <span className={`${(editedCategory?.metaDescription?.length || 0) > 160 ? "text-red-500" : ""}`}>
+                    {(editedCategory?.metaDescription?.length || 0)}/160
                   </span>
                 </div>
               </div>
@@ -835,7 +835,7 @@ export function CategoryDetail({
                 <Textarea
                   id="metaKeywords"
                   rows={2}
-                  value={editedCategory?.metaKeywords ?? category.metaKeywords}
+                  value={editedCategory?.metaKeywords ?? category?.metaKeywords ?? ""}
                   onChange={(e) => handleInputChange("metaKeywords", e.target.value)}
                   disabled={editedCategory === category}
                 />
@@ -846,13 +846,13 @@ export function CategoryDetail({
                 <h3 className="font-medium">Xem trước kết quả tìm kiếm</h3>
                 <div className="space-y-2 p-4 border rounded-md bg-slate-50">
                   <div className="text-blue-600 text-lg font-medium line-clamp-1">
-                    {editedCategory?.metaTitle || category.metaTitle || category.name}
+                    {editedCategory?.metaTitle || category?.metaTitle || category?.name || ""}
                   </div>
                   <div className="text-green-700 text-sm">
-                    {typeof window !== "undefined" ? `${window.location.origin}/danh-muc/` : ""}{category.slug}
+                    {typeof window !== "undefined" ? `${window.location.origin}/danh-muc/` : ""}{category?.slug || ""}
                   </div>
                   <div className="text-slate-700 text-sm line-clamp-2">
-                    {editedCategory?.metaDescription || category.metaDescription || category.description}
+                    {editedCategory?.metaDescription || category?.metaDescription || category?.description || ""}
                   </div>
                 </div>
               </div>

@@ -3,15 +3,9 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Chi tiết đánh giá | SmartMile Admin",
-  description: "Xem và quản lý chi tiết đánh giá sản phẩm",
+  description: "Xem chi tiết và quản lý đánh giá sản phẩm trong hệ thống SmartMile",
 }
 
-interface ReviewDetailPageProps {
-  params: {
-    id: string
-  }
-}
-
-export default function ReviewDetailPage({ params }: ReviewDetailPageProps) {
+export default function ReviewDetailPage({ params }: { params: { id: string } }) {
   return <ReviewDetail reviewId={params.id} />
 }

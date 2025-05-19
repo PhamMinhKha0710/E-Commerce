@@ -1,122 +1,159 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { motion } from "framer-motion"
-import { Eye, EyeOff, Lock, Mail, ShoppingBag } from "lucide-react"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { toast } from "sonner"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
+import { login, setAuth } from "@/lib/api/auth"
+
+// Validate schema
+const loginSchema = z.object({
+  email: z.string().email("Email không hợp lệ"),
+  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginForm() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const router = useRouter()
+  
+  // Mặc định thông tin đăng nhập cho dev environment
+  const defaultValues: Partial<LoginFormValues> = {
+    email: "admin@example.com", // Thay bằng email thực tế
+    password: "", // Không đặt mật khẩu mặc định vì lý do bảo mật
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues,
+  })
+
+  async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
 
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false)
+    try {
+      const response = await login(data)
+      
+      // Lưu token
+      setAuth(response.token, response.user)
+      
+      toast.success("Đăng nhập thành công")
       router.push("/dashboard")
-    }, 1500)
+      router.refresh() // Làm mới trạng thái toàn ứng dụng
+    } catch (error) {
+      console.error("Login error:", error)
+      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword)
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full max-w-md px-4"
-    >
-      <Card className="border-none shadow-lg">
-        <CardHeader className="space-y-4 text-center">
-          <div className="flex justify-center">
-            <div className="flex items-center justify-center w-12 h-12 rounded-md bg-primary text-primary-foreground">
-              <ShoppingBag className="h-6 w-6" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-bold">SmartMile Admin</CardTitle>
-          <CardDescription>Đăng nhập vào hệ thống quản trị</CardDescription>
+    <Card>
+      <CardHeader>
+        <CardTitle>Đăng nhập</CardTitle>
+        <CardDescription>
+          Nhập thông tin đăng nhập để truy cập quản trị
+        </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
                 <Input
-                  id="email"
+                      placeholder="admin@example.com" 
                   type="email"
-                  placeholder="admin@smartmile.com"
-                  className="pl-10"
-                  required
-                  defaultValue="admin@smartmile.com"
+                      {...field} 
+                      disabled={isLoading}
+                      autoComplete="email"
                 />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Mật khẩu</Label>
-                <Link href="#" className="text-xs text-primary hover:underline">
-                  Quên mật khẩu?
-                </Link>
-              </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mật khẩu</FormLabel>
+                  <FormControl>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="password"
+                        placeholder="••••••••" 
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="pl-10 pr-10"
-                  required
-                  defaultValue="password123"
+                        {...field} 
+                        disabled={isLoading}
+                        autoComplete="current-password"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1 h-8 w-8"
-                  onClick={() => setShowPassword(!showPassword)}
+                        onClick={toggleShowPassword}
+                        className="absolute right-0 top-0 h-full px-3 py-2"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                          <Eye className="h-4 w-4" />
                   )}
-                  <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                        <span className="sr-only">
+                          {showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                        </span>
                 </Button>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="remember" />
-              <Label htmlFor="remember" className="text-sm">
-                Ghi nhớ đăng nhập
-              </Label>
-            </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                "Đăng nhập"
+              )}
             </Button>
           </form>
+        </Form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4 text-center text-sm text-muted-foreground">
-          <div>
-            Bạn chưa có tài khoản?{" "}
-            <Link href="#" className="text-primary hover:underline">
-              Liên hệ quản trị viên
-            </Link>
+      <CardFooter className="flex flex-col space-y-2">
+        <div className="text-sm text-muted-foreground text-center">
+          <p>Nếu bạn không thể đăng nhập, vui lòng liên hệ với quản trị viên.</p>
           </div>
-          <div className="text-xs">© 2024 SmartMile. Bản quyền thuộc về SmartMile.</div>
         </CardFooter>
       </Card>
-    </motion.div>
   )
 }

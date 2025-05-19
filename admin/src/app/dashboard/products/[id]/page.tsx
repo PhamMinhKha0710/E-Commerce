@@ -12,6 +12,9 @@ interface ProductDetailPageProps {
   }
 }
 
-export default function ProductDetailPage({ params }: ProductDetailPageProps) {
-  return <ProductDetail productId={params.id} />
+export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  // Đảm bảo params đã được xử lý trước khi sử dụng
+  const id = params.id
+  
+  return <ProductDetail productId={id} />
 }

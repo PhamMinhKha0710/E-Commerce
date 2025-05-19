@@ -2,7 +2,7 @@
 
 import type React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   BarChart3,
@@ -24,6 +24,7 @@ import {
   HelpCircle,
   ChevronRight,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
 import { useSidebar } from "@/components/layout/sidebar-provider"
@@ -41,6 +42,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { getUserInfo, isAuthenticated, logout } from "@/lib/api/auth"
+import { useEffect, useState } from "react"
 
 export function AdminDashboardLayout({
   children,
@@ -48,7 +51,32 @@ export function AdminDashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter();
   const { isOpen, isMobileOpen, toggleSidebar, toggleMobileSidebar, closeMobileSidebar } = useSidebar()
+  const [user, setUser] = useState<{ name?: string; email: string } | null>(null);
+
+  useEffect(() => {
+    // Kiểm tra xác thực khi component được mount
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
+    }
+    
+    // Lấy thông tin người dùng từ localStorage
+    const userInfo = getUserInfo();
+    if (userInfo) {
+      setUser({
+        name: userInfo.name,
+        email: userInfo.email,
+      });
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Đăng xuất thành công");
+    router.push('/login');
+  };
 
   const mainRoutes = [
     {
@@ -184,6 +212,38 @@ export function AdminDashboardLayout({
       </div>
     </>
   )
+
+  const renderUserMenu = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+          <Avatar className="h-9 w-9">
+            <AvatarImage src="/placeholder-avatar.jpg" alt="Avatar" />
+            <AvatarFallback>{user?.name?.charAt(0) || user?.email?.charAt(0) || "U"}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <div className="flex items-center justify-start gap-2 p-2">
+          <div className="flex flex-col space-y-0.5">
+            <p className="text-sm font-medium">{user?.name || 'Admin User'}</p>
+            <p className="text-xs text-muted-foreground">{user?.email || 'admin@example.com'}</p>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Cài đặt</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Đăng xuất</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="h-full relative">
@@ -393,44 +453,7 @@ export function AdminDashboardLayout({
                 </Tooltip>
               </TooltipProvider>
               <ModeToggle />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar>
-                      <AvatarImage src="/placeholder-user.jpg" alt="Admin" />
-                      <AvatarFallback>AD</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-0.5">
-                      <p className="text-sm font-medium">Admin User</p>
-                      <p className="text-xs text-muted-foreground">admin@smartmile.com</p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
-                      <CircleUser className="mr-2 h-4 w-4" />
-                      <span>Hồ sơ</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Cài đặt</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="text-destructive focus:text-destructive">
-                    <Link href="/login">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Đăng xuất</span>
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {renderUserMenu()}
             </div>
           </div>
         </header>

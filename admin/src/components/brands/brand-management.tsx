@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import Link from "next/link"
-import { ChevronDown, Download, Filter, MoreHorizontal, PlusCircle, Search, Trash } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ChevronDown, Download, Filter, MoreHorizontal, PlusCircle, Search, Trash, Edit } from "lucide-react"
+import { toast } from "sonner"
 
+import { Brand, deleteBrand } from "@/lib/api/brands"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,86 +22,40 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
-const brands = [
-  {
-    id: "BRD-1001",
-    name: "Samsung",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Tập đoàn điện tử đa quốc gia của Hàn Quốc",
-    productCount: 145,
-    status: "Hiển thị",
-  },
-  {
-    id: "BRD-1002",
-    name: "Apple",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Công ty công nghệ đa quốc gia của Mỹ",
-    productCount: 98,
-    status: "Hiển thị",
-  },
-  {
-    id: "BRD-1003",
-    name: "Dell",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Công ty máy tính đa quốc gia của Mỹ",
-    productCount: 67,
-    status: "Hiển thị",
-  },
-  {
-    id: "BRD-1004",
-    name: "Sony",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Tập đoàn đa quốc gia của Nhật Bản",
-    productCount: 89,
-    status: "Hiển thị",
-  },
-  {
-    id: "BRD-1005",
-    name: "LG",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Tập đoàn điện tử đa quốc gia của Hàn Quốc",
-    productCount: 76,
-    status: "Hiển thị",
-  },
-  {
-    id: "BRD-1006",
-    name: "Xiaomi",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Công ty điện tử của Trung Quốc",
-    productCount: 112,
-    status: "Hiển thị",
-  },
-  {
-    id: "BRD-1007",
-    name: "Asus",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Công ty máy tính và điện tử của Đài Loan",
-    productCount: 54,
-    status: "Ẩn",
-  },
-  {
-    id: "BRD-1008",
-    name: "Lenovo",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Công ty máy tính đa quốc gia của Trung Quốc",
-    productCount: 43,
-    status: "Hiển thị",
-  },
-]
+interface BrandManagementProps {
+  initialBrands: Brand[];
+}
 
-export function BrandManagement() {
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+export function BrandManagement({ initialBrands }: BrandManagementProps) {
+  const router = useRouter()
+  const [selectedBrands, setSelectedBrands] = useState<number[]>([])
+  const [brands, setBrands] = useState<Brand[]>(initialBrands)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  const toggleSelectAll = () => {
-    if (selectedBrands.length === brands.length) {
-      setSelectedBrands([])
-    } else {
-      setSelectedBrands(brands.map((brand) => brand.id))
+  const handleDeleteBrand = async (id: number) => {
+    try {
+      await deleteBrand(id)
+      toast.success("Xóa thương hiệu thành công")
+      setBrands(brands.filter(brand => brand.id !== id))
+    } catch (error) {
+      toast.error("Không thể xóa thương hiệu")
+      console.error("Error deleting brand:", error)
     }
   }
 
-  const toggleSelectBrand = (brandId: string) => {
+  const toggleSelectAll = () => {
+    if (selectedBrands.length === paginatedBrands.length) {
+      setSelectedBrands([])
+    } else {
+      setSelectedBrands(paginatedBrands.map((brand) => brand.id))
+    }
+  }
+
+  const toggleSelectBrand = (brandId: number) => {
     if (selectedBrands.includes(brandId)) {
       setSelectedBrands(selectedBrands.filter((id) => id !== brandId))
     } else {
@@ -107,22 +63,142 @@ export function BrandManagement() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Hiển thị":
-        return "bg-green-500"
-      case "Ẩn":
-        return "bg-gray-500"
-      default:
-        return "bg-blue-500"
+  const getStatusColor = (productCount: number) => {
+    return productCount > 0 ? "bg-green-500" : "bg-gray-500"
+  }
+  
+  const filteredBrands = brands.filter(brand => 
+    brand.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  
+  // Tính toán tổng số trang
+  const totalPages = Math.ceil(filteredBrands.length / itemsPerPage)
+  
+  // Lấy danh sách thương hiệu cho trang hiện tại
+  const paginatedBrands = filteredBrands.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+  
+  // Xử lý khi thay đổi số lượng hiển thị
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value))
+    setCurrentPage(1) // Reset về trang 1 khi thay đổi số lượng hiển thị
+  }
+  
+  // Điều hướng giữa các trang
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+  }
+  
+  // Tạo các nút phân trang
+  const renderPaginationButtons = () => {
+    const buttons = []
+    
+    // Nút Prev
+    buttons.push(
+      <Button
+        key="prev"
+        variant="outline"
+        size="sm"
+        onClick={() => goToPage(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+      >
+        Trước
+      </Button>
+    )
+    
+    // Hiển thị số trang
+    // Logic: Hiển thị 5 nút trang, ưu tiên trang hiện tại ở giữa
+    const maxVisibleButtons = 5
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisibleButtons / 2))
+    let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1)
+    
+    // Điều chỉnh lại startPage nếu không đủ nút ở cuối
+    if (endPage - startPage + 1 < maxVisibleButtons) {
+      startPage = Math.max(1, endPage - maxVisibleButtons + 1)
     }
+    
+    // Thêm nút trang đầu và dấu chấm lửng nếu cần
+    if (startPage > 1) {
+      buttons.push(
+        <Button
+          key="1"
+          variant={1 === currentPage ? "default" : "outline"}
+          size="sm"
+          onClick={() => goToPage(1)}
+        >
+          1
+        </Button>
+      )
+      if (startPage > 2) {
+        buttons.push(
+          <Button key="ellipsis1" variant="outline" size="sm" disabled>
+            ...
+          </Button>
+        )
+      }
+    }
+    
+    // Thêm các nút số trang
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <Button
+          key={i}
+          variant={i === currentPage ? "default" : "outline"}
+          size="sm"
+          onClick={() => goToPage(i)}
+        >
+          {i}
+        </Button>
+      )
+    }
+    
+    // Thêm nút trang cuối và dấu chấm lửng nếu cần
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(
+          <Button key="ellipsis2" variant="outline" size="sm" disabled>
+            ...
+          </Button>
+        )
+      }
+      buttons.push(
+        <Button
+          key={totalPages}
+          variant={totalPages === currentPage ? "default" : "outline"}
+          size="sm"
+          onClick={() => goToPage(totalPages)}
+        >
+          {totalPages}
+        </Button>
+      )
+    }
+    
+    // Nút Next
+    buttons.push(
+      <Button
+        key="next"
+        variant="outline"
+        size="sm"
+        onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages || totalPages === 0}
+      >
+        Sau
+      </Button>
+    )
+    
+    return buttons
   }
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Quản lý thương hiệu</h2>
-        <Button className="flex items-center gap-2">
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => router.push("/dashboard/brands/new")}
+        >
           <PlusCircle className="h-4 w-4" />
           Thêm thương hiệu
         </Button>
@@ -138,7 +214,13 @@ export function BrandManagement() {
               <div className="flex flex-1 items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="search" placeholder="Tìm kiếm thương hiệu..." className="pl-8 w-full" />
+                  <Input 
+                    type="search" 
+                    placeholder="Tìm kiếm thương hiệu..." 
+                    className="pl-8 w-full" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -151,44 +233,36 @@ export function BrandManagement() {
                   <DropdownMenuContent align="end" className="w-[200px]">
                     <DropdownMenuLabel>Lọc theo</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Trạng thái</DropdownMenuItem>
                     <DropdownMenuItem>Số lượng sản phẩm</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Xuất
-                </Button>
-                <Select defaultValue="10">
-                  <SelectTrigger className="w-[80px]">
-                    <SelectValue placeholder="10" />
+                <Select onValueChange={handleItemsPerPageChange} defaultValue="10">
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Hiển thị" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="10">10 mục</SelectItem>
+                    <SelectItem value="20">20 mục</SelectItem>
+                    <SelectItem value="50">50 mục</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-            {selectedBrands.length > 0 && (
-              <div className="flex items-center gap-2 bg-muted p-2 rounded-md">
-                <span className="text-sm">{selectedBrands.length} thương hiệu đã chọn</span>
-                <Button variant="outline" size="sm" className="gap-1 ml-auto">
-                  <Trash className="h-3 w-3" />
-                  Xóa
+                <Button variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Export
                 </Button>
               </div>
-            )}
+            </div>
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[40px]">
-                      <Checkbox checked={selectedBrands.length === brands.length} onCheckedChange={toggleSelectAll} />
+                        <Checkbox 
+                          checked={paginatedBrands.length > 0 && selectedBrands.length === paginatedBrands.length} 
+                          onCheckedChange={toggleSelectAll} 
+                        />
                     </TableHead>
                     <TableHead>Thương hiệu</TableHead>
                     <TableHead>Mô tả</TableHead>
@@ -198,7 +272,14 @@ export function BrandManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {brands.map((brand) => (
+                    {paginatedBrands.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                          Không tìm thấy thương hiệu nào
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedBrands.map((brand) => (
                     <TableRow key={brand.id}>
                       <TableCell>
                         <Checkbox
@@ -209,7 +290,7 @@ export function BrandManagement() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Image
-                            src={brand.logo || "/placeholder.svg"}
+                                src={brand.imageUrl || "/placeholder.svg"}
                             alt={brand.name}
                             width={40}
                             height={40}
@@ -217,67 +298,86 @@ export function BrandManagement() {
                           />
                           <div className="flex flex-col">
                             <span className="text-sm font-medium">{brand.name}</span>
-                            <span className="text-xs text-muted-foreground">{brand.id}</span>
+                                <span className="text-xs text-muted-foreground">ID: {brand.id}</span>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{brand.description}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {brand.description || `${brand.name} - Thương hiệu`}
+                          </TableCell>
                       <TableCell>{brand.productCount}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`${getStatusColor(brand.status)} text-white border-none`}>
-                          {brand.status}
+                            <Badge className={`${getStatusColor(brand.productCount)} text-white`}>
+                              {brand.productCount > 0 ? "Hiển thị" : "Ẩn"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Mở menu</span>
                               <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Mở menu</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/brands/${brand.id}`}>Xem chi tiết</Link>
+                                <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => router.push(`/dashboard/brands/${brand.id}`)}
+                                  className="flex items-center gap-2 cursor-pointer"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  Chỉnh sửa
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/brands/${brand.id}`}>Chỉnh sửa</Link>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem
+                                      onSelect={(e) => e.preventDefault()}
+                                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                      Xóa
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {brand.status === "Hiển thị" ? (
-                              <DropdownMenuItem>Ẩn thương hiệu</DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem>Hiển thị thương hiệu</DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem className="text-red-600">Xóa thương hiệu</DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Xác nhận xóa thương hiệu</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Bạn có chắc chắn muốn xóa thương hiệu này? Hành động này không thể hoàn tác.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDeleteBrand(brand.id)}
+                                        className="bg-red-500 hover:bg-red-600"
+                                      >
+                                        Xóa
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                      ))
+                    )}
                 </TableBody>
               </Table>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">Hiển thị 1-8 của 24 thương hiệu</div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  Trước
-                </Button>
-                <Button variant="outline" size="sm" className="bg-primary text-primary-foreground">
-                  1
-                </Button>
-                <Button variant="outline" size="sm">
-                  2
-                </Button>
-                <Button variant="outline" size="sm">
-                  3
-                </Button>
-                <Button variant="outline" size="sm">
-                  Sau
-                </Button>
+            
+            {/* Phân trang */}
+            {filteredBrands.length > 0 && (
+              <div className="flex items-center justify-between py-4">
+                <div className="text-sm text-muted-foreground">
+                  Hiển thị {paginatedBrands.length} / {filteredBrands.length} thương hiệu
+                </div>
+                <div className="flex gap-1">
+                  {renderPaginationButtons()}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>

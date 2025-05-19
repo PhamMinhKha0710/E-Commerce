@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion } from "framer-motion"
@@ -29,124 +29,217 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "@/components/ui/use-toast"
+import { getProductDetail, updateProduct, deleteProduct, type ProductDetail as ProductDetailType } from "@/lib/api/products"
+import { getAdminCategories } from "@/lib/api/categories"
+import { getBrands } from "@/lib/api/brands"
+import { Skeleton } from "@/components/ui/skeleton"
 
-// Mock product data - in a real app, this would come from an API
-const productData = {
-  id: "PRD-1001",
-  name: "Điện thoại Samsung Galaxy S23",
-  slug: "dien-thoai-samsung-galaxy-s23",
-  description: "Điện thoại Samsung Galaxy S23 với hiệu năng mạnh mẽ, camera chất lượng cao và thiết kế sang trọng.",
-  price: 23990000,
-  salePrice: 21990000,
-  sku: "SS-GS23-128GB",
-  
-  stock: 45,
-  status: "Đang bán",
-  featured: true,
-  category: "Điện thoại",
-  brand: "Samsung",
-  images: [
-    "/placeholder.svg?height=500&width=500",
-    "/placeholder.svg?height=500&width=500",
-    "/placeholder.svg?height=500&width=500",
-  ],
-  attributes: [
-    { name: "Màu sắc", value: "Đen" },
-    { name: "Bộ nhớ", value: "128GB" },
-    { name: "RAM", value: "8GB" },
-    { name: "Màn hình", value: "6.1 inch" },
-    { name: "Pin", value: "3900 mAh" },
-  ],
-  variants: [
-    { id: "VAR-1001", name: "Đen / 128GB", price: 21990000, stock: 15 },
-    { id: "VAR-1002", name: "Đen / 256GB", price: 23990000, stock: 10 },
-    { id: "VAR-1003", name: "Trắng / 128GB", price: 21990000, stock: 12 },
-    { id: "VAR-1004", name: "Trắng / 256GB", price: 23990000, stock: 8 },
-  ],
-  createdAt: "01/01/2023",
-  updatedAt: "15/04/2023",
-  sales: 156,
-  rating: 4.5,
-  reviews: 32,
+// Define interfaces for API responses
+interface CategoryResponse {
+  id: number;
+  name?: string;
+  title?: string;
+}
+
+interface BrandResponse {
+  id: number;
+  name: string;
 }
 
 export function ProductDetail({ productId }: { productId: string }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [formData, setFormData] = useState({ ...productData })
-  const [activeTab, setActiveTab] = useState("details")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [product, setProduct] = useState<ProductDetailType | null>(null)
+  const [formData, setFormData] = useState<ProductDetailType | null>(null)
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([])
+  const [brands, setBrands] = useState<{id: number, name: string}[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
+  const [loadingBrands, setLoadingBrands] = useState(true)
+
+  useEffect(() => {
+    async function fetchProductDetail() {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const id = parseInt(productId, 10)
+        if (isNaN(id)) {
+          throw new Error("Invalid product ID")
+        }
+        const data = await getProductDetail(id)
+        setProduct(data)
+        setFormData(data)
+      } catch (err) {
+        console.error("Failed to fetch product details:", err)
+        setError(err instanceof Error ? err.message : "Failed to load product details")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProductDetail()
+  }, [productId])
+
+  useEffect(() => {
+    // Fetch categories and brands
+    const fetchCategoriesAndBrands = async () => {
+      try {
+        setLoadingCategories(true);
+        setLoadingBrands(true);
+        
+        const categoriesData = await getAdminCategories() as CategoryResponse[];
+        const brandsData = await getBrands() as BrandResponse[];
+        
+        setCategories(categoriesData.map(category => ({
+          id: category.id,
+          name: category.name || category.title || ""
+        })));
+        
+        setBrands(brandsData.map(brand => ({
+          id: brand.id,
+          name: brand.name
+        })));
+      } catch (error) {
+        console.error("Error fetching categories and brands:", error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải danh mục và thương hiệu. Vui lòng thử lại sau.",
+          variant: "destructive",
+        });
+        // Fallback to empty arrays
+        setCategories([]);
+        setBrands([]);
+      } finally {
+        setLoadingCategories(false);
+        setLoadingBrands(false);
+      }
+    };
+
+    fetchCategoriesAndBrands();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!formData) return
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => prev ? ({ ...prev, [name]: value }) : null)
   }
 
   const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!formData) return
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: Number.parseFloat(value) || 0 }))
+    setFormData((prev) => prev ? ({ ...prev, [name]: Number.parseFloat(value) || 0 }) : null)
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (!formData) return
+    setFormData((prev) => prev ? ({ ...prev, [name]: value }) : null)
   }
 
   const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }))
+    if (!formData) return
+    setFormData((prev) => prev ? ({ ...prev, [name]: checked }) : null)
   }
 
   const handleAttributeChange = (index: number, field: "name" | "value", value: string) => {
+    if (!formData) return
     const newAttributes = [...formData.attributes]
     newAttributes[index][field] = value
-    setFormData((prev) => ({ ...prev, attributes: newAttributes }))
+    setFormData((prev) => prev ? ({ ...prev, attributes: newAttributes }) : null)
   }
 
   const addAttribute = () => {
-    setFormData((prev) => ({
+    if (!formData) return
+    setFormData((prev) => prev ? ({
       ...prev,
       attributes: [...prev.attributes, { name: "", value: "" }],
-    }))
+    }) : null)
   }
 
   const removeAttribute = (index: number) => {
+    if (!formData) return
     const newAttributes = [...formData.attributes]
     newAttributes.splice(index, 1)
-    setFormData((prev) => ({ ...prev, attributes: newAttributes }))
+    setFormData((prev) => prev ? ({ ...prev, attributes: newAttributes }) : null)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!formData) return
     setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false)
-      setIsEditing(false)
+    try {
+      // Prepare the data for the API
+      const updateData = {
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description,
+        price: formData.price,
+        salePrice: formData.salePrice,
+        sku: formData.sku,
+        stock: formData.stock,
+        featured: formData.featured,
+        categoryId: typeof formData.categoryId === 'string' 
+          ? parseInt(formData.categoryId, 10) 
+          : formData.categoryId,
+        brandId: typeof formData.brandId === 'string' 
+          ? parseInt(formData.brandId, 10) 
+          : formData.brandId,
+        images: formData.images,
+        attributes: formData.attributes
+      }
+      
+      const updatedProduct = await updateProduct(formData.id, updateData)
+      setProduct(updatedProduct)
+      setFormData(updatedProduct)
       toast({
         title: "Thành công!",
         description: "Thông tin sản phẩm đã được cập nhật.",
         variant: "default",
       })
-    }, 1000)
+      setIsEditing(false)
+    } catch (err) {
+      console.error("Failed to update product:", err)
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật sản phẩm. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleDelete = () => {
-    // Simulate API call
-    setTimeout(() => {
-      router.push("/dashboard/products")
+  const handleDelete = async () => {
+    if (!product) return
+    setIsDeleting(true)
+    try {
+      await deleteProduct(product.id)
       toast({
         title: "Đã xóa sản phẩm",
         description: "Sản phẩm đã được xóa khỏi hệ thống.",
         variant: "destructive",
       })
-    }, 500)
+      router.push("/dashboard/products")
+    } catch (err) {
+      console.error("Failed to delete product:", err)
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa sản phẩm. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Đang bán":
+      case "In Stock":
         return "bg-green-500"
-      case "Hết hàng":
+      case "Out of Stock":
         return "bg-red-500"
-      case "Ngừng kinh doanh":
+      case "Discontinued":
         return "bg-gray-500"
       default:
         return "bg-blue-500"
@@ -155,6 +248,96 @@ export function ProductDetail({ productId }: { productId: string }) {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" disabled>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Skeleton className="h-10 w-64" />
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <Skeleton className="h-8 w-40" />
+              <Skeleton className="h-4 w-32" />
+            </CardHeader>
+            <CardContent className="flex flex-col items-center text-center">
+              <Skeleton className="w-full h-48 mb-4 rounded-md" />
+              <Skeleton className="h-6 w-48 mb-2" />
+              <Skeleton className="h-4 w-32 mb-4" />
+              <Skeleton className="h-6 w-24 rounded-full mb-4" />
+              <div className="w-full space-y-3">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <Skeleton className="h-8 w-40" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => router.push("/dashboard/products")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-3xl font-bold tracking-tight">Lỗi</h2>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center text-center p-6">
+              <h3 className="text-xl font-semibold text-destructive mb-2">Không thể tải thông tin sản phẩm</h3>
+              <p className="mb-4">{error}</p>
+              <Button onClick={() => router.push("/dashboard/products")}>
+                Quay lại danh sách sản phẩm
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!product || !formData) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => router.push("/dashboard/products")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-3xl font-bold tracking-tight">Không tìm thấy sản phẩm</h2>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center text-center p-6">
+              <h3 className="text-xl font-semibold mb-4">Sản phẩm không tồn tại hoặc đã bị xóa</h3>
+              <Button onClick={() => router.push("/dashboard/products")}>
+                Quay lại danh sách sản phẩm
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -203,8 +386,12 @@ export function ProductDetail({ productId }: { productId: string }) {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Hủy</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                      Xóa
+                    <AlertDialogAction 
+                      onClick={handleDelete} 
+                      className="bg-destructive text-destructive-foreground"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Đang xóa..." : "Xóa"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -242,11 +429,19 @@ export function ProductDetail({ productId }: { productId: string }) {
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Danh mục</span>
-                <span className="font-medium">{formData.category}</span>
+                <span className="font-medium">
+                  {formData?.categoryId && categories.length > 0
+                    ? categories.find(c => c.id === formData.categoryId)?.name || "Không xác định"
+                    : "Không xác định"}
+                </span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Thương hiệu</span>
-                <span className="font-medium">{formData.brand}</span>
+                <span className="font-medium">
+                  {formData?.brandId && brands.length > 0
+                    ? brands.find(b => b.id === formData.brandId)?.name || "Không xác định"
+                    : "Không xác định"}
+                </span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Tồn kho</span>
@@ -266,7 +461,7 @@ export function ProductDetail({ productId }: { productId: string }) {
             <CardDescription>Xem và chỉnh sửa thông tin chi tiết</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="details" className="w-full" onValueChange={setActiveTab}>
+            <Tabs defaultValue="details" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="details">Thông tin</TabsTrigger>
                 <TabsTrigger value="images">Hình ảnh</TabsTrigger>
@@ -346,9 +541,9 @@ export function ProductDetail({ productId }: { productId: string }) {
                           <SelectValue placeholder="Chọn trạng thái" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Đang bán">Đang bán</SelectItem>
-                          <SelectItem value="Hết hàng">Hết hàng</SelectItem>
-                          <SelectItem value="Ngừng kinh doanh">Ngừng kinh doanh</SelectItem>
+                          <SelectItem value="In Stock">In Stock</SelectItem>
+                          <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                          <SelectItem value="Discontinued">Discontinued</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
@@ -359,17 +554,25 @@ export function ProductDetail({ productId }: { productId: string }) {
                     <Label htmlFor="category">Danh mục</Label>
                     {isEditing ? (
                       <Select
-                        value={formData.category}
-                        onValueChange={(value) => handleSelectChange("category", value)}
+                        value={formData.categoryId.toString()}
+                        onValueChange={(value) => handleSelectChange("categoryId", value)}
+                        disabled={loadingCategories}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Chọn danh mục" />
+                          <SelectValue placeholder={loadingCategories ? "Đang tải..." : "Chọn danh mục"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Điện thoại">Điện thoại</SelectItem>
-                          <SelectItem value="Laptop">Laptop</SelectItem>
-                          <SelectItem value="Máy tính bảng">Máy tính bảng</SelectItem>
-                          <SelectItem value="Phụ kiện">Phụ kiện</SelectItem>
+                          {categories.length > 0 ? (
+                            categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-category" disabled>
+                              Không có danh mục nào
+                            </SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     ) : (
@@ -379,15 +582,26 @@ export function ProductDetail({ productId }: { productId: string }) {
                   <div className="space-y-2">
                     <Label htmlFor="brand">Thương hiệu</Label>
                     {isEditing ? (
-                      <Select value={formData.brand} onValueChange={(value) => handleSelectChange("brand", value)}>
+                      <Select 
+                        value={formData.brandId.toString()}
+                        onValueChange={(value) => handleSelectChange("brandId", value)}
+                        disabled={loadingBrands}
+                      >
                         <SelectTrigger>
-                          <SelectValue placeholder="Chọn thương hiệu" />
+                          <SelectValue placeholder={loadingBrands ? "Đang tải..." : "Chọn thương hiệu"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Samsung">Samsung</SelectItem>
-                          <SelectItem value="Apple">Apple</SelectItem>
-                          <SelectItem value="Xiaomi">Xiaomi</SelectItem>
-                          <SelectItem value="Sony">Sony</SelectItem>
+                          {brands.length > 0 ? (
+                            brands.map((brand) => (
+                              <SelectItem key={brand.id} value={brand.id.toString()}>
+                                {brand.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-brand" disabled>
+                              Không có thương hiệu nào
+                            </SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     ) : (
@@ -467,7 +681,12 @@ export function ProductDetail({ productId }: { productId: string }) {
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium">Biến thể sản phẩm</h3>
                     {isEditing && (
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => router.push(`/dashboard/products/${productId}/add-variant`)}
+                        aria-label="Thêm biến thể mới"
+                      >
                         <Plus className="mr-2 h-4 w-4" />
                         Thêm biến thể
                       </Button>
@@ -493,7 +712,12 @@ export function ProductDetail({ productId }: { productId: string }) {
                             <td className="px-4 py-2">{variant.stock}</td>
                             {isEditing && (
                               <td className="px-4 py-2 text-right">
-                                <Button variant="ghost" size="sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => router.push(`/dashboard/products/${productId}/edit-variant/${variant.id}`)}
+                                  aria-label="Chỉnh sửa biến thể này"
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="sm" className="text-destructive">

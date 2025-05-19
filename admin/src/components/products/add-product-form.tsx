@@ -1,40 +1,100 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { ArrowLeft, Plus, Save, Trash, Upload, X } from "lucide-react"
+import { X, Image as ImageIcon, Plus, ArrowLeft, Save, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
+import { 
+  createProduct, 
+  type CreateUpdateProductDto, 
+  type ProductAttribute 
+} from "@/lib/api/products"
+import { getAdminCategories } from "@/lib/api/categories"
+import { getBrands } from "@/lib/api/brands"
+
+// Define interfaces for API responses
+interface CategoryResponse {
+  id: number;
+  name?: string;
+  title?: string;
+}
+
+interface BrandResponse {
+  id: number;
+  name: string;
+}
+
+const initialFormData: CreateUpdateProductDto = {
+  name: "",
+  description: "",
+  price: 0,
+  salePrice: 0,
+  sku: "",
+  stock: 0,
+  featured: false,
+  categoryId: 0,
+  brandId: 0,
+  images: [],
+  attributes: []
+}
 
 export function AddProductForm() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    description: "",
-    price: 0,
-    salePrice: 0,
-    sku: "",
-    barcode: "",
-    stock: 0,
-    status: "Đang bán",
-    featured: false,
-    category: "",
-    brand: "",
-    attributes: [{ name: "", value: "" }],
-  })
+  const [formData, setFormData] = useState<CreateUpdateProductDto>(initialFormData)
+  const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [newImageUrl, setNewImageUrl] = useState("")
+  const [loadingCategories, setLoadingCategories] = useState(true)
+  const [loadingBrands, setLoadingBrands] = useState(true)
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([])
+  const [brands, setBrands] = useState<{id: number, name: string}[]>([])
+
+  useEffect(() => {
+    // Fetch categories and brands
+    const fetchCategoriesAndBrands = async () => {
+      try {
+        // Fetch categories and brands from the correct endpoints
+        setLoadingCategories(true);
+        setLoadingBrands(true);
+        
+        const categoriesData = await getAdminCategories() as CategoryResponse[];
+        const brandsData = await getBrands() as BrandResponse[];
+        
+        setCategories(categoriesData.map(category => ({
+          id: category.id,
+          name: category.name || category.title || ""
+        })));
+        
+        setBrands(brandsData.map(brand => ({
+          id: brand.id,
+          name: brand.name
+        })));
+      } catch (error) {
+        console.error("Error fetching categories and brands:", error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải danh mục và thương hiệu. Vui lòng thử lại sau.",
+          variant: "destructive",
+        });
+        // Fallback to empty arrays
+        setCategories([]);
+        setBrands([]);
+      } finally {
+        setLoadingCategories(false);
+        setLoadingBrands(false);
+      }
+    };
+
+    fetchCategoriesAndBrands();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -47,304 +107,390 @@ export function AddProductForm() {
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: name.includes("Id") ? parseInt(value, 10) : value }))
   }
 
   const handleSwitchChange = (name: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }))
   }
 
-  const handleAttributeChange = (index: number, field: "name" | "value", value: string) => {
-    const newAttributes = [...formData.attributes]
-    newAttributes[index][field] = value
+  const handleAttributeChange = (index: number, field: keyof ProductAttribute, value: string) => {
+    const newAttributes = [...(formData.attributes || [])]
+    newAttributes[index] = { ...newAttributes[index], [field]: value }
     setFormData((prev) => ({ ...prev, attributes: newAttributes }))
   }
 
   const addAttribute = () => {
     setFormData((prev) => ({
       ...prev,
-      attributes: [...prev.attributes, { name: "", value: "" }],
+      attributes: [...(prev.attributes || []), { name: "", value: "" }],
     }))
   }
 
   const removeAttribute = (index: number) => {
-    const newAttributes = [...formData.attributes]
+    const newAttributes = [...(formData.attributes || [])]
     newAttributes.splice(index, 1)
     setFormData((prev) => ({ ...prev, attributes: newAttributes }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const addImage = () => {
+    if (!newImageUrl.trim()) return
+    setImageUrls((prev) => [...prev, newImageUrl])
+    setFormData((prev) => ({ ...prev, images: [...(prev.images || []), newImageUrl] }))
+    setNewImageUrl("")
+  }
+
+  const removeImage = (index: number) => {
+    const newImages = [...imageUrls]
+    newImages.splice(index, 1)
+    setImageUrls(newImages)
+    setFormData((prev) => ({ ...prev, images: newImages }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
+    try {
     // Validate form
-    if (!formData.name || !formData.price || !formData.category || !formData.brand) {
+      if (!formData.name || !formData.description || formData.price <= 0 || !formData.sku || formData.categoryId <= 0 || formData.brandId <= 0) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin bắt buộc.",
+          title: "Thông tin không đầy đủ",
+          description: "Vui lòng điền đầy đủ thông tin sản phẩm",
         variant: "destructive",
       })
       setIsSubmitting(false)
       return
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
+      // Call API to create product
+      const result = await createProduct(formData)
+      
       toast({
-        title: "Thành công!",
-        description: "Sản phẩm đã được tạo thành công.",
+        title: "Tạo sản phẩm thành công",
+        description: "Sản phẩm \"" + result.name + "\" đã được tạo thành công.",
       })
-      router.push("/dashboard/products")
-    }, 1000)
+      
+      // Redirect to product detail page
+      router.push(`/dashboard/products/${result.id}`)
+    } catch (error) {
+      console.error("Error creating product:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể tạo sản phẩm. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-6">
+      <form onSubmit={handleSubmit}>
+        <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => router.push("/dashboard/products")}>
+            <Button type="button" variant="outline" size="icon" onClick={() => router.push("/dashboard/products")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <motion.h2
-            className="text-3xl font-bold tracking-tight"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Thêm sản phẩm mới
-          </motion.h2>
+            <h1 className="text-3xl font-bold tracking-tight">Thêm sản phẩm mới</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push("/dashboard/products")}>
-            <X className="mr-2 h-4 w-4" />
-            Hủy
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || loadingCategories || loadingBrands}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Đang lưu...
+              </>
+            ) : (
+              <>
             <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Đang lưu..." : "Lưu sản phẩm"}
+                Lưu sản phẩm
+              </>
+            )}
           </Button>
-        </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+        <div className="grid gap-6 md:grid-cols-6">
+          <div className="md:col-span-4 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Thông tin sản phẩm</CardTitle>
-            <CardDescription>Nhập thông tin chi tiết cho sản phẩm mới</CardDescription>
+                <CardTitle>Thông tin cơ bản</CardTitle>
+                <CardDescription>Thông tin cơ bản của sản phẩm</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="details">Thông tin cơ bản</TabsTrigger>
-                <TabsTrigger value="images">Hình ảnh</TabsTrigger>
-                <TabsTrigger value="attributes">Thuộc tính</TabsTrigger>
-              </TabsList>
-              <TabsContent value="details" className="space-y-4 pt-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">
-                      Tên sản phẩm <span className="text-destructive">*</span>
-                    </Label>
-                    <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Slug</Label>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <Label htmlFor="name">Tên sản phẩm</Label>
                     <Input
-                      id="slug"
-                      name="slug"
-                      value={formData.slug}
+                      id="name"
+                      name="name"
+                      value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="tu-dong-tao-tu-ten"
+                      placeholder="Nhập tên sản phẩm"
+                      required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="price">
-                      Giá gốc <span className="text-destructive">*</span>
-                    </Label>
+                  <div>
+                    <Label htmlFor="sku">Mã sản phẩm (SKU)</Label>
+                    <Input
+                      id="sku"
+                      name="sku"
+                      value={formData.sku}
+                      onChange={handleInputChange}
+                      placeholder="Ví dụ: SP-12345"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Mô tả sản phẩm</Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      placeholder="Mô tả chi tiết về sản phẩm"
+                      className="min-h-32"
+                      required
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Hình ảnh sản phẩm</CardTitle>
+                <CardDescription>Thêm hình ảnh sản phẩm</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      placeholder="Nhập URL hình ảnh"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                    />
+                    <Button type="button" onClick={addImage} variant="outline">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Thêm
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                    {imageUrls.map((url, index) => (
+                      <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`Product image ${index + 1}`} className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-6 w-6"
+                          onClick={() => removeImage(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {imageUrls.length === 0 && (
+                      <div className="col-span-full flex items-center justify-center border border-dashed rounded-md p-6">
+                        <div className="text-center">
+                          <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                          <p className="mt-2 text-sm text-muted-foreground">Chưa có hình ảnh nào</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Thuộc tính sản phẩm</CardTitle>
+                <CardDescription>Thêm các thuộc tính cho sản phẩm</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button type="button" variant="outline" onClick={addAttribute}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Thêm thuộc tính
+                </Button>
+
+                {formData.attributes && formData.attributes.length > 0 ? (
+                  <div className="space-y-4">
+                    {formData.attributes.map((attr, index) => (
+                      <div key={index} className="flex items-end gap-2">
+                        <div className="grid gap-2 flex-1">
+                          <Label htmlFor={`attribute-name-${index}`}>Tên thuộc tính</Label>
+                          <Input
+                            id={`attribute-name-${index}`}
+                            value={attr.name}
+                            onChange={(e) => handleAttributeChange(index, "name", e.target.value)}
+                            placeholder="Ví dụ: Màu sắc"
+                          />
+                        </div>
+                        <div className="grid gap-2 flex-1">
+                          <Label htmlFor={`attribute-value-${index}`}>Giá trị</Label>
+                          <Input
+                            id={`attribute-value-${index}`}
+                            value={attr.value}
+                            onChange={(e) => handleAttributeChange(index, "value", e.target.value)}
+                            placeholder="Ví dụ: Đen"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeAttribute(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Xóa thuộc tính</span>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Chưa có thuộc tính nào. Nhấn &quot;Thêm thuộc tính&quot; để bắt đầu.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Giá & Tồn kho</CardTitle>
+                <CardDescription>Thông tin về giá và tồn kho</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="price">Giá bán (VND)</Label>
                     <Input
                       id="price"
                       name="price"
                       type="number"
-                      value={formData.price || ""}
+                      value={formData.price}
                       onChange={handleNumberInputChange}
+                      min="0"
+                      step="1000"
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="salePrice">Giá khuyến mãi</Label>
+                  <div>
+                    <Label htmlFor="salePrice">Giá khuyến mãi (VND)</Label>
                     <Input
                       id="salePrice"
                       name="salePrice"
                       type="number"
                       value={formData.salePrice || ""}
                       onChange={handleNumberInputChange}
+                      min="0"
+                      step="1000"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sku">Mã SKU</Label>
-                    <Input id="sku" name="sku" value={formData.sku} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="barcode">Mã vạch</Label>
-                    <Input id="barcode" name="barcode" value={formData.barcode} onChange={handleInputChange} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="stock">
-                      Tồn kho <span className="text-destructive">*</span>
-                    </Label>
+                  <div>
+                    <Label htmlFor="stock">Số lượng tồn kho</Label>
                     <Input
                       id="stock"
                       name="stock"
                       type="number"
-                      value={formData.stock || ""}
+                      value={formData.stock}
                       onChange={handleNumberInputChange}
+                      min="0"
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Trạng thái</Label>
-                    <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Đang bán">Đang bán</SelectItem>
-                        <SelectItem value="Hết hàng">Hết hàng</SelectItem>
-                        <SelectItem value="Ngừng kinh doanh">Ngừng kinh doanh</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">
-                      Danh mục <span className="text-destructive">*</span>
-                    </Label>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Phân loại</CardTitle>
+                <CardDescription>Danh mục và thương hiệu sản phẩm</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="category">Danh mục</Label>
                     <Select
-                      value={formData.category}
-                      onValueChange={(value) => handleSelectChange("category", value)}
+                      value={formData.categoryId.toString()}
+                      onValueChange={(value) => handleSelectChange("categoryId", value)}
                       required
+                      disabled={loadingCategories}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn danh mục" />
+                        <SelectValue placeholder={loadingCategories ? "Đang tải..." : "Chọn danh mục"} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Điện thoại">Điện thoại</SelectItem>
-                        <SelectItem value="Laptop">Laptop</SelectItem>
-                        <SelectItem value="Máy tính bảng">Máy tính bảng</SelectItem>
-                        <SelectItem value="Phụ kiện">Phụ kiện</SelectItem>
+                        {categories.length > 0 ? (
+                          categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-category" disabled>
+                            Không có danh mục nào
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="brand">
-                      Thương hiệu <span className="text-destructive">*</span>
-                    </Label>
+                  <div>
+                    <Label htmlFor="brand">Thương hiệu</Label>
                     <Select
-                      value={formData.brand}
-                      onValueChange={(value) => handleSelectChange("brand", value)}
+                      value={formData.brandId.toString()}
+                      onValueChange={(value) => handleSelectChange("brandId", value)}
                       required
+                      disabled={loadingBrands}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn thương hiệu" />
+                        <SelectValue placeholder={loadingBrands ? "Đang tải..." : "Chọn thương hiệu"} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Samsung">Samsung</SelectItem>
-                        <SelectItem value="Apple">Apple</SelectItem>
-                        <SelectItem value="Xiaomi">Xiaomi</SelectItem>
-                        <SelectItem value="Sony">Sony</SelectItem>
+                        {brands.length > 0 ? (
+                          brands.map((brand) => (
+                            <SelectItem key={brand.id} value={brand.id.toString()}>
+                              {brand.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-brand" disabled>
+                            Không có thương hiệu nào
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Tùy chọn thêm</CardTitle>
+                <CardDescription>Các tùy chọn bổ sung</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="featured">Sản phẩm nổi bật</Label>
+                  <Label htmlFor="featured" className="cursor-pointer">Sản phẩm nổi bật</Label>
                       <Switch
                         id="featured"
                         checked={formData.featured}
                         onCheckedChange={(checked) => handleSwitchChange("featured", checked)}
                       />
                     </div>
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="description">Mô tả</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      rows={5}
-                    />
+              </CardContent>
+            </Card>
                   </div>
                 </div>
-              </TabsContent>
-              <TabsContent value="images" className="pt-4">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Hình ảnh sản phẩm</h3>
-                    <Button variant="outline" size="sm">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Tải lên
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="border border-dashed rounded-md aspect-square flex items-center justify-center">
-                      <Button variant="ghost" className="flex flex-col h-full w-full">
-                        <Plus className="h-6 w-6 mb-2" />
-                        <span>Thêm hình ảnh</span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              <TabsContent value="attributes" className="pt-4">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Thuộc tính sản phẩm</h3>
-                    <Button variant="outline" size="sm" onClick={addAttribute}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Thêm thuộc tính
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {formData.attributes.map((attr, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <div className="flex-1">
-                          <Input
-                            placeholder="Tên thuộc tính"
-                            value={attr.name}
-                            onChange={(e) => handleAttributeChange(index, "name", e.target.value)}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <Input
-                            placeholder="Giá trị"
-                            value={attr.value}
-                            onChange={(e) => handleAttributeChange(index, "value", e.target.value)}
-                          />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => removeAttribute(index)}
-                          disabled={formData.attributes.length <= 1}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "Đang lưu..." : "Lưu sản phẩm"}
-            </Button>
-          </CardFooter>
-        </Card>
       </form>
     </div>
   )

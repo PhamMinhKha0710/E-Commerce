@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Save, ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, ImageIcon, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,12 @@ interface ParentCategory {
   name: string;
 }
 
+interface ChildCategory {
+  name: string;
+  slug: string;
+  displayOrder: number;
+}
+
 interface FormData {
   name: string;
   slug: string;
@@ -30,6 +36,7 @@ interface FormData {
   metaTitle: string;
   metaDescription: string;
   metaKeywords: string;
+  childCategories: ChildCategory[];
 }
 
 interface AddCategoryFormProps {
@@ -55,6 +62,7 @@ export function AddCategoryForm({ initialParentCategories }: AddCategoryFormProp
     metaTitle: "",
     metaDescription: "",
     metaKeywords: "",
+    childCategories: [],
   });
 
   const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
@@ -86,6 +94,62 @@ export function AddCategoryForm({ initialParentCategories }: AddCategoryFormProp
     }
   };
 
+  const handleAddChildCategory = () => {
+    setFormData({
+      ...formData,
+      childCategories: [
+        ...formData.childCategories,
+        {
+          name: "",
+          slug: "",
+          displayOrder: formData.childCategories.length,
+        },
+      ],
+    });
+  };
+
+  const handleRemoveChildCategory = (index: number) => {
+    const updatedChildren = [...formData.childCategories];
+    updatedChildren.splice(index, 1);
+    
+    // Update display order for remaining children
+    const reorderedChildren = updatedChildren.map((child, idx) => ({
+      ...child,
+      displayOrder: idx,
+    }));
+    
+    setFormData({
+      ...formData,
+      childCategories: reorderedChildren,
+    });
+  };
+
+  const handleChildCategoryChange = (index: number, field: keyof ChildCategory, value: string | number) => {
+    const updatedChildren = [...formData.childCategories];
+    updatedChildren[index] = {
+      ...updatedChildren[index],
+      [field]: value,
+    };
+
+    // Auto-generate slug if name changes
+    if (field === "name" && typeof value === "string") {
+      const slug = value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[đĐ]/g, "d")
+        .replace(/[^a-z0-9\s]/g, "")
+        .replace(/\s+/g, "-");
+
+      updatedChildren[index].slug = slug;
+    }
+
+    setFormData({
+      ...formData,
+      childCategories: updatedChildren,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -98,8 +162,22 @@ export function AddCategoryForm({ initialParentCategories }: AddCategoryFormProp
       return;
     }
 
+    // Validate child categories if any exist
+    const invalidChildCategory = formData.childCategories.find(child => !child.name);
+    if (invalidChildCategory) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập tên cho tất cả các danh mục con",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      // Log to verify data being sent
+      console.log("Submitting category with children:", formData);
+      
       await new Promise((resolve) => setTimeout(resolve, 1000));
       toast({
         title: "Thành công",
@@ -315,6 +393,74 @@ export function AddCategoryForm({ initialParentCategories }: AddCategoryFormProp
                     {formData.metaDescription || formData.description || "Mô tả danh mục sản phẩm sẽ hiển thị ở đây"}
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Danh mục con</CardTitle>
+              <CardDescription>Thêm các danh mục con cho danh mục này</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {formData.childCategories.map((child, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md relative">
+                    <div className="space-y-2">
+                      <Label htmlFor={`child-name-${index}`}>
+                        Tên danh mục con <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`child-name-${index}`}
+                        value={child.name}
+                        onChange={(e) => handleChildCategoryChange(index, "name", e.target.value)}
+                        placeholder="Nhập tên danh mục con"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`child-slug-${index}`}>
+                        Slug <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`child-slug-${index}`}
+                        value={child.slug}
+                        onChange={(e) => handleChildCategoryChange(index, "slug", e.target.value)}
+                        placeholder="nhap-ten-danh-muc-con"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`child-order-${index}`}>Thứ tự hiển thị</Label>
+                      <Input
+                        id={`child-order-${index}`}
+                        type="number"
+                        value={child.displayOrder}
+                        onChange={(e) => handleChildCategoryChange(index, "displayOrder", Number.parseInt(e.target.value))}
+                        placeholder="0"
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute right-2 top-2" 
+                      onClick={() => handleRemoveChildCategory(index)}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                ))}
+
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleAddChildCategory} 
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm danh mục con
+                </Button>
               </div>
             </CardContent>
           </Card>

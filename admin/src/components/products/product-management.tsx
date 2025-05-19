@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { ChevronDown, Download, Filter, MoreHorizontal, PackagePlus, Search, Trash } from "lucide-react"
 import Link from "next/link"
@@ -20,102 +20,49 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
-const products = [
-  {
-    id: "PRD-1001",
-    name: "Điện thoại Samsung Galaxy S23",
-    category: "Điện thoại",
-    brand: "Samsung",
-    price: "₫23,990,000",
-    stock: 45,
-    status: "Đang bán", //if stock > 0 then status = "Đang bán", else status = "Hết hàng"
-    image: "/placeholder.svg?height=50&width=50",
-  },
-  {
-    id: "PRD-1002",
-    name: "Laptop Dell XPS 13",
-    category: "Laptop",
-    brand: "Dell",
-    price: "₫32,990,000",
-    stock: 12,
-    status: "Đang bán",
-    image: "/placeholder.svg?height=50&width=50",
-  },
-  {
-    id: "PRD-1003",
-    name: "Tai nghe Apple AirPods Pro",
-    category: "Phụ kiện",
-    brand: "Apple",
-    price: "₫5,990,000",
-    stock: 78,
-    status: "Đang bán",
-    image: "/placeholder.svg?height=50&width=50",
-  },
-  {
-    id: "PRD-1004",
-    name: "iPad Pro 12.9 inch",
-    category: "Máy tính bảng",
-    brand: "Apple",
-    price: "₫28,990,000",
-    stock: 23,
-    status: "Đang bán",
-    image: "/placeholder.svg?height=50&width=50",
-  },
-  {
-    id: "PRD-1005",
-    name: "Đồng hồ thông minh Apple Watch Series 8",
-    category: "Đồng hồ thông minh",
-    brand: "Apple",
-    price: "₫10,990,000",
-    stock: 34,
-    status: "Đang bán",
-    image: "/placeholder.svg?height=50&width=50",
-  },
-  {
-    id: "PRD-1006",
-    name: "Máy ảnh Sony Alpha A7 IV",
-    category: "Máy ảnh",
-    brand: "Sony",
-    price: "₫54,990,000",
-    stock: 8,
-    status: "Đang bán",
-    image: "/placeholder.svg?height=50&width=50",
-  },
-  {
-    id: "PRD-1007",
-    name: "Loa Bluetooth JBL Charge 5",
-    category: "Âm thanh",
-    brand: "JBL",
-    price: "₫3,490,000",
-    stock: 0,
-    status: "Hết hàng",
-    image: "/placeholder.svg?height=50&width=50",
-  },
-  {
-    id: "PRD-1008",
-    name: "Màn hình LG UltraGear 27GP950",
-    category: "Màn hình",
-    brand: "LG",
-    price: "₫18,990,000",
-    stock: 5,
-    status: "Đang bán",
-    image: "/placeholder.svg?height=50&width=50",
-  },
-]
+import { getProducts, type ProductListResponse } from "@/lib/api/products"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function ProductManagement() {
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([])
+  const [productData, setProductData] = useState<ProductListResponse>({
+    products: [],
+    categories: [],
+    brands: [],
+    totalCount: 0,
+    pageNumber: 1,
+    pageSize: 10,
+    totalPages: 0
+  })
+  const [pageNumber, setPageNumber] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  useEffect(() => {
+    async function fetchProducts() {
+      setLoading(true)
+      try {
+        const data = await getProducts(pageNumber, pageSize)
+        setProductData(data)
+      } catch (error) {
+        console.error("Failed to fetch products:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [pageNumber, pageSize])
 
   const toggleSelectAll = () => {
-    if (selectedProducts.length === products.length) {
+    if (selectedProducts.length === productData.products.length) {
       setSelectedProducts([])
     } else {
-      setSelectedProducts(products.map((product) => product.id))
+      setSelectedProducts(productData.products.map((product) => product.id))
     }
   }
 
-  const toggleSelectProduct = (productId: string) => {
+  const toggleSelectProduct = (productId: number) => {
     if (selectedProducts.includes(productId)) {
       setSelectedProducts(selectedProducts.filter((id) => id !== productId))
     } else {
@@ -125,24 +72,39 @@ export function ProductManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Đang bán":
+      case "In Stock":
         return "bg-green-500"
-      case "Hết hàng":
+      case "Out of Stock":
         return "bg-red-500"
-      case "Ngừng kinh doanh":
+      case "Discontinued":
         return "bg-gray-500"
       default:
         return "bg-blue-500"
     }
   }
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount)
+  }
+
+  const handlePageChange = (page: number) => {
+    setPageNumber(page)
+  }
+
+  const handlePageSizeChange = (size: string) => {
+    setPageSize(parseInt(size))
+    setPageNumber(1) // Reset to first page when changing page size
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Quản lý sản phẩm</h2>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2" asChild>
+          <Link href="/dashboard/products/add">
           <PackagePlus className="h-4 w-4" />
           Thêm sản phẩm
+          </Link>
         </Button>
       </div>
       <Card>
@@ -181,7 +143,7 @@ export function ProductManagement() {
                   <Download className="h-4 w-4" />
                   Xuất
                 </Button>
-                <Select defaultValue="10">
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
                   <SelectTrigger className="w-[80px]">
                     <SelectValue placeholder="10" />
                   </SelectTrigger>
@@ -209,7 +171,7 @@ export function ProductManagement() {
                   <TableRow>
                     <TableHead className="w-[40px]">
                       <Checkbox
-                        checked={selectedProducts.length === products.length}
+                        checked={selectedProducts.length === productData.products.length && productData.products.length > 0}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
@@ -223,7 +185,38 @@ export function ProductManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product) => (
+                  {loading ? (
+                    // Skeleton loader khi đang tải dữ liệu
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <TableRow key={index}>
+                        <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="h-10 w-10 rounded-md" />
+                            <div className="space-y-1">
+                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-full ml-auto" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : productData.products.length === 0 ? (
+                    // Hiển thị khi không có sản phẩm
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                        Không có sản phẩm nào. Hãy thêm sản phẩm mới.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    // Hiển thị danh sách sản phẩm
+                    productData.products.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell>
                         <Checkbox
@@ -234,7 +227,7 @@ export function ProductManagement() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Image
-                            src={product.image || "/placeholder.svg"}
+                              src={product.imageUrl || "/placeholder.svg"}
                             alt={product.name}
                             width={50}
                             height={50}
@@ -242,13 +235,13 @@ export function ProductManagement() {
                           />
                           <div className="flex flex-col">
                             <span className="text-sm font-medium">{product.name}</span>
-                            <span className="text-xs text-muted-foreground">{product.id}</span>
+                              <span className="text-xs text-muted-foreground">{product.sku}</span>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{product.category}</TableCell>
-                      <TableCell>{product.brand}</TableCell>
-                      <TableCell>{product.price}</TableCell>
+                        <TableCell>{product.categoryName}</TableCell>
+                        <TableCell>{product.brandName}</TableCell>
+                        <TableCell>{formatCurrency(product.price)}</TableCell>
                       <TableCell>{product.stock}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`${getStatusColor(product.status)} text-white border-none`}>
@@ -267,37 +260,61 @@ export function ProductManagement() {
                             <DropdownMenuItem asChild>
                               <Link href={`/dashboard/products/${product.id}`}>Xem chi tiết</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Chỉnh sửa</DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/products/${product.id}?edit=true`}>Chỉnh sửa</Link>
+                              </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-red-600">Xóa sản phẩm</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
+            {productData.totalCount > 0 && (
             <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">Hiển thị 1-8 của 256 sản phẩm</div>
+                <div className="text-sm text-muted-foreground">
+                  Hiển thị {(pageNumber - 1) * pageSize + 1}-
+                  {Math.min(pageNumber * pageSize, productData.totalCount)} của {productData.totalCount} sản phẩm
+                </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={pageNumber <= 1}
+                    onClick={() => handlePageChange(pageNumber - 1)}
+                  >
                   Trước
                 </Button>
-                <Button variant="outline" size="sm" className="bg-primary text-primary-foreground">
-                  1
+                  {Array.from({ length: Math.min(5, productData.totalPages) }, (_, i) => {
+                    const page = i + 1;
+                    return (
+                      <Button 
+                        key={page}
+                        variant="outline" 
+                        size="sm"
+                        className={pageNumber === page ? "bg-primary text-primary-foreground" : ""}
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
                 </Button>
-                <Button variant="outline" size="sm">
-                  2
-                </Button>
-                <Button variant="outline" size="sm">
-                  3
-                </Button>
-                <Button variant="outline" size="sm">
+                    );
+                  })}
+                  {productData.totalPages > 5 && <span>...</span>}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={pageNumber >= productData.totalPages}
+                    onClick={() => handlePageChange(pageNumber + 1)}
+                  >
                   Sau
                 </Button>
               </div>
             </div>
+            )}
           </div>
         </CardContent>
       </Card>
