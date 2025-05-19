@@ -24,6 +24,7 @@ interface AddressType {
 interface CartItemType {
   id: number;
   seller: string;
+  categoryId: number;
   name: string;
   price: number;
   quantity: number;
@@ -137,9 +138,10 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
       .map(index => ({
         productId: cartItems[index].id,
         productName: cartItems[index].name,
+        categoryId: cartItems[index].categoryId,
         imageUrl: cartItems[index].image,
         price: cartItems[index].price,
-        quantity: cartItems[index].quantity,
+        quantity: cartItems[index]. quantity,
         currency: 'VND',
         hasVariations: cartItems[index].productItemId !== null,
         productItemId: cartItems[index].productItemId,

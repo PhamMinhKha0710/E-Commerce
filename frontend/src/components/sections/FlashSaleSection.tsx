@@ -114,6 +114,7 @@ const FlashSaleSection = () => {
         >
           <SwiperSlide>
             <FlashSaleProduct
+              categoryId={44}
               href="/products/1-tai-nghe-bluetooth-edifier-w820nb-plus"
               productName="Tai Nghe Bluetooth Headphone Edifier W820NB PLUS thoáng khí thoải mái"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp20.jpg?v=1696241238643"
@@ -129,6 +130,7 @@ const FlashSaleSection = () => {
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
+              categoryId={26}
               href="/products/2-dau-goi-clear-men-perfume"
               productName="Dầu Gội Đầu CLEAR MEN Perfume Đánh Bay Gàu Ngứa Và Lưu Hương Nước Hoa Đẳng Cấp"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/1-1b8641c8-6064-43a5-8e07-dc697eb04a6e.jpg?v=1696233327897"
@@ -144,6 +146,7 @@ const FlashSaleSection = () => {
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
+              categoryId={44}
               href="/products/3-chuot-khong-day-logitech-b170"
               productName="Chuột không dây Logitech B170 - USB, nhỏ gọn, thuận cả 2 tay, phù hợp PC/Laptop"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp21.jpg?v=1696240462333"
@@ -159,6 +162,7 @@ const FlashSaleSection = () => {
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
+              categoryId={16}
               href="/products/4-banh-quy-dinh-duong-afc"
               productName="Bánh quy dinh dưỡng AFC vị lúa mì, combo 2 hộp x 172g"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp1.jpg?v=1696238355997"
@@ -174,6 +178,7 @@ const FlashSaleSection = () => {
           </SwiperSlide>
           <SwiperSlide>
             <FlashSaleProduct
+              categoryId={31}
               href="/products/5-ao-chong-nang-nu-uv-sunstop"
               productName="Áo chống nắng NỮ dòng UV SunStop Master mũ liền mỏng nhẹ thoáng mát"
               imageUrl="http://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp4.jpg?v=1696237642290"

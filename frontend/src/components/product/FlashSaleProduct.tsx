@@ -8,6 +8,7 @@ import { useAddToCart } from "@/hooks/useAddToCart";
 interface FlashSaleProductProps {
   href: string;
   productName: string;
+  categoryId: number;
   imageUrl: string;
   discount: string;
   price: string;
@@ -22,6 +23,7 @@ interface FlashSaleProductProps {
 const FlashSaleProduct = ({
   href,
   productName,
+  categoryId,
   imageUrl,
   discount,
   price,
@@ -42,6 +44,7 @@ const FlashSaleProduct = ({
 
       addToCart({
         productId: parseInt(productId),
+        cartegoryId: categoryId,
         productName,
         imageUrl,
         price: numericPrice,

@@ -9,4 +9,5 @@ public class PromotionResponseClient
     public int RemainingQuantity { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public List<int> ListCartIdPromotion { get; set; }
 }

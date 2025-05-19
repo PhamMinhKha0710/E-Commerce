@@ -7,7 +7,7 @@ import Image from "next/image";
 export interface CartItem {
   productId: number;
   productName: string;
-  cartegoryId: string | null;
+  cartegoryId: number;
   imageUrl: string;
   price: number;
   quantity: number;
@@ -24,7 +24,7 @@ export const useAddToCart = () => {
       await addToCart({
         productId: product.productId,
         productName: product.productName,
-        categoryId: product.cartegoryId || null,
+        categoryId: product.cartegoryId,
         imageUrl: product.imageUrl,
         price: product.price,
         quantity: 1,

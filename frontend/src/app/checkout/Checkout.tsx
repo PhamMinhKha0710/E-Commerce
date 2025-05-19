@@ -15,6 +15,7 @@ interface Coupon {
   code: string;
   discountPercent: number;
   limitDiscountPrice: number;
+  listCartIdPromotion: number[];
   image?: string;
 }
 
@@ -47,6 +48,7 @@ interface Bank {
 interface CartItem {
   productId: number;
   productName: string;
+  categoryId: number;
   imageUrl: string;
   price: number;
   quantity: number;
@@ -70,6 +72,7 @@ interface PromotionResponseDto {
   remainingQuantity: number;
   startDate: string;
   endDate: string;
+  listCartIdPromotion: number[];
 }
 
 interface ShippingMethod {
@@ -79,11 +82,11 @@ interface ShippingMethod {
 }
 
 const paymentMethods: PaymentMethod[] = [
-  { value: 'cod', label: 'Thanh toán tiền mặt', icon: 'https://salt.tikicdn.com/ts/upload/92/b2/78/1b3b9cda5208b323eb9ec56b84c7eb87.png' },
-  { value: 'viettelpay', label: 'Viettel Money', icon: 'https://salt.tikicdn.com/ts/upload/5f/f9/75/d7ac8660aae903818dd7da8e4772e145.png' },
-  { value: 'momo', label: 'Ví Momo', icon: 'https://salt.tikicdn.com/ts/upload/ce/f6/e8/ea880ef285856f744e3ffb5d282d4b2d.jpg' },
-  { value: 'zalopay', label: 'Ví ZaloPay', icon: 'https://salt.tikicdn.com/ts/upload/2f/43/da/dd7ded6d3659036f15f95fe81ac76d93.png' },
-  { value: 'vnpay', label: 'VNPAY', subLabel: 'Quét Mã QR từ ứng dụng ngân hàng', icon: 'https://salt.tikicdn.com/ts/upload/77/6a/df/a35cb9c62b9215dbc6d334a77cda4327.png' },
+  { value: 'COD', label: 'Thanh toán tiền mặt', subLabel: 'Thanh toán sau khi nhận hàng', icon: 'https://salt.tikicdn.com/ts/upload/92/b2/78/1b3b9cda5208b323eb9ec56b84c7eb87.png' },
+  { value: 'ViettelMoney', label: 'Viettel Money', subLabel: 'Chưa hỗ trợ', icon: 'https://salt.tikicdn.com/ts/upload/5f/f9/75/d7ac8660aae903818dd7da8e4772e145.png' },
+  { value: 'MoMo', label: 'Ví Momo', subLabel: 'Chưa hỗ trợ', icon: 'https://salt.tikicdn.com/ts/upload/ce/f6/e8/ea880ef285856f744e3ffb5d282d4b2d.jpg' },
+  { value: 'ZaloPay', label: 'Ví ZaloPay', subLabel: 'Chưa hỗ trợ', icon: 'https://salt.tikicdn.com/ts/upload/2f/43/da/dd7ded6d3659036f15f95fe81ac76d93.png' },
+  { value: 'VnPay', label: 'VNPAY', subLabel: 'Quét Mã QR từ ứng dụng ngân hàng', icon: 'https://salt.tikicdn.com/ts/upload/77/6a/df/a35cb9c62b9215dbc6d334a77cda4327.png' },
   { value: 'cybersource', label: 'Thẻ tín dụng/ Ghi nợ', icon: 'https://salt.tikicdn.com/ts/upload/7e/48/50/7fb406156d0827b736cf0fe66c90ed78.png', checked: true },
 ];
 
@@ -260,6 +263,7 @@ export default function Checkout() {
           .map((index) => ({
             productId: cartItems[index].productId,
             productName: cartItems[index].productName,
+            categoryId: cartItems[index].categoryId,
             imageUrl: cartItems[index].imageUrl,
             price: cartItems[index].price,
             quantity: cartItems[index].quantity,
@@ -367,13 +371,11 @@ export default function Checkout() {
     }
   };
 
-  // Toggle coupon input visibility
   const handleToggleCouponInput = () => {
     setIsCouponInputVisible(!isCouponInputVisible);
     setCouponError(null);
   };
 
-  // Check coupon validity
   const checkCoupon = async (code: string): Promise<PromotionResponseDto | null> => {
     try {
       const response = await fetch(`http://localhost:5130/api/Promotion/${code}`, {
@@ -413,6 +415,15 @@ export default function Checkout() {
           return null;
         }
 
+        const applicableItems = checkoutItems.filter((item) =>
+          data.listCartIdPromotion.includes(item.categoryId)
+        );
+        if (applicableItems.length === 0) {
+          setCouponError('Mã khuyến mãi không áp dụng cho sản phẩm nào trong đơn hàng.');
+          toast.error('Mã khuyến mãi không áp dụng cho sản phẩm nào trong đơn hàng.');
+          return null;
+        }
+
         return data;
       } else if (response.status === 404) {
         setCouponError('Mã khuyến mãi không hợp lệ.');
@@ -428,7 +439,6 @@ export default function Checkout() {
     }
   };
 
-  // Apply coupon
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       setCouponError('Vui lòng nhập mã khuyến mãi.');
@@ -449,6 +459,7 @@ export default function Checkout() {
         code: couponCode.trim(),
         discountPercent: couponData.discountRate,
         limitDiscountPrice: couponData.limitDiscountPrice,
+        listCartIdPromotion: couponData.listCartIdPromotion,
         image: 'https://salt.tikicdn.com/cache/128x128/ts/upload/11/b7/94/0ea7a1742603abb1f645e0147fe1dd17.jpg',
       };
 
@@ -464,83 +475,145 @@ export default function Checkout() {
     }
   };
 
-  // Remove coupon
   const handleRemoveCoupon = (code: string) => {
     setCoupons(coupons.filter((coupon) => coupon.code !== code));
     toast.info('Đã bỏ mã khuyến mãi.');
   };
 
-  // Handle place order
   const handlePlaceOrder = async () => {
-    if (checkoutItems.length === 0) {
-      toast.error('Không có sản phẩm để thanh toán!');
+  if (checkoutItems.length === 0) {
+    toast.error('Không có sản phẩm để thanh toán!');
+    return;
+  }
+
+  if (!address) {
+    toast.error('Vui lòng chọn địa chỉ giao hàng!');
+    router.push('/address');
+    return;
+  }
+
+  if (!selectedShippingMethod) {
+    toast.error('Vui lòng chọn phương thức giao hàng!');
+    return;
+  }
+
+  if (!shippingMethods.some((method) => method.shippingId === selectedShippingMethod)) {
+    toast.error('Phương thức giao hàng không hợp lệ!');
+    return;
+  }
+
+  const validPaymentMethods = paymentMethods.map((method) => method.value);
+  if (!validPaymentMethods.includes(selectedPaymentMethod)) {
+    toast.error('Phương thức thanh toán không hợp lệ!');
+    return;
+  }
+
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim() === '') {
+      toast.error('Vui lòng đăng nhập để thanh toán!');
+      router.push('/auth/login');
       return;
     }
 
-    if (!address) {
-      toast.error('Vui lòng chọn địa chỉ giao hàng!');
-      router.push('/address');
+    const selectedItems = JSON.parse(localStorage.getItem('selectedItems') || '[]') as number[];
+    const cartItems = JSON.parse(localStorage.getItem('cart') || '[]') as CartItem[];
+
+    const cartPayments = selectedItems
+      .filter((index) => index >= 0 && index < cartItems.length)
+      .map((index) => ({
+        productItemId: cartItems[index].productItemId,
+        quantity: cartItems[index].quantity,
+        price: cartItems[index].price,
+      }))
+      .filter(
+        (item) =>
+          item.productItemId != null &&
+          typeof item.quantity === 'number' &&
+          item.quantity > 0 &&
+          typeof item.price === 'number' &&
+          item.price >= 0
+      );
+
+    if (cartPayments.length === 0) {
+      toast.error('Không có sản phẩm hợp lệ để thanh toán!');
       return;
     }
 
-    if (!selectedShippingMethod) {
-      toast.error('Vui lòng chọn phương thức giao hàng!');
-      return;
-    }
-
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        toast.error('Vui lòng đăng nhập để thanh toán!');
-        router.push('/auth/login');
+    if (coupons.length > 0) {
+      const couponData = await checkCoupon(coupons[0].code);
+      if (!couponData) {
+        toast.error('Mã khuyến mãi không hợp lệ, vui lòng kiểm tra lại!');
+        setCoupons([]);
         return;
       }
+    }
 
-      const response = await fetch('http://localhost:5130/api/order/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          items: checkoutItems,
-          paymentMethod: selectedPaymentMethod,
-          bank: selectedBank,
-          addressId: address.id,
-          couponCode: coupons.length > 0 ? coupons[0].code : null,
-          shippingMethodId: selectedShippingMethod,
-        }),
-      });
+    const requestBody = {
+      shippingMethodId: selectedShippingMethod,
+      note: 'string',
+      paymentMethod: selectedPaymentMethod,
+      codePromotion: coupons.length > 0 ? coupons[0].code : '', // Gửi chuỗi rỗng
+      cartPayments,
+    };
+    console.log('Request body:', requestBody); // Log dữ liệu gửi đi
 
-      if (response.status === 401) {
-        toast.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
-        router.push('/auth/login');
-        return;
-      }
+    const response = await fetch('http://localhost:5130/api/Orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        Accept: '*/*',
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-      if (!response.ok) {
-        throw new Error(`Lỗi không xác định: ${response.status}`);
-      }
+    if (response.status === 401) {
+      toast.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+      router.push('/auth/login');
+      return;
+    }
 
-      const { orderId } = await response.json();
-      localStorage.removeItem('selectedItems');
-      localStorage.removeItem('selectedCartItems');
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error response from API:', errorData); // Log chi tiết lỗi
+      throw new Error(errorData.message || `Lỗi không xác định: ${response.status}`);
+    }
+
+    const { orderId, paymentUrl } = await response.json();
+
+    localStorage.removeItem('selectedItems');
+    localStorage.removeItem('selectedCartItems');
+
+    if (selectedPaymentMethod === 'VnPay' && paymentUrl) {
+      toast.success('Đặt hàng thành công! Chuyển hướng đến trang thanh toán...');
+      window.location.href = paymentUrl;
+    } else {
       toast.success('Đặt hàng thành công!');
       router.push(`/order/success?orderId=${orderId}`);
-    } catch {
-      toast.error('Không thể đặt hàng!');
     }
-  };
+  } catch (error) {
+    console.error('Place order error:', error);
+    toast.error(error instanceof Error ? error.message : 'Không thể đặt hàng!');
+  }
+};
 
   // Calculate totals
   const selectedMethod = shippingMethods.find((method) => method.shippingId === selectedShippingMethod);
-  const shippingFee = selectedMethod ? selectedMethod.fee * 1000 : 0; // Assuming API returns fee in thousands
+  const shippingFee = selectedMethod ? selectedMethod.fee * 1000 : 0;
   const totalPrice = checkoutItems.reduce((total, item) => total + item.price * item.quantity, 0);
   let discount = 0;
   if (coupons.length > 0) {
     const coupon = coupons[0];
-    const discountAmount = Math.min((totalPrice * coupon.discountPercent) / 100, coupon.limitDiscountPrice);
-    discount += discountAmount;
+    const applicableItems = checkoutItems.filter((item) =>
+      coupon.listCartIdPromotion.includes(item.categoryId)
+    );
+    const applicableTotal = applicableItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+    const discountAmount = (applicableTotal * coupon.discountPercent) / 100;
+    discount = Math.min(discountAmount, coupon.limitDiscountPrice);
   }
   const finalTotal = totalPrice + shippingFee - discount;
 
@@ -551,9 +624,7 @@ export default function Checkout() {
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        {/* Left Section */}
         <div className={styles.left1}>
-          {/* Shipping Method Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Chọn hình thức giao hàng</h3>
             <div className={styles.shippingMethod}>
@@ -584,7 +655,7 @@ export default function Checkout() {
             </div>
             {selectedMethod && (
               <ShippingPackage
-                deliveryDate="Giao thứ 7, trước 19h, 19/04" // Consider fetching from API
+                deliveryDate="Giao thứ 7, trước 19h, 19/04"
                 method={selectedMethod.name}
                 originalFee={`${(selectedMethod.fee * 1000).toLocaleString()} ₫`}
                 currentFee={selectedMethod.fee === 0 ? 'MIỄN PHÍ' : `${(selectedMethod.fee * 1000).toLocaleString()} ₫`}
@@ -599,7 +670,6 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* Payment Method Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Chọn hình thức thanh toán</h3>
             <div className={styles.paymentMethods}>
@@ -675,11 +745,7 @@ export default function Checkout() {
                         />
                       )}
                       <svg
-                        style={{
-                          position: 'absolute',
-                          top: '30px',
-                          right: '10px',
-                        }}
+                        style={{ position: 'absolute', top: '30px', right: '10px' }}
                         className={styles.infoIcon}
                         width="16"
                         height="16"
@@ -771,7 +837,6 @@ export default function Checkout() {
           </div>
         </div>
 
-        {/* Right Section */}
         <div className={styles.right1}>
           <div style={{ position: 'sticky', top: '0px' }}>
             <div className={styles.deliveryInfo}>
@@ -863,7 +928,7 @@ export default function Checkout() {
                           <div className={styles.couponActions}>
                             <button className={styles.couponInfoButton}>
                               <Image
-                                src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%3E%20%20%20%20%3Cdefs%3E%20%20%20%20%20%20%20%20%3Cpath%20id%3D%224gg7gqe5ua%22%20d%3D%22M8.333%200C3.738%200%200%203.738%200%208.333c0%204.595%203.738%208.334%208.333%208.334%204.595%200%208.334-3.739%208.334-8.334S12.928%200%208.333%200zm0%201.026c4.03%200%207.308%203.278%207.308%207.307%200%204.03-3.278%207.308-7.308%207.308-4.03%200-7.307-3.278-7.307-7.308%200-4.03%203.278-7.307%207.307-7.307zm.096%206.241c-.283%200-.512.23-.512.513v4.359c0%20.283.23.513.512.513.284%200%20.513-.23.513-.513V7.78c0-.283-.23-.513-.513-.513zm.037-3.114c-.474%200-.858.384-.858.858%200%20.473.384.857.858.857s.858-.384.858-.857c0-.474-.384-.858-.858-.858z%22%2F%3E%20%20%20%20%3C%2Fdefs%3E%20%20%20%20%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%20transform%3D%22translate%28-2808%20-4528%29%20translate%282708%2080%29%20translate%2852%204304%29%20translate%2848%20144%29%20translate%281.667%201.667%29%22%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cuse%20fill%3D%22%23017FFF%22%20xlink%3Ahref%3D%22%234gg7gqe5ua%22%2F%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%3C%2Fg%3E%3C%2Fsvg%3E"
+                                src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%3E%20%20%20%20%3Cdefs%3E%20%20%20%20%20%20%20%20%3Cpath%20id%3D%224gg7gqe5ua%22%20d%3D%22M8.333%200C3.738%200%200%203.738%200%208.333c0%204.595%203.738%208.334%208.333%208.334%204.595%200%208.334-3.739%208.334-8.334S12.928%200%208.333%200zm0%201.026c4.03%200%207.308%203.278%207.308%207.307%200%204.03-3.278%207.308-7.308%207.308-4.03%200-7.307-3.278-7.307-7.308%200-4.03%203.278-7.307%207.307-7.307zm.096%206.241c-.283%200-.512.23-.512.513v4.359c0%20.283.23.513.512.513.284%200%20.513-.23.513-.513V7.78c0-.283-.23-.513-.513-.513zm.037-3.114c-.474%200-.858.384-.858.858%200%20.473.384.857.858.857s.858-.384.858-.857c0-.474-.384-.858-.858-.858z%22%2F%3E%20%20%20%20%3C%2Fdefs%3E%20%20%20%20%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cg%20transform%3D%22translate%28-2808%20-4528%29%20translate%282708%2080%29%20translate%2852%204304%29%20translate% INR(48%20144%29%20translate%281.667%201.667%29%22%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cuse%20fill%3D%22%23017FFF%22%20xlink%3Ahref%3D%22%234gg7gqe5ua%22%2F%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%20%20%20%20%3C%2Fg%3E%20%20%20%20%3C%2Fg%3E%3C%2Fsvg%3E"
                                 alt="info-icon"
                                 width={16}
                                 height={16}
@@ -956,7 +1021,7 @@ export default function Checkout() {
                   <span>Tổng tiền thanh toán</span>
                   <div>
                     <span className={styles.totalAmount}>{finalTotal.toLocaleString()} ₫</span>
-                    <span className={styles.saving}>Tiết kiệm { discount.toLocaleString()} ₫</span>
+                    <span className={styles.saving}>Tiết kiệm {discount.toLocaleString()} ₫</span>
                   </div>
                 </div>
                 <div className={styles.additionalText}>

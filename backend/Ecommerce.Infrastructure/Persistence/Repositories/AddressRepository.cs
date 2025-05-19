@@ -4,6 +4,7 @@ using Ecommerce.Application.Interfaces.Repositories;
 using Ecommerce.Infrastructure.Persistence;
 
 namespace Ecommerce.Infrastructure.Repositories;
+
 public class AddressRepository : IAddressRepository
 {
     private readonly AppDbContext _context;
@@ -99,4 +100,5 @@ public class AddressRepository : IAddressRepository
             .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.IsDefault == true);
         return userAddress;
     }
+    
 }

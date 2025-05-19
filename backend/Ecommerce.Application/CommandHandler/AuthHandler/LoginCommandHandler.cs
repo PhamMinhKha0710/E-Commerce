@@ -2,10 +2,12 @@ using Ecommerce.Application.Commands;
 using Ecommerce.Application.Common.DTOs;
 using Ecommerce.Application.Common.Utilities;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Entities; 
 using Ecommere.Application.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Ecommerce.Application.CommandHandler;
+
 public class LoginCommandHandler
 {
     private readonly IAuthRepository _authRepository;
@@ -34,16 +36,36 @@ public class LoginCommandHandler
             if (!user.IsVerified)
                 return Result<LoginResponseDto>.Failure("Email not verified");
 
+            // Tạo access token
             var accessToken = _tokenService.GenerateAccessToken(user);
-            var refreshToken = await _tokenService.GenerateRefreshToken(user.Id);
-            await _authRepository.AddRefreshTokenAsync(refreshToken);
 
-            _logger.LogInformation("User logged in: {Email}", dto.Email);
+            // Kiểm tra refresh token hiện có
+            var existingRefreshToken = await _authRepository.GetRefreshTokenByUserIdAsync(user.Id);
+            RefreshToken refreshToken;
+
+            if (existingRefreshToken != null)
+            {
+                // Cập nhật refresh token hiện có
+                existingRefreshToken.Token = Guid.NewGuid().ToString(); // Tạo refresh token mới
+                existingRefreshToken.ExpiresAt = DateTime.UtcNow.AddDays(7); // Ví dụ: hết hạn sau 7 ngày
+                refreshToken = existingRefreshToken;
+
+                await _authRepository.UpdateRefreshTokenAsync(refreshToken);
+                _logger.LogInformation("Updated existing refresh token for user: {Email}", dto.Email);
+            }
+            else
+            {
+                // Tạo refresh token mới
+                refreshToken = await _tokenService.GenerateRefreshToken(user.Id);
+                await _authRepository.AddRefreshTokenAsync(refreshToken);
+                _logger.LogInformation("Created new refresh token for user: {Email}", dto.Email);
+            }
+
             return Result<LoginResponseDto>.Success(new LoginResponseDto
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken.Token,
-                ExpiresIn = 15 * 60
+                ExpiresIn = 15 * 60 // 15 phút
             });
         }
         catch (Exception ex)

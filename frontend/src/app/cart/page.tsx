@@ -12,6 +12,7 @@ import { useRouter, usePathname } from 'next/navigation';
 // Define the type for cart items in localStorage
 interface CartItemFromStorage {
   productId: number;
+  categoryId: number;
   productName: string;
   imageUrl: string;
   price: number;
@@ -25,6 +26,7 @@ interface CartItemFromStorage {
 interface CartItemType {
   id: number;
   seller: string;
+  categoryId: number;
   name: string;
   price: number;
   quantity: number;
@@ -134,6 +136,7 @@ export default function CheckoutPage() {
         key: `${item.productId}-${item.productItemId ?? 'no-variation'}`,
         seller: defaultSellers[Math.floor(Math.random() * defaultSellers.length)],
         name: item.productName,
+        categoryId: item.categoryId,
         price: item.price,
         quantity: item.quantity,
         available: true,

@@ -179,8 +179,8 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
             {
                 OrderNumber = $"ORD-{DateTime.Now.Ticks}",
                 OrderDate = DateTime.UtcNow,
-                OrderTotal = orderTotal - discountAmount, // Trừ giảm giá
-                ShippingAmount = 32000,
+                OrderTotal = orderTotal - discountAmount + shippingMethod.Fee * 1000, // Trừ giảm giá + phí ship*1000 đồng
+                ShippingAmount = shippingMethod.Fee * 1000,
                 DiscountAmount = discountAmount,
                 Note = request.Request.Note,
                 ShippingAddressId = shippingAddress.AddressId,

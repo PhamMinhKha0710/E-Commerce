@@ -20,6 +20,10 @@ public class PromotionRepository : IPromotionRepository
 
         if (promotion == null)
             throw new NotFoundException($"Promotion with code {code} not found");
+        var listCartIdPromotion = await _context.PromotionCategories
+            .Where(p => p.PromotionId == promotion.Id)
+            .Select(p => p.ProductCategoryId)
+            .ToListAsync();
 
         var remainingQuantity = promotion.TotalQuantity - promotion.UsedQuantity;
         bool IsAvailable = false;
@@ -33,7 +37,8 @@ public class PromotionRepository : IPromotionRepository
                 RemainingQuantity = remainingQuantity,
                 StartDate = promotion.StartDate,
                 EndDate = promotion.EndDate,
-                IsAvailable = IsAvailable
+                IsAvailable = IsAvailable,
+                ListCartIdPromotion = listCartIdPromotion
             };
     }
 }
