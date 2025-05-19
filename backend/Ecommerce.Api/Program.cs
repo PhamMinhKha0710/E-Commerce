@@ -111,6 +111,11 @@ builder.Services.AddScoped<IPromotionRepository, PromotionRepository>();
 builder.Services.AddScoped<IRabbitMQService,  RabbitMQService>();
 builder.Services.AddHostedService<EmailConsumerWorker>();
 
+
+// register Rating
+builder.Services.AddScoped<IRatingRepository, RatingRepository>();
+
+
 // đăng ký Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));
 builder.Services.AddLogging(logging => logging.AddConsole());
