@@ -12,7 +12,7 @@ public class CategoryRepository : ICategoryRepository
     {
         _dbContext = dbContext;
     }
-    
+
     public async Task<List<ProductCategory>> GetAllCategoriesAsync()
     {
         return await _dbContext.ProductCategories
@@ -32,4 +32,12 @@ public class CategoryRepository : ICategoryRepository
             .Include(pc => pc.Children)
             .ToListAsync();
     }
+    public async Task<ProductCategory> GetByIdAsync(int id)
+    {
+        return await _dbContext.ProductCategories
+            .Include(c => c.Parent)
+            .Include(c => c.Children)
+            .FirstOrDefaultAsync(c => c.Id == id);
+    }
+
 } 

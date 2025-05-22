@@ -1,5 +1,6 @@
 using Ecommerce.Application.Command;
 using Ecommerce.Application.Commands.ProductCommands;
+using Ecommerce.Application.Common.DTOs;
 using Ecommerce.Application.Queries.Products;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +18,34 @@ public class ProductsController : ControllerBase
         _mediator = mediator;
     }
 
+    // GET: api/products
+    [HttpGet]
+    public async Task<ActionResult<ProductsWithRatingListDto>> GetProducts(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string category = "",
+        [FromQuery] string brand = "",
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] string sortBy = "rating",
+        [FromQuery] bool sortDesc = true)
+    {
+        var query = new GetProductsWithRatingsQuery
+        {
+            Page = page,
+            PageSize = pageSize,
+            Category = category,
+            Brand = brand,
+            MinPrice = minPrice,
+            MaxPrice = maxPrice,
+            SortBy = sortBy,
+            SortDesc = sortDesc
+        };
+        
+        var result = await _mediator.Send(query);
+        return Ok(result);
+    }
+    
     // GET: api/products/{id}/detail
     [HttpGet("{id}/detail")]
     public async Task<IActionResult> GetProductDetail(int id)

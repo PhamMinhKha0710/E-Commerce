@@ -127,4 +127,130 @@ public class ProductRepository : IProductRepository
             .Take(count)
             .ToListAsync();
     }
+    public async Task<Product> GetProductDetailByIdAsync(int id, CancellationToken cancellationToken)
+    {
+        var product = await _dbContext.Products
+            .Include(p => p.Brand)
+            .Include(p => p.ProductCategory)
+            .Include(p => p.ProductItems)
+            .Include(p => p.ProductImages)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        
+        // Initialize empty collections if they're null
+        if (product != null)
+        {
+            if (product.ProductItems == null)
+                product.ProductItems = new List<ProductItem>();
+            
+            if (product.ProductImages == null)
+                product.ProductImages = new List<ProductImage>();
+        }
+        
+        return product;
+    }
+
+    public async Task<List<ProductItem>> GetProductVariantsAsync(int productId, CancellationToken cancellationToken)
+    {
+        var items = await _dbContext.ProductItems
+            .Where(pi => pi.ProductId == productId)
+            .Include(pi => pi.ProductConfigurations)
+                .ThenInclude(pc => pc.VariationOption)
+                    .ThenInclude(vo => vo.Variation)
+            .ToListAsync(cancellationToken);
+        
+        // Initialize empty ProductConfigurations collection if null
+        foreach (var item in items)
+        {
+            if (item.ProductConfigurations == null)
+                item.ProductConfigurations = new List<ProductConfiguration>();
+        }
+        
+        return items;
+    }
+
+    public async Task<(List<Product> Products, int TotalCount)> GetPaginatedProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
+    {
+        var query = _dbContext.Products
+            .Include(p => p.Brand)
+            .Include(p => p.ProductCategory)
+            .Include(p => p.ProductItems)
+            .Include(p => p.ProductImages)
+            .OrderByDescending(p => p.Id);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var products = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        // Initialize empty collections if they're null
+        foreach (var product in products)
+        {
+            if (product.ProductItems == null)
+                product.ProductItems = new List<ProductItem>();
+            
+            if (product.ProductImages == null)
+                product.ProductImages = new List<ProductImage>();
+        }
+
+        return (products, totalCount);
+    }
+
+    public async Task<(List<string> Categories, List<string> Brands)> GetProductFilterOptionsAsync(CancellationToken cancellationToken)
+    {
+        var categories = await _dbContext.ProductCategories
+            .Select(c => c.Name)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var brands = await _dbContext.Brands
+            .Select(b => b.Name)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return (categories, brands);
+    }
+
+    public async Task<ProductItem> GetProductVariantByIdAsync(int productId, int variantId, CancellationToken cancellationToken)
+    {
+        return await _dbContext.ProductItems
+            .FirstOrDefaultAsync(pi => pi.ProductId == productId && pi.Id == variantId, cancellationToken);
+    }
+
+    public async Task AddProductItemAsync(ProductItem productItem, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.ProductItems.AddAsync(productItem, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateProductItemAsync(ProductItem productItem, CancellationToken cancellationToken = default)
+    {
+        _dbContext.ProductItems.Update(productItem);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteProductItemAsync(ProductItem productItem, CancellationToken cancellationToken = default)
+    {
+        _dbContext.ProductItems.Remove(productItem);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AddProductImageAsync(ProductImage productImage, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.ProductImages.AddAsync(productImage, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteProductImageAsync(ProductImage productImage, CancellationToken cancellationToken = default)
+    {
+        _dbContext.ProductImages.Remove(productImage);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<List<ProductImage>> GetProductImagesByProductIdAsync(int productId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.ProductImages
+            .Where(pi => pi.ProductId == productId)
+            .ToListAsync(cancellationToken);
+    }
 }
