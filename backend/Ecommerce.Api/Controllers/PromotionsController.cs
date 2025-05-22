@@ -13,17 +13,17 @@ namespace Ecommerce.API.Controllers;
 
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/admin/[controller]")]
 
-public class PromotionController : ControllerBase
+public class PromotionsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    public PromotionController(IMediator mediator)
+    public PromotionsController(IMediator mediator)
     {
         _mediator = mediator;
     }
 
-    [HttpGet("{code}")]
+    [HttpGet("client/{code}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPromotionByCodeClient(string code)
     {

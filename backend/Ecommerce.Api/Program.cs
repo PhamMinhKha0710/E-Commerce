@@ -89,6 +89,8 @@ builder.Services.AddScoped<IAddressRepository, AddressRepository>();
 // Register Khởi tạo admin
 builder.Services.AddScoped<AdminInitializer>();
 
+// Register brand
+builder.Services.AddScoped<IBrandRepository, BrandRepository>();
 
 // Register cart
 builder.Services.AddScoped<ICartRepository, CartRepository>();

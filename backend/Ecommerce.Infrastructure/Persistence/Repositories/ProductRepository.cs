@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Ecommerce.Infrastructure.Persistence.Data;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
 
@@ -104,6 +103,28 @@ public class ProductRepository : IProductRepository
         return await query
             .OrderByDescending(p => p.ProductItems.FirstOrDefault().Price)
             .Take(limit)
+            .ToListAsync();
+    }
+    public async Task<List<int>> GetRelatedCategoriesAsync(int categoryId)
+    {
+        // Giả sử có bảng liên kết danh mục hoặc logic xác định danh mục liên quan
+        // Ví dụ: lấy danh mục cùng parent category
+        var category = await _dbContext.ProductCategories
+            .FirstOrDefaultAsync(c => c.Id == categoryId);
+        if (category == null) return new List<int>();
+
+        return await _dbContext.ProductCategories
+            .Where(c => c.ParentId == category.ParentId && c.Id != categoryId)
+            .Select(c => c.Id)
+            .ToListAsync();
+    }
+
+    public async Task<List<Product>> GetRandomProductsAsync(int count)
+    {
+        // Lấy ngẫu nhiên sản phẩm, ưu tiên sản phẩm có lượt xem hoặc doanh số cao
+        return await _dbContext.Products
+            .OrderBy(p => Guid.NewGuid()) // Ngẫu nhiên
+            .Take(count)
             .ToListAsync();
     }
 }

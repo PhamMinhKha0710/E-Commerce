@@ -37,6 +37,7 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
 
     public async Task<List<ProductRecommendationDto>> Handle(GetRecommendationsQuery request, CancellationToken cancellationToken)
     {
+        const int MINIMUM_PRODUCTS = 7;
         var userId = request.UserId ?? _currentUserService.GetUserId();
         var cacheKey = $"recommend:{userId ?? 0}:{request.ProductId ?? 0}:{request.CategoryId ?? 0}";
         var cachedJson = await _redisService.GetAsync(cacheKey);
@@ -81,6 +82,88 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
             }
         }
 
+        // Fallback logic: Đảm bảo tối thiểu 7 sản phẩm
+        if (result.Count < MINIMUM_PRODUCTS)
+        {
+            Console.WriteLine($"Chưa đủ sản phẩm còn thiếu {result.Count - MINIMUM_PRODUCTS}");
+            int remainingCount = MINIMUM_PRODUCTS - result.Count;
+
+            // Bước 1: Lấy thêm sản phẩm phổ biến toàn hệ thống
+            var additionalPopular = await _popularityStatRepository.GetPopularProductsAsync(null, remainingCount);
+            foreach (var product in additionalPopular)
+            {
+                if (!result.Any(r => r.Id == product.Id))
+                {
+                    var defaultItem = product.ProductItems?.FirstOrDefault(pi => pi.IsDefault);
+                    if (defaultItem != null)
+                    {
+                        result.Add(new ProductRecommendationDto
+                        {
+                            Id = product.Id,
+                            Name = product.Name,
+                            ProductCategoryId = product.ProductCategoryId,
+                            Price = defaultItem.Price
+                        });
+                    }
+                }
+            }
+
+            // Bước 2: Nếu vẫn không đủ, lấy sản phẩm từ danh mục liên quan
+            if (result.Count < MINIMUM_PRODUCTS && request.CategoryId.HasValue)
+            {
+                remainingCount = MINIMUM_PRODUCTS - result.Count;
+                var relatedCategories = await _productRepository.GetRelatedCategoriesAsync(request.CategoryId.Value);
+                foreach (var categoryId in relatedCategories)
+                {
+                    var relatedProducts = await _productRepository.GetByCategoryIdAsync(categoryId, remainingCount);
+                    foreach (var product in relatedProducts)
+                    {
+                        if (!result.Any(r => r.Id == product.Id))
+                        {
+                            var defaultItem = product.ProductItems?.FirstOrDefault(pi => pi.IsDefault);
+                            if (defaultItem != null)
+                            {
+                                result.Add(new ProductRecommendationDto
+                                {
+                                    Id = product.Id,
+                                    Name = product.Name,
+                                    ProductCategoryId = product.ProductCategoryId,
+                                    Price = defaultItem.Price
+                                });
+                                remainingCount--;
+                                if (result.Count >= MINIMUM_PRODUCTS) break;
+                            }
+                        }
+                    }
+                    if (result.Count >= MINIMUM_PRODUCTS) break;
+                }
+            }
+
+            // Bước 3: Nếu vẫn không đủ, lấy sản phẩm ngẫu nhiên
+            if (result.Count < MINIMUM_PRODUCTS)
+            {
+                remainingCount = MINIMUM_PRODUCTS - result.Count;
+                var randomProducts = await _productRepository.GetRandomProductsAsync(remainingCount);
+                foreach (var product in randomProducts)
+                {
+                    if (!result.Any(r => r.Id == product.Id))
+                    {
+                        var defaultItem = product.ProductItems?.FirstOrDefault(pi => pi.IsDefault);
+                        if (defaultItem != null)
+                        {
+                            result.Add(new ProductRecommendationDto
+                            {
+                                Id = product.Id,
+                                Name = product.Name,
+                                ProductCategoryId = product.ProductCategoryId,
+                                Price = defaultItem.Price
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
         var resultJson = JsonSerializer.Serialize(result);
         await _redisService.SetAsync(cacheKey, resultJson, TimeSpan.FromHours(6));
 
@@ -98,7 +181,23 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
 
         var products = await _popularityStatRepository.GetPopularProductsAsync(categoryId, 10);
 
-        var productsJson = JsonSerializer.Serialize(products);
+        // Chuyển đổi sang ProductRecommendationDto để serialize
+        var dtos = products
+            .Select(p => 
+            {
+                var defaultItem = p.ProductItems?.FirstOrDefault(pi => pi.IsDefault);
+                return defaultItem != null ? new ProductRecommendationDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    ProductCategoryId = p.ProductCategoryId,
+                    Price = defaultItem.Price
+                } : null;
+            })
+            .Where(dto => dto != null)
+            .ToList();
+
+        var productsJson = JsonSerializer.Serialize(dtos);
         await _redisService.SetAsync(cacheKey, productsJson, TimeSpan.FromHours(6));
         return products;
     }
