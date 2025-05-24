@@ -1,34 +1,41 @@
 // data/products.ts
 export interface Product {
-  productId: number; // Thêm productId để lưu Id của sản phẩm
+  productId: number; 
+  categoryId: number;
   slug: string;
   name: string;
   category: string;
-  image: string; // Ảnh chính của sản phẩm (có thể lấy từ ProductItem IsDefault hoặc danh sách ProductImages)
+  image: string; 
   brand: string;
   description: string;
-  price: number; // Giá của ProductItem mặc định
-  oldPrice: number; // Giá cũ của ProductItem mặc định
+  price: number; 
+  oldPrice: number; 
   currency: string;
-  availability: string; // Dựa trên QtyInStock của ProductItem mặc định
+  availability: string; 
   seller: {
     name: string;
     url: string;
     logo: string;
   };
-  images: string[]; // Danh sách ảnh từ ProductImages
-  hasVariations?: boolean; // Tương ứng với HasVariation
-  defaultCombinationId?: string; // Id của ProductItem mặc định (IsDefault = true)
-  variantGroups?: VariantGroup[]; // Nhóm biến thể (tương ứng với Variation)
+  images: string[]; 
+  hasVariations?: boolean; 
+  defaultCombinationId?: string; 
+  variantGroups?: VariantGroup[]; 
 }
 
 export interface RelatedProduct {
-  productId: number; // Thêm productId cho sản phẩm liên quan
-  slug: string;
-  name: string;
-  image: string;
-  price: number;
-  oldPrice: number;
+  categoryId: number;
+  productId: string;
+  productName: string;
+  href: string;
+  slug: string | null;
+  imageUrl: string;
+  price: string;
+  comparePrice: string | null;
+  discount: string | null;
+  hasVariations: boolean;
+  contact: boolean;
+  productItemId: number | null;
 }
 
 export interface VariantOption {

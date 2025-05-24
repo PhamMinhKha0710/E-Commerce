@@ -26,7 +26,7 @@ interface ProductDetailProps {
   slug: string;
 }
 
-export default function ProductDetail({ initialProduct, productId, slug }: ProductDetailProps) {
+export default function ProductDetail({ initialProduct, productId }: ProductDetailProps) {
   const handleAddToCart = useAddToCart();
   const { isLoggedIn } = useAuth(); // Lấy isLoggedIn từ AuthContext
 
@@ -106,6 +106,7 @@ export default function ProductDetail({ initialProduct, productId, slug }: Produ
       currency: product.currency || 'VND',
       hasVariations: product.hasVariations || false,
       productItemId: selectedVariant ? parseInt(selectedVariant.id) : null,
+      cartegoryId: product.categoryId
     };
 
     handleAddToCart(cartItem);
@@ -186,7 +187,7 @@ export default function ProductDetail({ initialProduct, productId, slug }: Produ
         </div>
       </div>
 
-      <ProductRelated slug={slug} />
+      <ProductRelated productId={productId} />
     </section>
   );
 }

@@ -3,6 +3,7 @@ import ProductSection from "@/components/sections/ProductSection";
 const RecommendProduct = () => {
   const productsData = [
     {
+      categoryId: 1,
       productId: "32899086",
       productName: "iPhone 14 Pro Max",
       href: "iphone-14-pro-max.html",
@@ -12,8 +13,11 @@ const RecommendProduct = () => {
       comparePrice: "28.000.000₫",
       discount: "-7%",
       hasVariations: true,
+      productItemId: 1
     },
     {
+      
+      categoryId: 1,
       productId: "32898940",
       productName: "iPhone 15 Pro Max Titan Xanh 256g",
       href: "iphone-15-pro-max-titan-xanh-256g.html",
@@ -23,8 +27,10 @@ const RecommendProduct = () => {
       comparePrice: "36.000.000₫",
       discount: "-6%",
       hasVariations: false,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882774",
       productName: "Tai Nghe Bluetooth Headphone Edifier W820NB PLUS thoáng khí thoải mái",
       href: "tai-nghe-bluetooth-headphone-edifier-w820nb-plus-thoang-khi-thoai-mai.html",
@@ -34,8 +40,10 @@ const RecommendProduct = () => {
       comparePrice: "2.399.000₫",
       discount: "-42%",
       hasVariations: false,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882682",
       productName: "Tai nghe bluetooth Galaxy Buds 2 Pro",
       href: "tai-nghe-bluetooth-galaxy-buds-2-pro.html",
@@ -45,8 +53,10 @@ const RecommendProduct = () => {
       comparePrice: "600.000₫",
       discount: "-33%",
       hasVariations: true,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882553",
       productName: "Chuột không dây Logitech B170 - USB, nhỏ gọn, thuận cả 2 tay, phù hợp PC/Laptop",
       href: "chuot-khong-day-logitech-b170-usb-nho-gon-thuan-ca-2-tay-phu-hop-pc-laptop.html",
@@ -56,8 +66,10 @@ const RecommendProduct = () => {
       comparePrice: "400.000₫",
       discount: "-26%",
       hasVariations: false,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882737",
       productName: "Hub chia cổng Baseus cổng Type C sang HDMI USB 3.0 dành cho Pro Air Surface Pro 7",
       href: "hub-chia-cong-baseus-cong-type-c-sang-hdmi-usb-3-0-danh-chopro-air-surface-pro-7.html",
@@ -67,8 +79,10 @@ const RecommendProduct = () => {
       comparePrice: "1.090.000₫",
       discount: "-54%",
       hasVariations: false,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882811",
       productName: "Thùng 24 chai Sữa nước Ensure Abbott 237ml/chai",
       href: "thung-24-chai-sua-nuoc-ensure-abbott-237ml-chai.html",
@@ -78,8 +92,10 @@ const RecommendProduct = () => {
       comparePrice: "2.000.000₫",
       discount: "-30%",
       hasVariations: false,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882800",
       productName: "Sữa 9 loại hạt Vinamilk Super Nut Super Nut - Thùng 24 hộp 180ml",
       href: "sua-9-loai-hat-vinamilk-super-nut-super-nut-thung-24-hop-180ml.html",
@@ -89,8 +105,10 @@ const RecommendProduct = () => {
       comparePrice: "450.000₫",
       discount: "-44%",
       hasVariations: false,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882796",
       productName: "Mì Omachi Tôm Chua Cay Thái Gói 80g",
       href: "mi-omachi-tom-chua-cay-thai-goi-80g.html",
@@ -98,8 +116,10 @@ const RecommendProduct = () => {
       imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp11.jpg?v=1696241389353",
       hasVariations: true,
       contact: true,
+      productItemId: 1
     },
     {
+      categoryId: 1,
       productId: "32882789",
       productName: "Thùng 48 hộp sữa tươi tiệt trùng TH True Milk HILO 180ml (180ml x 48)",
       href: "thung-48-hop-sua-tuoi-tiet-trung-th-true-milk-hilo-180ml-180ml-x-48.html",
@@ -109,6 +129,7 @@ const RecommendProduct = () => {
       comparePrice: "680.000₫",
       discount: "-19%",
       hasVariations: false,
+      productItemId: 1
     },
   ];
 

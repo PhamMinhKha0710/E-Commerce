@@ -38,6 +38,7 @@ namespace Ecommerce.Application.QueryHandlers.Products
                 ProductId = product.Id,
                 Slug = product.Slug,
                 Name = product.Name,
+                CategoryId = product.ProductCategoryId,
                 Category = product.ProductCategory?.Name ?? string.Empty,
                 Brand = product.Brand?.Name ?? string.Empty,
                 Description = product.Description,

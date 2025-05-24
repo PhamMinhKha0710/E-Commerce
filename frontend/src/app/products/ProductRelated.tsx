@@ -1,4 +1,3 @@
-// ProductRelated.tsx
 'use client';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -7,77 +6,65 @@ import { RelatedProduct } from '@/app/products/ProductType';
 import Image from 'next/image';
 import useSWR from 'swr';
 import { useInView } from 'react-intersection-observer';
+import { useAuth } from '@/context/AuthContext';
 import 'swiper/css';
 import 'swiper/css/navigation';
 
-// Mock data cho sản phẩm liên quan
-const mockRelatedProducts: RelatedProduct[] = [
-  {
-    slug: 'iphone-14-pro-max-1',
-    name: 'iPhone 14 Pro Max 1',
-    image: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110',
-    price: 26000000,
-    oldPrice: 28000000,
-  },
-  {
-    slug: 'iphone-14-pro-max-2',
-    name: 'iPhone 14 Pro Max 2',
-    image: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110',
-    price: 27000000,
-    oldPrice: 29000000,
-  },
-  {
-    slug: 'iphone-14-pro-max-3',
-    name: 'iPhone 14 Pro Max 3',
-    image: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110',
-    price: 25000000,
-    oldPrice: 27000000,
-  },
-  {
-    slug: 'iphone-14-pro-max-4',
-    name: 'iPhone 14 Pro Max 4',
-    image: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110',
-    price: 28000000,
-    oldPrice: 30000000,
-  },
-  {
-    slug: 'iphone-14-pro-max-5',
-    name: 'iPhone 14 Pro Max 5',
-    image: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110',
-    price: 29000000,
-    oldPrice: 31000000,
-  },
-  {
-    slug: 'iphone-14-pro-max-6',
-    name: 'iPhone 14 Pro Max 6',
-    image: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110',
-    price: 24000000,
-    oldPrice: 26000000,
-  },
-  {
-    slug: 'iphone-14-pro-max-6',
-    name: 'iPhone 14 Pro Max 6',
-    image: 'http://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110',
-    price: 24000000,
-    oldPrice: 26000000,
-  },
-];
+// Giao diện cho dữ liệu thô từ API
+interface ApiRelatedProduct {
+  categoryId: number;
+  productId: number;
+  productName: string | null;
+  href: string | null;
+  slug: string | null;
+  imageUrl: string | null;
+  price: number;
+  comparePrice: number | null;
+  discount: string | null;
+  hasVariations: boolean;
+  contact: boolean;
+  productItemId: number | null;
+}
 
-// Hàm fetcher giả lập
-const fetcher = async (): Promise<RelatedProduct[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockRelatedProducts), 500); // Giả lập độ trễ mạng 500ms
-  });
+const fetcher = async ([url, isLoggedIn]: [string, boolean]): Promise<RelatedProduct[]> => {
+  const headers: HeadersInit = { accept: 'application/json' };
+  if (isLoggedIn) {
+    const accessToken = localStorage.getItem('accessToken') || '';
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to fetch related products: ${res.status} - ${errorText}`);
+  }
+  const data: ApiRelatedProduct[] = await res.json();
+  // Chuyển đổi dữ liệu sang RelatedProduct
+  return data.map((item) => ({
+    categoryId: item.categoryId,
+    productId: String(item.productId),
+    productName: item.productName || 'Sản phẩm không tên',
+    href: item.href || '#',
+    slug: item.slug || '',
+    imageUrl: item.imageUrl || 'https://via.placeholder.com/200',
+    price: String(item.price),
+    comparePrice: item.comparePrice ? String(item.comparePrice) : null,
+    discount: item.discount,
+    hasVariations: item.hasVariations,
+    contact: item.contact,
+    productItemId: item.productItemId,
+  }));
 };
 
 interface ProductRelatedProps {
-  slug: string;
+  productId: string;
 }
 
-export default function ProductRelated({ slug }: ProductRelatedProps) {
+export default function ProductRelated({ productId }: ProductRelatedProps) {
+  const { isLoggedIn } = useAuth();
   const { ref, inView } = useInView({ triggerOnce: true });
   const { data: relatedProducts, error } = useSWR<RelatedProduct[], Error>(
-    inView ? `/api/products/${slug}/related?limit=6` : null,
+    inView ? [`http://localhost:5130/api/Recommendations/recommend?productId=${productId}&categoryId=2&limit=6`, isLoggedIn] : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -85,12 +72,26 @@ export default function ProductRelated({ slug }: ProductRelatedProps) {
     }
   );
 
-  const formatPrice = (price: number) => {
-    return `${price.toLocaleString('vi-VN')}₫`;
+  const formatPrice = (price: string) => {
+    return `${parseInt(price).toLocaleString('vi-VN')}₫`;
   };
 
-  if (error) return <div>Error loading related products</div>;
-  if (!relatedProducts) return <div ref={ref}>Loading related products...</div>;
+  const calculateDiscount = (price: string, comparePrice: string) => {
+    const priceNum = parseInt(price);
+    const comparePriceNum = parseInt(comparePrice);
+    if (comparePriceNum <= priceNum) return '0%';
+    return `${Math.round(((comparePriceNum - priceNum) / comparePriceNum) * 100)}%`;
+  };
+
+  if (error) return <div>Lỗi khi tải sản phẩm liên quan</div>;
+  if (!relatedProducts) return <div ref={ref}>Đang tải sản phẩm liên quan...</div>;
+
+  // Lọc các sản phẩm có đủ thông tin cần thiết
+  const validProducts = relatedProducts.filter(
+    (product) => product.productName !== 'Sản phẩm không tên' && product.imageUrl !== 'https://via.placeholder.com/200' && product.href !== '#'
+  );
+
+  if (validProducts.length === 0) return <div>Không có sản phẩm liên quan</div>;
 
   return (
     <div className="productRelate" ref={ref}>
@@ -98,7 +99,7 @@ export default function ProductRelated({ slug }: ProductRelatedProps) {
         <div className="bg">
           <div className="block-title">
             <h2>
-              <a href="danh-cho-ban.html" title="Sản phẩm cùng loại">Sản phẩm cùng loại</a>
+              <a href="#" title="Sản phẩm cùng loại">Sản phẩm cùng loại</a>
             </h2>
           </div>
           <div className="margin-am">
@@ -118,7 +119,7 @@ export default function ProductRelated({ slug }: ProductRelatedProps) {
                 1200: { slidesPerView: 5, spaceBetween: 20 },
               }}
             >
-              {relatedProducts.map((related, index) => (
+              {validProducts.map((related, index) => (
                 <SwiperSlide key={index}>
                   <div className="item_product_main">
                     <form
@@ -129,35 +130,39 @@ export default function ProductRelated({ slug }: ProductRelatedProps) {
                       encType="multipart/form-data"
                     >
                       <div className="product-thumbnail">
-                        <a className="image_thumb scale_hover" href={`${related.slug}.html`} title={related.name}>
+                        <a className="image_thumb scale_hover" href={related.href} title={related.productName}>
                           <Image
                             className="lazyload"
                             width={200}
                             height={200}
-                            src={related.image}
-                            alt={related.name}
+                            src={related.imageUrl}
+                            alt={related.productName}
                             loading="lazy"
                           />
                         </a>
-                        <span className="smart">
-                          -{Math.round(((related.oldPrice - related.price) / related.oldPrice) * 100)}%
-                        </span>
+                        {related.comparePrice && (
+                          <span className="smart">
+                            -{related.discount || calculateDiscount(related.price || '0', related.comparePrice)}
+                          </span>
+                        )}
                       </div>
                       <div className="product-info">
                         <h3 className="product-name">
-                          <a href={`${related.slug}.html`} title={related.name}>{related.name}</a>
+                          <a href={related.href} title={related.productName}>{related.productName}</a>
                         </h3>
                         <div className="price-box">
-                          {formatPrice(related.price)}{' '}
-                          <span className="compare-price">{formatPrice(related.oldPrice)}</span>
+                          {related.price ? formatPrice(related.price) : 'Liên hệ'}{' '}
+                          {related.comparePrice && (
+                            <span className="compare-price">{formatPrice(related.comparePrice)}</span>
+                          )}
                         </div>
                         <div className="actions-primary">
-                          <input className="hidden" type="hidden" name="variantId" value="99496971" />
+                          <input className="hidden" type="hidden" name="variantId" value={related.productItemId || ''} />
                           <button
                             className="btn-cart"
                             title="Tùy chọn"
                             type="button"
-                            onClick={() => (window.location.href = `${related.slug}.html`)}
+                            onClick={() => (window.location.href = related.href)}
                           >
                             <svg className="icon icon-settings">
                               <use xlinkHref="#icon-settings"></use>
