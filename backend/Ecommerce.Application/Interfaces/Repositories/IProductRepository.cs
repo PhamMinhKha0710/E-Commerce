@@ -24,7 +24,8 @@ public interface IProductRepository
     Task<(List<Product> Products, int TotalCount)> GetPaginatedProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
     Task<(List<string> Categories, List<string> Brands)> GetProductFilterOptionsAsync(CancellationToken cancellationToken);
     Task<ProductItem> GetProductVariantByIdAsync(int productId, int variantId, CancellationToken cancellationToken);
-    
+    Task<List<Product>> GetByCategoryIdAsync(int categoryId, int limit, CancellationToken cancellationToken = default);
+    Task<List<Product>> GetRandomProductsAsync(int count, CancellationToken cancellationToken = default);
     // Additional methods for product items and images
     Task AddProductItemAsync(ProductItem productItem, CancellationToken cancellationToken = default);
     Task UpdateProductItemAsync(ProductItem productItem, CancellationToken cancellationToken = default);

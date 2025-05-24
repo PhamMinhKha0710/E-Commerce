@@ -9,6 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 // Định nghĩa interface cho product (đồng bộ với CartContext)
 interface Product {
+  categoryId: number;
   productId: string; 
   productName: string; 
   href: string; 
@@ -19,6 +20,7 @@ interface Product {
   discount?: string;
   hasVariations?: boolean;
   contact?: boolean; 
+  productItemId: number | null;
 }
 
 interface ProductSectionProps {
@@ -138,7 +140,8 @@ const ProductCard = ({ product }: { product: Product }) => {
         quantity: 1,
         currency: "VND", 
         hasVariations: false,
-        productItemId: null, // Thay selectedVariations
+        productItemId:  product.productItemId, 
+        categoryId: product.categoryId,
       });
       toast.success(
         <div style={{ display: "flex", alignItems: "center" }}>

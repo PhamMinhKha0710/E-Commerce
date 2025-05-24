@@ -24,7 +24,13 @@ public class ProductRepository : IProductRepository
 
     public async Task<Product> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Products.FindAsync(new object[] { id }, cancellationToken);
+        return await _dbContext.Products
+            .AsSplitQuery()
+            .Include(p => p.ProductItems.Where(pi => pi.IsDefault))
+            .Include(p => p.ProductImages)
+            .Include(p => p.ProductCategory)
+            .Include(p => p.Brand)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public async Task AddAsync(Product entity, CancellationToken cancellationToken = default)
@@ -85,6 +91,31 @@ public class ProductRepository : IProductRepository
             .Where(p => p.ProductCategoryId == categoryId)
             .Take(limit)
             .ToListAsync();
+    }
+
+    public async Task<List<Product>> GetByCategoryIdAsync(int categoryId, int limit, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Products
+            .AsSplitQuery()
+            .Where(p => p.ProductCategoryId == categoryId)
+            .Include(p => p.ProductItems.Where(pi => pi.IsDefault))
+            .Include(p => p.ProductImages)
+            .Include(p => p.ProductCategory)
+            .Include(p => p.Brand)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }   
+    public async Task<List<Product>> GetRandomProductsAsync(int count, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Products
+            .AsSplitQuery()
+            .Include(p => p.ProductItems.Where(pi => pi.IsDefault))
+            .Include(p => p.ProductImages)
+            .Include(p => p.ProductCategory)
+            .Include(p => p.Brand)
+            .OrderBy(p => Guid.NewGuid()) // Ngẫu nhiên
+            .Take(count)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<Product> GetByIdAsync(int id)
