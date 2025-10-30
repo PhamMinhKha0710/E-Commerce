@@ -93,20 +93,31 @@ export default function CreatePromotionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate form data before setting loading state
+    if (formData.startDate >= formData.endDate) {
+      toast.error("Ngày bắt đầu phải trước ngày kết thúc")
+      return
+    }
+
+    if (formData.discountRate < 0.01 || formData.discountRate > 100) {
+      toast.error("Phần trăm giảm giá phải từ 0.01% đến 100%")
+      return
+    }
+
+    if (!formData.name.trim()) {
+      toast.error("Vui lòng nhập tên khuyến mãi")
+      return
+    }
+
+    if (!formData.code.trim()) {
+      toast.error("Vui lòng nhập mã khuyến mãi")
+      return
+    }
+
     setIsLoading(true)
     
     try {
-      // Validate form data
-      if (formData.startDate >= formData.endDate) {
-        toast.error("Ngày bắt đầu phải trước ngày kết thúc")
-        return
-      }
-
-      if (formData.discountRate < 0.01 || formData.discountRate > 100) {
-        toast.error("Phần trăm giảm giá phải từ 0.01% đến 100%")
-        return
-      }
-
       // Create the DTO that matches the API's expected format
       const promotionDto: CreatePromotionDto = {
         name: formData.name,
@@ -121,20 +132,25 @@ export default function CreatePromotionPage() {
       }
       
       console.log("Sending data to API:", promotionDto);
-      await createPromotion(promotionDto)
+      const result = await createPromotion(promotionDto)
+      console.log("Promotion created successfully:", result);
+      
       toast.success("Tạo khuyến mãi thành công")
       
-      // Redirect to the promotion list
-      router.push(`/dashboard/promotions`)
+      // Wait a bit for the toast to show, then redirect
+      setTimeout(() => {
+        router.push('/dashboard/promotions')
+        router.refresh()
+      }, 500)
     } catch (error) {
       console.error("Failed to create promotion:", error)
       if (axios.isAxiosError(error) && error.response) {
         // Show the specific error message from the API if available
-        toast.error(error.response.data || "Không thể tạo mã khuyến mãi. Vui lòng thử lại.")
+        const errorMessage = error.response.data?.message || error.response.data || "Không thể tạo mã khuyến mãi. Vui lòng thử lại."
+        toast.error(errorMessage)
       } else {
         toast.error("Không thể tạo mã khuyến mãi. Vui lòng thử lại.")
       }
-    } finally {
       setIsLoading(false)
     }
   }

@@ -1,5 +1,7 @@
 using System.Text;
 using Ecommerce.API.Filters;
+using Ecommerce.Api.Extensions;
+using Ecommerce.Api.Middleware;
 using Ecommerce.Application.CommandHandler;
 using Ecommerce.Application.Common.DTOs;
 using Ecommerce.Application.Interfaces;
@@ -22,10 +24,43 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Nest;
+using Serilog;
 using Slugify;
 using StackExchange.Redis;
 
-var builder = WebApplication.CreateBuilder(args);
+// ============================================================
+// SERILOG CONFIGURATION - Phải đặt TRƯỚC khi tạo builder
+// ============================================================
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("serilog.json", optional: false, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .Build();
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithProcessId()
+    .Enrich.WithProperty("ApplicationName", "Ecommerce.Api")
+    .CreateLogger();
+
+try
+{
+    Log.Information("========================================");
+    Log.Information("Starting Ecommerce API");
+    Log.Information("Application starting at {Time}", DateTime.UtcNow);
+    Log.Information("Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production");
+    Log.Information("========================================");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Sử dụng Serilog - KHÔNG dùng built-in request logging
+    builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
@@ -117,6 +152,8 @@ builder.Services.AddHostedService<EmailConsumerWorker>();
 // register Rating
 builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 
+// register Review
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 
 // đăng ký Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));
@@ -239,31 +276,57 @@ builder.Services.AddAuthorization(options =>
 
 
 /// ************** ------------------------------ Buider.Build-----------------------------------///*********************
-var app = builder.Build();
+    var app = builder.Build();
 
-// Gọi AdminInitializer khi ứng dụng khởi động
-using (var scope = app.Services.CreateScope())
-{
-    var adminInitializer = scope.ServiceProvider.GetRequiredService<AdminInitializer>();
-    await adminInitializer.InitializeAsync();
-}
+    // ============================================================
+    // MIDDLEWARE PIPELINE - Thứ tự quan trọng!
+    // ============================================================
 
-app.UseHangfireDashboard("/hangfire");
+    // 1. Global Exception Handler - Phải đặt SỚM để catch tất cả exceptions
+    app.UseGlobalExceptionHandler();
 
-// đăng ký background chạy định kỳ cho cập nhật bảng popularity chạy lúc 0h để tránh trường hợp người dùng mua nhiều
-RecurringJob.AddOrUpdate<PopularityStatUpdateJob>(
-    "update-popularity-stats",
-    job => job.ExecuteAsync(),
-    // "0 59 23 * * *"); // Chạy hàng ngày lúc 23:59
-    "*/5 * * * * *"); // -- Chạy mỗi 5 phút dùng để test 
+    // 2. Request Logging - Log HTTP requests (TINH GỌN)
+    app.UseRequestLogging();
+
+    // Gọi AdminInitializer khi ứng dụng khởi động
+    using (var scope = app.Services.CreateScope())
+    {
+        var adminInitializer = scope.ServiceProvider.GetRequiredService<AdminInitializer>();
+        await adminInitializer.InitializeAsync();
+    }
+
+    app.UseHangfireDashboard("/hangfire");
+
+    // đăng ký background chạy định kỳ cho cập nhật bảng popularity chạy lúc 0h để tránh trường hợp người dùng mua nhiều
+    RecurringJob.AddOrUpdate<PopularityStatUpdateJob>(
+        "update-popularity-stats",
+        job => job.ExecuteAsync(),
+        // "0 59 23 * * *"); // Chạy hàng ngày lúc 23:59
+        "*/5 * * * * *"); // -- Chạy mỗi 5 phút dùng để test 
+        
+    app.UseCors("AllowAll");
     
-app.UseCors("AllowAll");
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+    
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    // Log application start
+    app.LogApplicationStart();
+
+    app.Run();
 }
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    SerilogExtensions.LogApplicationShutdown();
+}

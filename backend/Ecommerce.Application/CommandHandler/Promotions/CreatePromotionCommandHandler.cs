@@ -55,11 +55,15 @@ public class CreatePromotionCommandHandler : IRequestHandler<CreatePromotionComm
         // Save to database
         var result = await _promotionRepository.CreatePromotionAsync(promotion);
         
+        // After creating, we need to reload the entity with navigation properties included
+        var createdPromotion = await _promotionRepository.GetPromotionByIdAsync(result.Id);
+        
         // Get all categories for response
         var categories = new List<CategoryDto>();
-        if (result.PromotionCategories != null)
+        if (createdPromotion.PromotionCategories != null && createdPromotion.PromotionCategories.Any())
         {
-            categories = result.PromotionCategories
+            categories = createdPromotion.PromotionCategories
+                .Where(pc => pc.ProductCategory != null)  // Safety check
                 .Select(pc => new CategoryDto
                 {
                     id = pc.ProductCategory.Id,
@@ -71,17 +75,17 @@ public class CreatePromotionCommandHandler : IRequestHandler<CreatePromotionComm
         // Map to DTO and return
         return new PromotionDto
         {
-            Id = result.Id,
-            Name = result.Name,
-            Code = result.Code,
-            Description = result.Description,
-            DiscountRate = result.DiscountRate,
-            StartDate = result.StartDate,
-            EndDate = result.EndDate,
-            IsActive = result.IsActive,
-            TotalQuantity = result.TotalQuantity,
-            UsedQuantity = result.UsedQuantity,
-            CategoryIds = dto.CategoryIds,
+            Id = createdPromotion.Id,
+            Name = createdPromotion.Name,
+            Code = createdPromotion.Code,
+            Description = createdPromotion.Description,
+            DiscountRate = createdPromotion.DiscountRate,
+            StartDate = createdPromotion.StartDate,
+            EndDate = createdPromotion.EndDate,
+            IsActive = createdPromotion.IsActive,
+            TotalQuantity = createdPromotion.TotalQuantity,
+            UsedQuantity = createdPromotion.UsedQuantity,
+            CategoryIds = dto.CategoryIds ?? new List<int>(),
             Categories = categories
         };
     }

@@ -136,6 +136,12 @@ export default function PromotionDetailPage() {
       setPromotion(updated)
       setIsEditing(false)
       toast.success("Thông tin khuyến mãi đã được cập nhật")
+      
+      // Redirect về trang danh sách sau khi update thành công
+      setTimeout(() => {
+        router.push('/dashboard/promotions')
+        router.refresh()
+      }, 500)
     } catch (error) {
       console.error("Failed to update promotion:", error)
       if (axios.isAxiosError(error) && error.response) {
