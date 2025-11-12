@@ -131,9 +131,7 @@ export default function CreatePromotionPage() {
         totalQuantity: Number(formData.totalQuantity)
       }
       
-      console.log("Sending data to API:", promotionDto);
       const result = await createPromotion(promotionDto)
-      console.log("Promotion created successfully:", result);
       
       toast.success("Tạo khuyến mãi thành công")
       

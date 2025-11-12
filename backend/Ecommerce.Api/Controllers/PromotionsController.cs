@@ -106,6 +106,10 @@ public class PromotionsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<PromotionDto>> UpdatePromotion(int id, [FromBody] UpdatePromotionDto dto)
     {
+        _logger.LogInformation("Received update request for promotion {PromotionId}", id);
+        _logger.LogInformation("DTO: Name={Name}, Code={Code}, Discount={Discount}, Start={Start}, End={End}, Active={Active}, TotalQty={TotalQty}", 
+            dto.Name, dto.Code, dto.DiscountRate, dto.StartDate, dto.EndDate, dto.IsActive, dto.TotalQuantity);
+        
         if (id != dto.Id)
         {
             _logger.LogWarning("ID mismatch: route={RouteId}, body={BodyId}", id, dto.Id);
