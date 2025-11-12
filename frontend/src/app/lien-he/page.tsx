@@ -44,25 +44,6 @@ export default function ContactPage() {
 
   return (
     <div className="contact-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
-        <div className="container">
-          <div className="breadcrumb">
-            <a href="/" className="breadcrumb-link">Trang chủ</a>
-            <span className="breadcrumb-separator">/</span>
-            <span className="breadcrumb-current">Liên hệ</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="container">
-          <h1 className="page-title">Liên hệ</h1>
-          <p className="page-subtitle">Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn</p>
-        </div>
-      </div>
-
       {/* Contact Info Cards */}
       <section className="contact-info-section">
         <div className="container">

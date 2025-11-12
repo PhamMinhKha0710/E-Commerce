@@ -78,8 +78,9 @@
 
 /* Contact Info Cards */
 .contact-info-section {
-  padding: 60px 0;
+  padding: 80px 0 60px;
   background-color: #ffffff;
+  margin-top: 0;
 }
 
 .contact-cards-grid {

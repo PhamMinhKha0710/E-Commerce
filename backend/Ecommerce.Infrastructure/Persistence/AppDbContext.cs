@@ -41,6 +41,9 @@ public class AppDbContext : DbContext
     public DbSet<UserSearch> UserSearches {get; set;}
     public DbSet<UserViewHistory> UserViewHistories {get; set;}
     public DbSet<PopularityStat> PopularityStats {get; set;}
+    public DbSet<BlogPost> BlogPosts {get; set;}
+    public DbSet<BlogComment> BlogComments {get; set;}
+    public DbSet<BlogCategory> BlogCategories {get; set;}
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Áp dụng các configuration 
@@ -72,5 +75,8 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new UserViewHistoryConfiguration());
         modelBuilder.ApplyConfiguration(new VariationConfiguration());
         modelBuilder.ApplyConfiguration(new VariationOptionConfiguration());
+        modelBuilder.ApplyConfiguration(new BlogPostConfiguration());
+        modelBuilder.ApplyConfiguration(new BlogCommentConfiguration());
+        modelBuilder.ApplyConfiguration(new BlogCategoryConfiguration());
     }
 }

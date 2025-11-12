@@ -178,6 +178,9 @@ builder.Services.AddScoped<ProductSimilarityService>();
 // Register ShippingMethod 
 builder.Services.AddScoped<IShippingMethodRepository, ShippingMethodRepository>();
 
+// Register Blog
+builder.Services.AddScoped<IBlogRepository, BlogRepository>();
+
 // Register Hangfire
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
