@@ -1,12 +1,12 @@
-import CategoryMenu from "@/app/danh-cho-ban/CategoryMenu";
-import FilterContainer from "@/app/danh-cho-ban/FilterContainer";
-import ProductGrid from "@/app/danh-cho-ban/ProductGrid";
-import ThreeBanner from "@/app/danh-cho-ban/ThreeBanner";
+import CategoryMenu from "@/app/collections/all/CategoryMenu";
+import FilterContainer from "@/app/collections/all/FilterContainer";
+import ProductGrid from "@/app/collections/all/ProductGrid";
+import ThreeBanner from "@/app/collections/all/ThreeBanner";
 import Breadcrumb from "@/components/sections/Breadcrum";
-import { FilterProvider } from "@/app/danh-cho-ban/FilterContext";
+import { FilterProvider } from "@/app/collections/all/FilterContext";
 
 
-export default function DanhChoBan() {
+export default function AllProductsPage() {
     return (
         <FilterProvider>
             <div className="bodywrap" style={{marginTop: '-30px'}}>

@@ -2,37 +2,36 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import ProductItem from "./ProductItem";
-import { useFilters } from "./FilterContext";
+import ProductItem from "@/app/collections/all/ProductItem";
+import { useFilters } from "@/app/collections/all/FilterContext";
 
 interface Product {
-  productId: number;
-  itemId: number;
+  id: number;
   name: string;
+  slug: string;
   description: string;
   category: string;
-  subCategory: string;
   brand: string;
+  imageUrl: string;
   price: number;
   oldPrice: number;
-  stock: number;
-  sku: string;
-  imageUrl: string;
-  popularityScore: number;
+  currency: string;
   hasVariation: boolean;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  rating: number;
-  totalRatingCount: number;
-  status: boolean;
+  qtyInStock: number;
+  averageRating: number;
+  totalReviews: number;
 }
 
-interface SearchResponse {
-  total: number;
-  page: number;
+interface ProductsResponse {
+  products: Product[];
+  totalCount: number;
+  currentPage: number;
   pageSize: number;
-  results: Product[];
+  totalPages: number;
+  categories: string[];
+  brands: string[];
+  minPrice: number;
+  maxPrice: number;
 }
 
 const ProductGrid: React.FC = () => {
@@ -45,8 +44,8 @@ const ProductGrid: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalProducts, setTotalProducts] = useState<number>(0);
-  const { filters } = useFilters();
-  const pageSize = 24;
+  const { filters, updateMetadata } = useFilters();
+  const pageSize = 25;
 
   // Hàm tải dữ liệu từ localStorage
   const loadImageSearchResults = () => {
@@ -98,19 +97,41 @@ const ProductGrid: React.FC = () => {
 
         const backendSort = sortMap[filters.sort] ?? '';
 
-        const response = await fetch("http://localhost:5130/api/Search/search", {
-          method: "POST",
+        // Build query params
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          pageSize: pageSize.toString(),
+        });
+
+        // Add filters
+        if (filters.category && filters.category.length > 0) {
+          params.append('category', filters.category.join(','));
+        }
+        if (filters.brand && filters.brand.length > 0) {
+          params.append('brand', filters.brand.join(','));
+        }
+        if (filters.priceRange.min > 0) {
+          params.append('minPrice', filters.priceRange.min.toString());
+        }
+        if (filters.priceRange.max < 100000000) {
+          params.append('maxPrice', filters.priceRange.max.toString());
+        }
+        
+        // Add sort
+        if (backendSort === 'price_asc') {
+          params.append('sortBy', 'price');
+          params.append('sortDesc', 'false');
+        } else if (backendSort === 'price_desc') {
+          params.append('sortBy', 'price');
+          params.append('sortDesc', 'true');
+        }
+
+        const response = await fetch(`http://localhost:5130/api/Products?${params.toString()}`, {
+          method: "GET",
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          body: JSON.stringify({
-            query: query || "", // Empty string để load tất cả sản phẩm
-            filters: filters,
-            sort: backendSort,
-            page: currentPage,
-            pageSize: pageSize,
-          }),
         });
   
         if (!response.ok) {
@@ -124,10 +145,19 @@ const ProductGrid: React.FC = () => {
           throw new Error("Failed to fetch products");
         }
   
-        const data: SearchResponse = await response.json();
-        setProducts(data.results);
-        setTotalProducts(Number(data.total));
-        setTotalPages(Math.ceil(Number(data.total) / pageSize));
+        const data: ProductsResponse = await response.json();
+        setProducts(data.products);
+        setTotalProducts(data.totalCount);
+        setTotalPages(data.totalPages);
+        
+        // Update filter metadata
+        updateMetadata({
+          categories: data.categories || [],
+          brands: data.brands || [],
+          minPrice: data.minPrice || 0,
+          maxPrice: data.maxPrice || 100000000,
+        });
+        
         // Xóa dữ liệu tìm kiếm hình ảnh khi thực hiện tìm kiếm văn bản
         localStorage.removeItem("imageSearchResults");
         localStorage.removeItem("isImageSearch");
@@ -198,27 +228,27 @@ const ProductGrid: React.FC = () => {
           <div className="row margin">
             {products.map((product) => (
           <ProductItem
-            key={product.productId}
-            id={product.productId.toString()}
+            key={product.id}
+            id={product.id.toString()}
             title={product.name}
-            href={`/products/${product.productId}`}
+            href={`/products/${product.id}`}
             imgSrc={product.imageUrl}
             alt={product.name}
             price={product.price.toLocaleString("vi-VN") + "₫"}
             comparePrice={
-              product.oldPrice
+              product.oldPrice && product.oldPrice > 0
                 ? product.oldPrice.toLocaleString("vi-VN") + "₫"
                 : undefined
             }
             discount={
-              product.oldPrice && product.price
+              product.oldPrice && product.oldPrice > 0 && product.price
                 ? `-${Math.round(
                     ((product.oldPrice - product.price) / product.oldPrice) * 100
                   )}%`
                 : undefined
             }
-            variantId={product.itemId.toString()}
-            formAction="https://nd-mall.mysapo.net/cart/add"
+            variantId={product.id.toString()}
+            formAction="/cart/add"
             hasOptions={product.hasVariation}
             isContact={product.price === 0}
             onAddToWishlist={handleAddToWishlist}

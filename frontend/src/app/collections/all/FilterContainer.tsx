@@ -1,9 +1,10 @@
 // components/FilterContainer.tsx
 "use client"
-import { useState } from 'react';
-import FilterGroup from './FilterGroup';
-import SortItem from './SortItem';
-import { useFilters } from './FilterContext';
+import { useState, useMemo } from 'react';
+import FilterGroup from '@/app/collections/all/FilterGroup';
+import SortItem from '@/app/collections/all/SortItem';
+import { useFilters } from '@/app/collections/all/FilterContext';
+import './FilterContainer.css';
 
 const sortData = [
   { label: 'Mặc định', value: 'default' },
@@ -16,44 +17,9 @@ const sortData = [
 const priceData = [
   { id: 'filter-duoi-100-000d', label: 'Giá dưới 100.000đ', value: '(<100000)', dataGroup: 'Khoảng giá', dataField: 'price_min', dataText: 'Dưới 100.000đ', dataOperator: 'OR' },
   { id: 'filter-100-000d-200-000d', label: '100.000đ - 200.000đ', value: '(>100000 AND <200000)', dataGroup: 'Khoảng giá', dataField: 'price_min', dataText: '100.000đ - 200.000đ', dataOperator: 'OR' },
-  { id: 'filter- personally-200-000d-400-000d', label: '200.000đ - 400.000đ', value: '(>200000 AND <400000)', dataGroup: 'Khoảng giá', dataField: 'price_min', dataText: '200.000đ - 400.000đ', dataOperator: 'OR' },
+  { id: 'filter-200-000d-400-000d', label: '200.000đ - 400.000đ', value: '(>200000 AND <400000)', dataGroup: 'Khoảng giá', dataField: 'price_min', dataText: '200.000đ - 400.000đ', dataOperator: 'OR' },
   { id: 'filter-400-000d-700-000d', label: '400.000đ - 700.000đ', value: '(>400000 AND <700000)', dataGroup: 'Khoảng giá', dataField: 'price_min', dataText: '400.000đ - 700.000đ', dataOperator: 'OR' },
   { id: 'filter-tren700-000d', label: 'Giá trên 700.000đ', value: '(>700000)', dataGroup: 'Khoảng giá', dataField: 'price_min', dataText: 'Trên 700.000đ', dataOperator: 'OR' },
-];
-
-const typeData = [
-  { id: 'filter-ao-chong-nang', label: 'Áo chống nắng', value: '("Áo chống nắng")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Áo chống nắng', dataOperator: 'OR' },
-  { id: 'filter-banh-bong-lan', label: 'Bánh bông lan', value: '("Bánh bông lan")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Bánh bông lan', dataOperator: 'OR' },
-  { id: 'filter-banh-quy', label: 'Bánh quy', value: '("Bánh quy")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Bánh quy', dataOperator: 'OR' },
-  { id: 'filter-chuot-khong-day', label: 'Chuột không dây', value: '("Chuột không dây")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Chuột không dây', dataOperator: 'OR' },
-  { id: 'filter-dau-ca', label: 'Dầu cá', value: '("Dầu cá")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Dầu cá', dataOperator: 'OR' },
-  { id: 'filter-dep-quai', label: 'Dép quai', value: '("Dép quai")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Dép quai', dataOperator: 'OR' },
-  { id: 'filter-dien-thoai', label: 'Điện thoại', value: '("Điện thoại")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Điện thoại', dataOperator: 'OR' },
-  { id: 'filter-duong-mat', label: 'Dưỡng mắt', value: '("Dưỡng mắt")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Dưỡng mắt', dataOperator: 'OR' },
-  { id: 'filter-kem-chong-nang', label: 'Kem chống nắng', value: '("Kem chống nắng")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Kem chống nắng', dataOperator: 'OR' },
-  { id: 'filter-mi-tom', label: 'Mì tôm', value: '("Mì tôm")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Mì tôm', dataOperator: 'OR' },
-  { id: 'filter-serum', label: 'Serum', value: '("Serum")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Serum', dataOperator: 'OR' },
-  { id: 'filter-sua', label: 'Sữa', value: '("Sữa")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Sữa', dataOperator: 'OR' },
-  { id: 'filter-sua-hat', label: 'Sữa hạt', value: '("Sữa hạt")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Sữa hạt', dataOperator: 'OR' },
-  { id: 'filter-tai-nghe-bluetooth', label: 'Tai nghe bluetooth', value: '("Tai nghe bluetooth")', dataGroup: 'Loại', dataField: 'product_type.filter_key', dataText: 'Tai nghe bluetooth', dataOperator: 'OR' },
-];
-
-const vendorData = [
-  { id: 'filter-afc', label: 'AFC', value: '("AFC")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'AFC', dataOperator: 'OR' },
-  { id: 'filter-apple', label: 'Apple', value: '("Apple")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Apple', dataOperator: 'OR' },
-  { id: 'filter-coolmate', label: 'Coolmate', value: '("Coolmate")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Coolmate', dataOperator: 'OR' },
-  { id: 'filter-crocs', label: 'Crocs', value: '("Crocs")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Crocs', dataOperator: 'OR' },
-  { id: 'filter-ensure', label: 'Ensure', value: '("Ensure")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Ensure', dataOperator: 'OR' },
-  { id: 'filter-feg', label: 'FEG', value: '("FEG")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'FEG', dataOperator: 'OR' },
-  { id: 'filter-linkeetech', label: 'Linkeetech', value: '("Linkeetech")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Linkeetech', dataOperator: 'OR' },
-  { id: 'filter-logitech', label: 'Logitech', value: '("Logitech")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Logitech', dataOperator: 'OR' },
-  { id: 'filter-mega-lifesciences', label: 'Mega Lifesciences', value: '("Mega Lifesciences")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Mega Lifesciences', dataOperator: 'OR' },
-  { id: 'filter-omachi', label: 'Omachi', value: '("Omachi")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Omachi', dataOperator: 'OR' },
-  { id: 'filter-skinavis', label: 'Skinavis', value: '("Skinavis")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Skinavis', dataOperator: 'OR' },
-  { id: 'filter-solite', label: 'SOLITE', value: '("SOLITE")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'SOLITE', dataOperator: 'OR' },
-  { id: 'filter-th-truemilk', label: 'TH Truemilk', value: '("TH Truemilk")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'TH Truemilk', dataOperator: 'OR' },
-  { id: 'filter-tokyolife', label: 'TOKYOLIFE', value: '("TOKYOLIFE")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'TOKYOLIFE', dataOperator: 'OR' },
-  { id: 'filter-vinamilk', label: 'Vinamilk', value: '("Vinamilk")', dataGroup: 'Hãng', dataField: 'vendor.filter_key', dataText: 'Vinamilk', dataOperator: 'OR' },
 ];
 
 const colorData = [
@@ -74,11 +40,36 @@ const colorData = [
 ];
 
 const FilterContainer: React.FC = () => {
-  const { filters, updateFilters, clearAllFilters: clearFilters, selectedFilters } = useFilters();
+  const { filters, metadata, updateFilters, clearAllFilters: clearFilters, selectedFilters, removeFilter } = useFilters();
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+
+  // Generate dynamic filter data from API
+  const categoryData = useMemo(() => {
+    return metadata.categories.map((cat, index) => ({
+      id: `filter-cat-${index}`,
+      label: cat,
+      value: `"${cat}"`,
+      dataGroup: 'Danh mục',
+      dataField: 'category',
+      dataText: cat,
+      dataOperator: 'OR'
+    }));
+  }, [metadata.categories]);
+
+  const brandData = useMemo(() => {
+    return metadata.brands.map((brand, index) => ({
+      id: `filter-brand-${index}`,
+      label: brand,
+      value: `"${brand}"`,
+      dataGroup: 'Thương hiệu',
+      dataField: 'brand',
+      dataText: brand,
+      dataOperator: 'OR'
+    }));
+  }, [metadata.brands]);
 
   const handleSortChange = (value: string) => {
     updateFilters('sort', value);
@@ -142,12 +133,12 @@ const FilterContainer: React.FC = () => {
   const handleFilterChange = (value: string, checked: boolean) => {
     // General handler - will be mapped to specific handlers
     const priceItem = priceData.find(p => p.label === value);
-    const typeItem = typeData.find(t => t.label === value);
-    const brandItem = vendorData.find(v => v.label === value);
+    const categoryItem = categoryData.find(t => t.label === value);
+    const brandItem = brandData.find(v => v.label === value);
     const colorItem = colorData.find(c => c.label === value);
 
     if (priceItem) handlePriceChange(value, checked);
-    else if (typeItem) handleTypeChange(value, checked);
+    else if (categoryItem) handleTypeChange(value, checked);
     else if (brandItem) handleBrandChange(value, checked);
     else if (colorItem) handleColorChange(value, checked);
   };
@@ -167,7 +158,7 @@ const FilterContainer: React.FC = () => {
           <div className="filter-containers">
             <div
               className="filter-container__selected-filter"
-              style={{ display: [...selectedPriceRanges, ...selectedTypes, ...selectedBrands, ...selectedColors].length > 0 ? 'block' : 'none' }}
+              style={{ display: selectedFilters.length > 0 ? 'block' : 'none' }}
             >
               <div className="filter-container__selected-filter-header clearfix">
                 <span className="filter-container__selected-filter-header-title">
@@ -175,7 +166,7 @@ const FilterContainer: React.FC = () => {
                 </span>
                 <a
                   href="javascript:void(0)"
-                  onClick={clearAllFilters}
+                  onClick={clearFilters}
                   className="filter-container__clear-all"
                   title="Bỏ hết"
                 >
@@ -184,8 +175,17 @@ const FilterContainer: React.FC = () => {
               </div>
               <div className="filter-container__selected-filter-list clearfix">
                 <ul>
-                  {[...selectedPriceRanges, ...selectedTypes, ...selectedBrands, ...selectedColors].map((filter, index) => (
-                    <li key={index}>{filter}</li>
+                  {selectedFilters.map((filter, index) => (
+                    <li key={`${filter.key}-${filter.value}-${index}`}>
+                      <a
+                        href="javascript:void(0)"
+                        onClick={() => removeFilter(filter.key, filter.value)}
+                        className="filter-tag-remove"
+                      >
+                        <span className="filter-tag-close">×</span>
+                        {filter.label}
+                      </a>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -223,21 +223,25 @@ const FilterContainer: React.FC = () => {
               onFilterChange={handleFilterChange}
             />
 
-            {/* Loại */}
-            <FilterGroup
-              title="Loại"
-              items={typeData}
-              className="filter-type"
-              onFilterChange={handleFilterChange}
-            />
+            {/* Danh mục sản phẩm */}
+            {categoryData.length > 0 && (
+              <FilterGroup
+                title="Danh mục sản phẩm"
+                items={categoryData}
+                className="filter-category"
+                onFilterChange={handleFilterChange}
+              />
+            )}
 
             {/* Thương hiệu */}
-            <FilterGroup
-              title="Thương hiệu"
-              items={vendorData}
-              className="filter-vendor"
-              onFilterChange={handleFilterChange}
-            />
+            {brandData.length > 0 && (
+              <FilterGroup
+                title="Thương hiệu"
+                items={brandData}
+                className="filter-brand"
+                onFilterChange={handleFilterChange}
+              />
+            )}
 
             {/* Màu sắc */}
             <FilterGroup
