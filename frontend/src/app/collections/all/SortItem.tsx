@@ -14,7 +14,7 @@ interface SortItemProps {
   }) => {
     return (
       <li className={`btn-quick-sort ${value} ${isActive ? 'active' : ''}`}>
-        <a href="javascript:;" onClick={() => onSortChange(value)}>
+        <a href="#" onClick={(e) => { e.preventDefault(); onSortChange(value); }}>
           <i></i>
           {label}
         </a>

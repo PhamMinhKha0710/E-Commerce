@@ -279,11 +279,12 @@ const ProductTab: React.FC = () => {
                                       <div className="action d-xl-block d-none">
                                         <div className="actions-secondary">
                                           <a
-                                            href="javascript:void(0)"
+                                            href="#"
                                             className="action btn-compare js-btn-wishlist setWishlist btn-views"
                                             data-wish={product.href}
                                             tabIndex={0}
                                             title="Thêm vào yêu thích"
+                                            onClick={(e) => e.preventDefault()}
                                           >
                                             <svg
                                               className="icon"
@@ -303,7 +304,7 @@ const ProductTab: React.FC = () => {
                                 </div>
                               ))}
                             </div>
-                            <Link href="/my-pham.html" className="more bold border-radius-4" title="Xem thêm">
+                            <Link href="/collections/all" className="more bold border-radius-4" title="Xem thêm">
                               Xem thêm
                             </Link>
                           </div>

@@ -1,4 +1,4 @@
-using Ecommerce.Application.Common.DTOs;
+using Ecommerce.Application.Common.DTOs.Blog;
 using Ecommerce.Application.Queries.Blog;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;

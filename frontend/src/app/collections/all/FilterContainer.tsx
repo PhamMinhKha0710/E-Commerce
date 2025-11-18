@@ -165,8 +165,8 @@ const FilterContainer: React.FC = () => {
                   Bạn chọn
                 </span>
                 <a
-                  href="javascript:void(0)"
-                  onClick={clearFilters}
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); clearFilters(); }}
                   className="filter-container__clear-all"
                   title="Bỏ hết"
                 >
@@ -178,8 +178,8 @@ const FilterContainer: React.FC = () => {
                   {selectedFilters.map((filter, index) => (
                     <li key={`${filter.key}-${filter.value}-${index}`}>
                       <a
-                        href="javascript:void(0)"
-                        onClick={() => removeFilter(filter.key, filter.value)}
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); removeFilter(filter.key, filter.value); }}
                         className="filter-tag-remove"
                       >
                         <span className="filter-tag-close">×</span>
@@ -225,22 +225,22 @@ const FilterContainer: React.FC = () => {
 
             {/* Danh mục sản phẩm */}
             {categoryData.length > 0 && (
-              <FilterGroup
+            <FilterGroup
                 title="Danh mục sản phẩm"
                 items={categoryData}
                 className="filter-category"
-                onFilterChange={handleFilterChange}
-              />
+              onFilterChange={handleFilterChange}
+            />
             )}
 
             {/* Thương hiệu */}
             {brandData.length > 0 && (
-              <FilterGroup
-                title="Thương hiệu"
+            <FilterGroup
+              title="Thương hiệu"
                 items={brandData}
                 className="filter-brand"
-                onFilterChange={handleFilterChange}
-              />
+              onFilterChange={handleFilterChange}
+            />
             )}
 
             {/* Màu sắc */}

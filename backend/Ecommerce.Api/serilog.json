@@ -10,6 +10,8 @@
         "Microsoft": "Warning",
         "Microsoft.AspNetCore": "Warning",
         "Microsoft.EntityFrameworkCore": "Warning",
+        "Microsoft.EntityFrameworkCore.Relational": "Warning",
+        "Microsoft.EntityFrameworkCore.Database.Command": "Warning",
         "System": "Warning",
         "System.Net.Http.HttpClient": "Warning",
         "Serilog.AspNetCore.RequestLoggingMiddleware": "Warning"

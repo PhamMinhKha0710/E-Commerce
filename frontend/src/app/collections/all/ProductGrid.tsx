@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductItem from "@/app/collections/all/ProductItem";
 import { useFilters } from "@/app/collections/all/FilterContext";
+import { wishlistService } from "@/services/wishlistService";
+import WishlistNotification from "@/components/WishlistNotification";
 
 interface Product {
   id: number;
@@ -45,6 +47,7 @@ const ProductGrid: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalProducts, setTotalProducts] = useState<number>(0);
   const { filters, updateMetadata } = useFilters();
+  const [showWishlistNotification, setShowWishlistNotification] = useState(false);
   const pageSize = 25;
 
   // Hàm tải dữ liệu từ localStorage
@@ -193,7 +196,13 @@ const ProductGrid: React.FC = () => {
   };
 
   const handleAddToWishlist = (wish: string) => {
-    console.log(`Added to wishlist: ${wish}`);
+    const productId = parseInt(wish);
+    if (!isNaN(productId)) {
+      const success = wishlistService.addToWishlist(productId);
+      if (success) {
+        setShowWishlistNotification(true);
+      }
+    }
   };
 
   const handleAddToCart = (variantId: string) => {
@@ -201,8 +210,14 @@ const ProductGrid: React.FC = () => {
   };
 
   return (
-    <div className="products-view products-view-grid list_hover_pro">
-      {isLoading && (
+    <>
+      <WishlistNotification
+        show={showWishlistNotification}
+        onClose={() => setShowWishlistNotification(false)}
+        productCount={1}
+      />
+      <div className="products-view products-view-grid list_hover_pro">
+        {isLoading && (
         <div className="loading-container" style={{ padding: '60px 0', textAlign: 'center' }}>
           <div className="spinner-border text-danger" role="status">
             <span className="sr-only">Đang tải...</span>
@@ -325,6 +340,7 @@ const ProductGrid: React.FC = () => {
         </>
       )}
     </div>
+    </>
   );
 };
 

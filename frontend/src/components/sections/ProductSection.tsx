@@ -99,7 +99,7 @@ const ProductSection = ({ productsData }: ProductSectionProps) => {
                               ))}
                             </div>
                             <Link
-                              href="/danh-cho-ban.html"
+                              href="/collections/all"
                               className="more bold border-radius-4"
                               title="Xem thêm"
                             >
@@ -258,11 +258,12 @@ const ProductCard = ({ product }: { product: Product }) => {
         <div className="action d-xl-block d-none">
           <div className="actions-secondary">
             <a
-              href="javascript:void(0)"
+              href="#"
               className="action btn-compare js-btn-wishlist setWishlist btn-views"
               data-wish={product.slug}
               tabIndex={0}
               title="Thêm vào yêu thích"
+              onClick={(e) => e.preventDefault()}
             >
               <svg
                 className="icon"

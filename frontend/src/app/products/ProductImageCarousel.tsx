@@ -47,10 +47,11 @@ export default function ProductImageCarousel({ images, alt }: ProductImageCarous
           ))}
           <div className="product-reviews-wish">
             <a
-              href="javascript:void(0)"
+              href="#"
               className="action btn-compare js-btn-wishlist setWishlist btn-views"
               data-wish="tai-nghe-bluetooth-headphone-edifier-w820nb-plus-thoang-khi-thoai-mai"
               title="Thêm vào yêu thích"
+              onClick={(e) => e.preventDefault()}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="11" viewBox="0 0 12 11" fill="none">
                 <path

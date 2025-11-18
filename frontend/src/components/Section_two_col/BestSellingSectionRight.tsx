@@ -66,7 +66,7 @@ const BestSellingSectionRight: React.FC = () => {
       <div className="position-sticky">
         <div className="block-title">
           <h2>
-            <Link href="/san-pham-noi-bat.html" title="Deal hot trong tuần">
+            <Link href="/collections/all" title="Deal hot trong tuần">
               <Image
                 width={26}
                 height={21}
@@ -76,7 +76,7 @@ const BestSellingSectionRight: React.FC = () => {
               Deal hot trong tuần
             </Link>
           </h2>
-          <Link href="/san-pham-noi-bat.html" title="Xem tất cả" className="view_more">
+          <Link href="/collections/all" title="Xem tất cả" className="view_more">
             Xem tất cả
             <svg
               xmlns="http://www.w3.org/2000/svg"

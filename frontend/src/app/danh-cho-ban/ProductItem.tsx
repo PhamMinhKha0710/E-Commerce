@@ -2,6 +2,8 @@
 "use client";
 
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { wishlistService } from '@/services/wishlistService';
 
 interface ProductItemProps {
   id: string;
@@ -36,6 +38,27 @@ const ProductItem: React.FC<ProductItemProps> = ({
   onAddToWishlist,
   onAddToCart,
 }) => {
+  const [isInWishlist, setIsInWishlist] = useState(false);
+
+  // Kiểm tra trạng thái wishlist khi component mount và khi wishlist thay đổi
+  useEffect(() => {
+    const checkWishlist = () => {
+      const productId = parseInt(id, 10);
+      if (!isNaN(productId)) {
+        setIsInWishlist(wishlistService.isInWishlist(productId));
+      }
+    };
+
+    checkWishlist();
+
+    // Lắng nghe event khi wishlist được cập nhật
+    window.addEventListener('wishlistUpdated', checkWishlist);
+
+    return () => {
+      window.removeEventListener('wishlistUpdated', checkWishlist);
+    };
+  }, [id]);
+
   const handleAddToCart = (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasOptions && !isContact) {
@@ -45,7 +68,8 @@ const ProductItem: React.FC<ProductItemProps> = ({
     }
   };
 
-  const handleWishlistClick = () => {
+  const handleWishlistClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
     onAddToWishlist(id);
   };
 
@@ -123,22 +147,32 @@ const ProductItem: React.FC<ProductItemProps> = ({
           <div className="action d-xl-block d-none">
             <div className="actions-secondary">
               <a
-                href="javascript:void(0)"
-                className="action btn-compare js-btn-wishlist setWishlist btn-views"
+                href="#"
+                className={`action btn-compare js-btn-wishlist setWishlist btn-views ${isInWishlist ? 'active' : ''}`}
                 data-wish={id}
                 tabIndex={0}
-                title="Thêm vào yêu thích"
+                title={isInWishlist ? "Đã yêu thích" : "Thêm vào yêu thích"}
                 onClick={handleWishlistClick}
               >
-                {/* <svg className="icon">
-                  <use xmlnsXlink="http://www.w3.org/1999/xlink" xlinkHref="#icon-wishlist" />
-                </svg> */}
-                <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                <path 
-                  fill="#fd213b" 
-                  d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"
+                {isInWishlist ? (
+                  // Icon đầy (filled) khi đã yêu thích
+                  <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                    <path 
+                      fill="#fd213b" 
+                      d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"
                     />
-                </svg>
+                  </svg>
+                ) : (
+                  // Icon viền (outline) khi chưa yêu thích
+                  <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                    <path 
+                      fill="none"
+                      stroke="#fd213b"
+                      strokeWidth="32"
+                      d="M352.92 80C288 80 256 144 256 144s-32-64-96.92-64c-52.76 0-94.54 44.14-95.08 96.81-1.1 109.33 86.73 187.08 183 252.42a16 16 0 0018 0c96.26-65.34 184.1-143.09 183-252.42-.54-52.67-42.32-96.81-95.08-96.81z"
+                    />
+                  </svg>
+                )}
               </a>
             </div>
           </div>

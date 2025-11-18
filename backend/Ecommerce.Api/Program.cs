@@ -21,6 +21,7 @@ using Ecommere.Application.Common;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Nest;
@@ -78,6 +79,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             // Bật tính năng thử lại tối đa 3 lần nếu gặp lỗi tạm thời
             // Ví dụ: mất kết nối mạng hoặc cơ sở dữ liệu tạm thời không phản hồi
             sqlOptions.EnableRetryOnFailure(3);
+
+            // Cấu hình QuerySplittingBehavior để tối ưu performance khi load nhiều collections
+            // SplitQuery sẽ tách thành nhiều query riêng biệt thay vì một query lớn
+            // Điều này giúp tránh cảnh báo MultipleCollectionIncludeWarning và cải thiện performance
+            sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
         });
 
     // Tắt tính năng theo dõi thay đổi khi chỉ cần đọc dữ liệu (không sửa/xóa)
@@ -86,6 +92,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     {
         options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
     }
+
+    // Cấu hình logging cho Entity Framework Core warnings
+    // Đảm bảo cảnh báo MultipleCollectionIncludeWarning được log vào Serilog
+    // Mặc định EF Core sẽ log warnings, nhưng cần đảm bảo Serilog đã cấu hình để nhận chúng
+    options.ConfigureWarnings(warnings =>
+    {
+        // Giữ nguyên tất cả warnings (không bỏ qua) để Serilog có thể log
+        // MultipleCollectionIncludeWarning sẽ được log tự động nếu Serilog đã cấu hình đúng
+        warnings.Default(WarningBehavior.Log);
+    });
 });
 
 builder.Services.AddCors(options =>
@@ -109,6 +125,7 @@ builder.Services.AddScoped<SendOtpCommandHandler>();
 builder.Services.AddScoped<GetUserInfoQueryHandler>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 // builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<IRedisService, RedisService>();

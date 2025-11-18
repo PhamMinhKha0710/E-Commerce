@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userData = await userResponse.json();
           setIsLoggedIn(true);
           setUser({
-            name: `${userData.firstName} ${userData.lastName}`,
+            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email,
             email: userData.email,
             avatarUrl: userData.avatarUrl || "https://example.com/default-avatar.png",
           });
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userData = await response.json();
           setIsLoggedIn(true);
           setUser({
-            name: `${userData.firstName} ${userData.lastName}`,
+            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email,
             email: userData.email,
             avatarUrl: userData.avatarUrl || "https://example.com/default-avatar.png",
           });

@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5130';
+import apiClient from '@/lib/apiClient';
 
 export interface BlogPost {
   id: number;
@@ -51,7 +49,7 @@ export interface PaginatedBlogPosts {
 }
 
 class BlogService {
-  private baseUrl = `${API_BASE_URL}/api/blog`;
+  private baseUrl = '/api/blog';
 
   async getPosts(params: {
     page?: number;
@@ -62,47 +60,27 @@ class BlogService {
     onlyPublished?: boolean;
     onlyHighlighted?: boolean;
   } = {}): Promise<PaginatedBlogPosts> {
-    try {
-      const response = await axios.get<PaginatedBlogPosts>(this.baseUrl, { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching blog posts:', error);
-      throw error;
-    }
+    const response = await apiClient.get<PaginatedBlogPosts>(this.baseUrl, { params });
+    return response.data;
   }
 
   async getPostBySlug(slug: string): Promise<BlogPostDetail> {
-    try {
-      const response = await axios.get<BlogPostDetail>(`${this.baseUrl}/${slug}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching blog post:', error);
-      throw error;
-    }
+    const response = await apiClient.get<BlogPostDetail>(`${this.baseUrl}/${slug}`);
+    return response.data;
   }
 
   async getCategories(onlyActive: boolean = true): Promise<BlogCategory[]> {
-    try {
-      const response = await axios.get<BlogCategory[]>(`${this.baseUrl}/categories`, {
-        params: { onlyActive }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching blog categories:', error);
-      throw error;
-    }
+    const response = await apiClient.get<BlogCategory[]>(`${this.baseUrl}/categories`, {
+      params: { onlyActive }
+    });
+    return response.data;
   }
 
   async getHighlightedPosts(pageSize: number = 6): Promise<PaginatedBlogPosts> {
-    try {
-      const response = await axios.get<PaginatedBlogPosts>(`${this.baseUrl}/highlighted`, {
-        params: { pageSize }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching highlighted posts:', error);
-      throw error;
-    }
+    const response = await apiClient.get<PaginatedBlogPosts>(`${this.baseUrl}/highlighted`, {
+      params: { pageSize }
+    });
+    return response.data;
   }
 }
 

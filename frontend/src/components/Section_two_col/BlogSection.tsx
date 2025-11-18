@@ -84,11 +84,11 @@ const BlogSection: React.FC = () => {
         <div className="index-white-bg clearfix">
           <div className="title clearfix">
             <h2 className="titlecate">
-              <Link href="/tin-tuc.html" title="Tin tức mới nhất">
+              <Link href="/tin-tuc" title="Tin tức mới nhất">
                 Tin tức mới nhất
               </Link>
             </h2>
-            <Link href="/tin-tuc.html" className="viewall" title="Xem thêm Tin tức mới nhất">
+            <Link href="/tin-tuc" className="viewall" title="Xem thêm Tin tức mới nhất">
               Xem thêm <b>Tin tức mới nhất</b> ❯
             </Link>
           </div>
@@ -134,7 +134,7 @@ const BlogSection: React.FC = () => {
             <div className="col-lg-3 col-md-12 index-promotion-news-block">
               <div className="index-promotion-news">
                 <h3>
-                  <Link href="/tin-tuc.html" title="Mẹo vặt">
+                  <Link href="/tin-tuc" title="Mẹo vặt">
                     Mẹo vặt
                   </Link>
                 </h3>

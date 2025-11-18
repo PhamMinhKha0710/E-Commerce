@@ -29,9 +29,15 @@ public class GetUserInfoQueryHandler
             return Result<UserDto>.Success(new UserDto {
                 Id = user.Id,
                 Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                Role = user.Role
+                AvatarUrl = user.AvatarUrl,
+                Role = user.Role,
+                IsVerified = user.IsVerified,
+                LastActive = user.LastActive,
+                IsLocked = user.IsLocked,
+                CreatedAt = user.CreatedAt
             });
         }
         catch (Exception ex)

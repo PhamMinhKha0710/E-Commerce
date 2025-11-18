@@ -33,7 +33,7 @@ export default function NewsSidebar() {
   return (
     <div className="blog-bar">
       <div className="title">
-        <a href="tin-tuc.html" title="Tin nổi bật">Tin nổi bật</a>
+        <a href="/tin-tuc" title="Tin nổi bật">Tin nổi bật</a>
       </div>
       <div className="clearfix"></div>
       <div className="blog-bar-default">

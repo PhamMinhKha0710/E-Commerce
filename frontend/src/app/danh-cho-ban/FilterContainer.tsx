@@ -174,8 +174,8 @@ const FilterContainer: React.FC = () => {
                   Bạn chọn
                 </span>
                 <a
-                  href="javascript:void(0)"
-                  onClick={clearAllFilters}
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); clearAllFilters(); }}
                   className="filter-container__clear-all"
                   title="Bỏ hết"
                 >

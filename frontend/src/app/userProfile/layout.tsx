@@ -1,13 +1,40 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import '@/styles/userProfileStyles.css';
 import Breadcrumb from '@/components/sections/Breadcrum';
+import { getUserAccount, UserAccountInfo } from '@/services/profileService';
 
 export default function UserProfileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [userInfo, setUserInfo] = useState<UserAccountInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (typeof window === "undefined") return;
+      
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await getUserAccount(token);
+        setUserInfo(data);
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const sidebarItems = [
     {
@@ -117,10 +144,20 @@ export default function UserProfileLayout({ children }: { children: React.ReactN
         <div className="row">
           <aside className="col-lg-3 col-md-4 col-sm-12 sc-33a27214-2 jIYTAs" style={{ backgroundColor: '#e7eef6' }}>
             <div className="sc-33a27214-3 bThJSs">
-              <Image src="https://salt.tikicdn.com/desktop/img/avatar.png" alt="avatar" width={40} height={40} />
+              <Image 
+                src={userInfo?.avatarUrl || "https://salt.tikicdn.com/desktop/img/avatar.png"} 
+                alt="avatar" 
+                width={40} 
+                height={40}
+                style={{ borderRadius: '50%', objectFit: 'cover' }}
+              />
               <div>
                 <p style={{ marginBottom: '0px' }}>Tài khoản của</p>
-                <strong>Nguyễn Ngọc Tiệp</strong>
+                <strong>
+                  {loading ? 'Đang tải...' : 
+                   userInfo ? `${userInfo.firstName || ''} ${userInfo.lastName || ''}`.trim() || userInfo.email : 
+                   'Khách hàng'}
+                </strong>
               </div>
             </div>
             <ul className="sc-33a27214-4 iXwMON">
