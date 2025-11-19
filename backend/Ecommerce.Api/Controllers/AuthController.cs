@@ -91,8 +91,6 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> GetUserInfo()
     {
-        var authorizationHeader = Request.Headers["Authorization"].ToString() ?? "Không có header Authorization";
-        _logger.LogInformation("Received Authorization header: {Header}", authorizationHeader);
         var subClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (subClaim == null)
         {
