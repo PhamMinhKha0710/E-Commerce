@@ -42,8 +42,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getUserInfo, isAuthenticated, logout, getCurrentUser, checkIsAdmin } from "@/lib/api/auth"
+import { getUserInfo, isAuthenticated, logout, getCurrentUser } from "@/lib/api/auth"
 import { useEffect, useState } from "react"
+
+// Type cho route navigation
+interface NavRoute {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  active: boolean;
+  badge?: string;
+}
 
 export function AdminDashboardLayout({
   children,
@@ -68,15 +77,16 @@ export function AdminDashboardLayout({
         // Thử lấy từ API trước
         const currentUser = await getCurrentUser();
         if (currentUser) {
-          // Kiểm tra role admin
+          // Kiểm tra role admin - BẢO VỆ CLIENT-SIDE
           const userRole = currentUser.role?.toLowerCase();
           if (userRole !== 'admin') {
-            // Xóa token và redirect về login
-c            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user_info');
-            document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            toast.error("Bạn không có quyền truy cập admin. Chỉ có role admin mới được phép.");
-            router.push('/login');
+            // User không phải admin, xóa token và redirect
+            logout();
+            toast.error("Bạn không có quyền truy cập khu vực quản trị!", {
+              description: "Chỉ có role Admin mới được phép truy cập.",
+              duration: 5000,
+            });
+            router.push('/403?error=access_denied&from=' + encodeURIComponent(pathname));
             return;
           }
           
@@ -96,12 +106,13 @@ c            localStorage.removeItem('auth_token');
           if (userInfo) {
             const userRole = userInfo.role?.toLowerCase();
             if (userRole !== 'admin') {
-              // Xóa token và redirect về login
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user_info');
-              document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-              toast.error("Bạn không có quyền truy cập admin. Chỉ có role admin mới được phép.");
-              router.push('/login');
+              // User không phải admin, xóa token và redirect
+              logout();
+              toast.error("Bạn không có quyền truy cập khu vực quản trị!", {
+                description: "Chỉ có role Admin mới được phép truy cập.",
+                duration: 5000,
+              });
+              router.push('/403?error=access_denied&from=' + encodeURIComponent(pathname));
               return;
             }
             
@@ -126,10 +137,13 @@ c            localStorage.removeItem('auth_token');
         if (userInfo) {
           const userRole = userInfo.role?.toLowerCase();
           if (userRole !== 'admin') {
-            // Xóa token và redirect về login
+            // User không phải admin, xóa token và redirect
             logout();
-            toast.error("Bạn không có quyền truy cập admin. Chỉ có role admin mới được phép.");
-            router.push('/login');
+            toast.error("Bạn không có quyền truy cập khu vực quản trị!", {
+              description: "Chỉ có role Admin mới được phép truy cập.",
+              duration: 5000,
+            });
+            router.push('/403?error=access_denied&from=' + encodeURIComponent(pathname));
             return;
           }
           
@@ -149,7 +163,7 @@ c            localStorage.removeItem('auth_token');
     };
     
     fetchUserInfo();
-  }, [router]);
+  }, [router, pathname]);
 
   const handleLogout = () => {
     logout();
@@ -233,7 +247,7 @@ c            localStorage.removeItem('auth_token');
     closed: { opacity: 0, display: "none", transition: { duration: 0.2 } },
   }
 
-  const renderNavLinks = (routes, sectionName = "") => (
+  const renderNavLinks = (routes: NavRoute[], sectionName = "") => (
     <>
       {sectionName && isOpen && (
         <div className="px-3 py-2">

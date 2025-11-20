@@ -67,19 +67,21 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
     }
 
     const data = await response.json();
-    console.log('Login successful');
+    console.log('Login response:', data);
     
-    // Handle both 'token' and 'accessToken' from API
-    const token = data.token || data.accessToken;
+    // Handle both 'token', 'accessToken' (camelCase) and 'AccessToken' (PascalCase) from API
+    const token = data.token || data.accessToken || data.AccessToken;
     if (!token) {
-      console.error('No token found in login response');
+      console.error('No token found in login response. Response data:', data);
       throw new Error('No token received from server');
     }
     
+    // Backend không trả về user trong login response, cần gọi API /me để lấy user info
+    // Tạm thời return token, user sẽ được lấy sau khi set token
     return {
       token,
-      expiresAt: data.expiresAt,
-      user: data.user,
+      expiresAt: data.expiresAt || data.ExpiresIn ? new Date(Date.now() + (data.ExpiresIn || data.expiresIn || 900) * 1000).toISOString() : undefined,
+      user: data.user || data.User, // Có thể không có
     };
   } catch (error) {
     console.error('Login error:', error);
@@ -114,7 +116,19 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     }
 
     const userData = await response.json();
-    return userData;
+    
+    // Map API response để đảm bảo tương thích với cả PascalCase và camelCase
+    const mappedUser: CurrentUser = {
+      id: userData.id || userData.Id,
+      email: userData.email || userData.Email || '',
+      name: userData.name || userData.Name,
+      role: userData.role || userData.Role || '',
+      firstName: userData.firstName || userData.FirstName,
+      lastName: userData.lastName || userData.LastName,
+      bio: userData.bio || userData.Bio,
+    };
+    
+    return mappedUser;
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
@@ -176,35 +190,6 @@ export function getUserInfo(): CurrentUser | null {
  */
 export function isAuthenticated(): boolean {
   return !!getAuthToken();
-}
-
-/**
- * Check if current user has admin role
- */
-export function isAdmin(): boolean {
-  const userInfo = getUserInfo();
-  if (!userInfo) return false;
-  
-  // Kiểm tra role, hỗ trợ cả "admin" và "Admin"
-  const role = userInfo.role?.toLowerCase();
-  return role === 'admin';
-}
-
-/**
- * Check if current user has admin role (async - from API)
- */
-export async function checkIsAdmin(): Promise<boolean> {
-  try {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) return false;
-    
-    // Kiểm tra role, hỗ trợ cả "admin" và "Admin"
-    const role = currentUser.role?.toLowerCase();
-    return role === 'admin';
-  } catch (error) {
-    console.error('Error checking admin role:', error);
-    return false;
-  }
 }
 
 /**
