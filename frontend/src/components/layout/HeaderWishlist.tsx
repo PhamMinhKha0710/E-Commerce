@@ -3,31 +3,58 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { wishlistService } from "@/services/wishlistService";
+import { useAuth } from "@/context/AuthContext";
+import { wishlistService, AUTH_REQUIRED_ERROR } from "@/services/wishlistService";
 
 const HeaderWishlist = () => {
     const [wishlistCount, setWishlistCount] = useState(0);
+    const { isLoggedIn } = useAuth();
 
     useEffect(() => {
-        // Lấy số lượng ban đầu
-        const updateCount = () => {
-            const count = wishlistService.getWishlistCount();
-            setWishlistCount(count);
+        let isMounted = true;
+
+        const updateCountFromCache = () => {
+            if (!isMounted) return;
+            setWishlistCount(wishlistService.getWishlistCount());
         };
 
-        updateCount();
+        const syncWishlist = async () => {
+            if (!isLoggedIn) {
+                wishlistService.clearCache();
+                updateCountFromCache();
+                return;
+            }
+            try {
+                await wishlistService.getWishlist();
+            } catch (error: unknown) {
+                const message = (error as Error)?.message;
+                if (message === AUTH_REQUIRED_ERROR) {
+                    wishlistService.clearCache();
+                } else {
+                    console.error("Không thể đồng bộ wishlist:", error);
+                }
+            } finally {
+                updateCountFromCache();
+            }
+        };
 
-        // Lắng nghe event khi wishlist thay đổi
+        syncWishlist();
+
         const handleWishlistUpdate = () => {
-            updateCount();
+            updateCountFromCache();
         };
 
-        window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+        if (typeof window !== "undefined") {
+            window.addEventListener("wishlistUpdated", handleWishlistUpdate as EventListener);
+        }
 
         return () => {
-            window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+            isMounted = false;
+            if (typeof window !== "undefined") {
+                window.removeEventListener("wishlistUpdated", handleWishlistUpdate as EventListener);
+            }
         };
-    }, []);
+    }, [isLoggedIn]);
 
     return (
         <div className="header-wish">

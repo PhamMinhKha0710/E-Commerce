@@ -24,4 +24,5 @@ public class User
     public List<RefreshToken> RefreshTokens { get; set; } 
     public List<UserSearch> UserSearches { get; set; }
     public List<UserViewHistory> UserViewHistories { get; set; }
+    public List<WishlistItem> WishlistItems { get; set; } = new();
 }

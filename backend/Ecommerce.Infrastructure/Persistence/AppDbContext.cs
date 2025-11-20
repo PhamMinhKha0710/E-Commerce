@@ -44,6 +44,7 @@ public class AppDbContext : DbContext
     public DbSet<BlogPost> BlogPosts {get; set;}
     public DbSet<BlogComment> BlogComments {get; set;}
     public DbSet<BlogCategory> BlogCategories {get; set;}
+    public DbSet<WishlistItem> WishlistItems { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Áp dụng các configuration 
@@ -78,5 +79,6 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new BlogPostConfiguration());
         modelBuilder.ApplyConfiguration(new BlogCommentConfiguration());
         modelBuilder.ApplyConfiguration(new BlogCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new WishlistItemConfiguration());
     }
 }

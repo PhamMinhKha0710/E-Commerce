@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductItem from "@/app/collections/all/ProductItem";
 import { useFilters } from "@/app/collections/all/FilterContext";
-import { wishlistService } from "@/services/wishlistService";
 import WishlistNotification from "@/components/WishlistNotification";
 
 interface Product {
@@ -195,14 +194,8 @@ const ProductGrid: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAddToWishlist = (wish: string) => {
-    const productId = parseInt(wish);
-    if (!isNaN(productId)) {
-      const success = wishlistService.addToWishlist(productId);
-      if (success) {
-        setShowWishlistNotification(true);
-      }
-    }
+  const handleWishlistSuccess = () => {
+    setShowWishlistNotification(true);
   };
 
   const handleAddToCart = (variantId: string) => {
@@ -266,7 +259,7 @@ const ProductGrid: React.FC = () => {
             formAction="/cart/add"
             hasOptions={product.hasVariation}
             isContact={product.price === 0}
-            onAddToWishlist={handleAddToWishlist}
+            onAddToWishlist={handleWishlistSuccess}
             onAddToCart={handleAddToCart}
           />
             ))}

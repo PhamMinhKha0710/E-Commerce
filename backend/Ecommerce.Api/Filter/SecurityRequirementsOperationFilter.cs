@@ -8,7 +8,7 @@ namespace Ecommerce.API.Filters
     {
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
-            // Kiểm tra xem endpoint có [AllowAnonymous] không
+            // Kiểm tra xem endpoint có [AllowAnonymous] không (method-level hoặc controller-level)
             var hasAllowAnonymous = context.MethodInfo
             .GetCustomAttributes(true)
             .OfType<AllowAnonymousAttribute>()
@@ -23,10 +23,18 @@ namespace Ecommerce.API.Filters
                 return;
             }
 
-            var authAttributes = context.MethodInfo
+            // Kiểm tra [Authorize] ở cả method-level và controller-level
+            var methodAuthAttributes = context.MethodInfo
                 .GetCustomAttributes(true)
                 .OfType<AuthorizeAttribute>()
                 .ToList();
+            
+            var controllerAuthAttributes = context.MethodInfo.DeclaringType?
+                .GetCustomAttributes(true)
+                .OfType<AuthorizeAttribute>()
+                .ToList() ?? new List<AuthorizeAttribute>();
+
+            var authAttributes = methodAuthAttributes.Concat(controllerAuthAttributes).ToList();
 
             // Ghi log để debug
             Console.WriteLine($"Applying filter to {context.MethodInfo.Name}, Auth: {authAttributes.Any()}");

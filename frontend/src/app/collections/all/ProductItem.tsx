@@ -3,7 +3,8 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { wishlistService } from '@/services/wishlistService';
+import { useAuth } from '@/context/AuthContext';
+import { wishlistService, AUTH_REQUIRED_ERROR } from '@/services/wishlistService';
 
 interface ProductItemProps {
   id: string;
@@ -18,7 +19,7 @@ interface ProductItemProps {
   formAction: string;
   hasOptions?: boolean; // Vẫn giữ prop này để xử lý logic redirect
   isContact?: boolean; // Vẫn giữ prop này để xử lý logic redirect
-  onAddToWishlist: (wish: string) => void;
+  onAddToWishlist?: (productId: number) => void;
   onAddToCart: (variantId: string) => void;
 }
 
@@ -39,25 +40,50 @@ const ProductItem: React.FC<ProductItemProps> = ({
   onAddToCart,
 }) => {
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const { isLoggedIn } = useAuth();
+  const productId = parseInt(id, 10);
 
-  // Kiểm tra trạng thái wishlist khi component mount và khi wishlist thay đổi
   useEffect(() => {
-    const checkWishlist = () => {
-      const productId = parseInt(id, 10);
-      if (!isNaN(productId)) {
+    let isMounted = true;
+
+    const syncWishlistState = async () => {
+      if (!isLoggedIn || isNaN(productId)) {
+        setIsInWishlist(false);
+        return;
+      }
+      try {
+        await wishlistService.getWishlist();
+      } catch (error) {
+        const message = (error as Error)?.message;
+        if (message === AUTH_REQUIRED_ERROR) {
+          setIsInWishlist(false);
+          return;
+        }
+        console.error('Không thể đồng bộ wishlist:', error);
+      }
+      if (isMounted) {
         setIsInWishlist(wishlistService.isInWishlist(productId));
       }
     };
 
-    checkWishlist();
+    const handleWishlistUpdate = () => {
+      if (!isMounted || isNaN(productId)) return;
+      setIsInWishlist(wishlistService.isInWishlist(productId));
+    };
 
-    // Lắng nghe event khi wishlist được cập nhật
-    window.addEventListener('wishlistUpdated', checkWishlist);
+    syncWishlistState();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('wishlistUpdated', handleWishlistUpdate as EventListener);
+    }
 
     return () => {
-      window.removeEventListener('wishlistUpdated', checkWishlist);
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('wishlistUpdated', handleWishlistUpdate as EventListener);
+      }
     };
-  }, [id]);
+  }, [id, isLoggedIn, productId]);
 
   const handleAddToCart = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,9 +94,32 @@ const ProductItem: React.FC<ProductItemProps> = ({
     }
   };
 
-  const handleWishlistClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleWishlistClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    onAddToWishlist(id);
+    if (isNaN(productId)) return;
+
+    if (!isLoggedIn) {
+      alert('Vui lòng đăng nhập để quản lý danh sách yêu thích');
+      return;
+    }
+
+    try {
+      if (isInWishlist) {
+        await wishlistService.removeFromWishlist(productId);
+      } else {
+        await wishlistService.addToWishlist(productId);
+        onAddToWishlist?.(productId);
+      }
+      setIsInWishlist(wishlistService.isInWishlist(productId));
+    } catch (error) {
+      const message = (error as Error)?.message;
+      if (message === AUTH_REQUIRED_ERROR) {
+        alert('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+      } else {
+        console.error('Không thể cập nhật wishlist:', error);
+        alert('Không thể cập nhật danh sách yêu thích. Vui lòng thử lại.');
+      }
+    }
   };
 
   return (

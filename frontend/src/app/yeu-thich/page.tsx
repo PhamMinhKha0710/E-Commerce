@@ -4,128 +4,107 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Breadcrumb from '@/components/sections/Breadcrum';
-import { wishlistService, WishlistItem } from '@/services/wishlistService';
+import { wishlistService, WishlistItem, AUTH_REQUIRED_ERROR } from '@/services/wishlistService';
+import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import './WishlistPage.css';
 
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  imageUrl: string;
-  price: number;
-  oldPrice: number;
-  currency: string;
-  hasVariation: boolean;
-  qtyInStock: number;
-  categoryId?: number;
-  productItemId?: number | null;
-}
-
 export default function WishlistPage() {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
   const { addToCart } = useCart();
+  const { isLoggedIn } = useAuth();
 
-  // Load wishlist và fetch product details
   useEffect(() => {
-    const loadWishlist = async () => {
+    let isMounted = true;
+
+    const loadWishlist = async (force = false) => {
+      if (!isLoggedIn) {
+        setAuthMessage('Vui lòng đăng nhập để xem danh sách yêu thích');
+        setWishlistItems([]);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
+      setAuthMessage(null);
 
       try {
-        const items = wishlistService.getWishlist();
-        setWishlistItems(items);
-
-        if (items.length === 0) {
-          setIsLoading(false);
-          return;
+        const items = await wishlistService.getWishlist(force);
+        if (isMounted) {
+          setWishlistItems(items);
         }
-
-        // Fetch product details từ API
-        const productIds = items.map(item => item.productId);
-        const productPromises = productIds.map(async (id) => {
-          try {
-            const response = await fetch(`http://localhost:5130/api/Products/${id}/detail`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              // API trả về ProductId, Image, HasVariations, Availability
-              const isInStock = data.availability === 'InStock';
-              return {
-                id: data.productId || data.id,
-                name: data.name,
-                slug: data.slug || `products/${data.productId || data.id}`,
-                imageUrl: data.image || data.imageUrl || '/images/placeholder.jpg',
-                price: data.price || 0,
-                oldPrice: data.oldPrice || 0,
-                currency: '₫',
-                hasVariation: data.hasVariations || data.hasVariation || false,
-                qtyInStock: isInStock ? 1 : 0, // Sử dụng Availability để xác định stock
-                categoryId: data.categoryId || 0,
-                productItemId: data.defaultCombinationId ? parseInt(data.defaultCombinationId) : null,
-              };
-            }
-            return null;
-          } catch (err) {
-            console.error(`Error fetching product ${id}:`, err);
-            return null;
-          }
-        });
-
-        const fetchedProducts = await Promise.all(productPromises);
-        const validProducts = fetchedProducts.filter(p => p !== null) as Product[];
-        setProducts(validProducts);
       } catch (err) {
-        console.error('Error loading wishlist:', err);
-        setError('Không thể tải danh sách yêu thích. Vui lòng thử lại sau.');
+        const message = (err as Error)?.message;
+        if (message === AUTH_REQUIRED_ERROR) {
+          if (isMounted) {
+            setAuthMessage('Vui lòng đăng nhập để xem danh sách yêu thích');
+            setWishlistItems([]);
+          }
+        } else {
+          console.error('Error loading wishlist:', err);
+          if (isMounted) {
+            setError('Không thể tải danh sách yêu thích. Vui lòng thử lại sau.');
+          }
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    loadWishlist();
+    loadWishlist(true);
 
-    // Lắng nghe event khi wishlist được cập nhật
     const handleWishlistUpdate = () => {
-      loadWishlist();
+      setWishlistItems(wishlistService.getCachedWishlist());
     };
 
-    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('wishlistUpdated', handleWishlistUpdate as EventListener);
+    }
+
     return () => {
-      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+      isMounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('wishlistUpdated', handleWishlistUpdate as EventListener);
+      }
     };
-  }, []);
+  }, [isLoggedIn]);
 
-  const handleRemoveFromWishlist = (productId: number) => {
-    wishlistService.removeFromWishlist(productId);
-    setProducts(products.filter(p => p.id !== productId));
-    setWishlistItems(wishlistItems.filter(item => item.productId !== productId));
+  const handleRemoveFromWishlist = async (productId: number) => {
+    try {
+      await wishlistService.removeFromWishlist(productId);
+      setWishlistItems(wishlistService.getCachedWishlist());
+    } catch (err) {
+      const message = (err as Error)?.message;
+      if (message === AUTH_REQUIRED_ERROR) {
+        setAuthMessage('Vui lòng đăng nhập để xem danh sách yêu thích');
+      } else {
+        setError('Không thể xóa sản phẩm khỏi danh sách yêu thích. Vui lòng thử lại.');
+      }
+    }
   };
 
-  const handleAddToCart = async (product: Product) => {
+  const handleAddToCart = async (product: WishlistItem) => {
     if (product.hasVariation) {
       // Nếu có biến thể, chuyển đến trang chi tiết
-      window.location.href = `/products/${product.id}`;
+      window.location.href = `/products/${product.productId}`;
     } else {
       // Thêm trực tiếp vào giỏ hàng
       await addToCart({
-        productId: product.id,
+        productId: product.productId,
         productName: product.name,
         imageUrl: product.imageUrl,
         price: product.price,
         quantity: 1,
-        currency: 'VND',
+        currency: product.currency || 'VND',
         hasVariations: product.hasVariation,
-        productItemId: product.productItemId || null,
-        categoryId: product.categoryId || 0,
+        productItemId: product.productItemId ?? null,
+        categoryId: product.categoryId ?? 0,
       });
     }
   };
@@ -167,7 +146,14 @@ export default function WishlistPage() {
           <div className="wishlist-error">
             <p>{error}</p>
           </div>
-        ) : products.length === 0 ? (
+        ) : authMessage ? (
+          <div className="wishlist-error">
+            <p>{authMessage}</p>
+            <Link href="/auth/login" className="continue-shopping-btn">
+              Đăng nhập ngay
+            </Link>
+          </div>
+        ) : wishlistItems.length === 0 ? (
           <div className="wishlist-empty">
             <div className="empty-icon">
               <svg width="120" height="120" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -186,14 +172,15 @@ export default function WishlistPage() {
         ) : (
           <div className="wishlist-content">
             <div className="wishlist-grid">
-              {products.map((product) => {
+              {wishlistItems.map((product) => {
                 const discount = calculateDiscount(product.oldPrice, product.price);
                 const imageSrc = product.imageUrl || '/images/placeholder.jpg';
                 const isExternalImage = imageSrc.startsWith('http');
+                const productUrl = `/products/${product.productId}`;
                 return (
-                  <div key={product.id} className="wishlist-item">
+                  <div key={product.productId} className="wishlist-item">
                     <div className="wishlist-item-image">
-                      <Link href={`/products/${product.id}`}>
+                      <Link href={productUrl}>
                         {isExternalImage ? (
                           <img
                             src={imageSrc}
@@ -219,7 +206,7 @@ export default function WishlistPage() {
                       )}
                       <button
                         className="remove-wishlist-btn"
-                        onClick={() => handleRemoveFromWishlist(product.id)}
+                        onClick={() => handleRemoveFromWishlist(product.productId)}
                         title="Xóa khỏi yêu thích"
                       >
                         <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor">
@@ -229,7 +216,7 @@ export default function WishlistPage() {
                     </div>
                     <div className="wishlist-item-info">
                       <h3 className="product-name">
-                        <Link href={`/products/${product.id}`}>{product.name}</Link>
+                        <Link href={productUrl}>{product.name}</Link>
                       </h3>
                       <div className="product-price">
                         {product.price > 0 ? (

@@ -1,77 +1,204 @@
-// Service để quản lý wishlist trong localStorage
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5130";
+export const AUTH_REQUIRED_ERROR = "AUTH_REQUIRED";
 
 export interface WishlistItem {
+  id: number;
   productId: number;
+  name: string;
+  slug: string;
+  imageUrl: string;
+  price: number;
+  oldPrice: number;
+  currency: string;
+  hasVariation: boolean;
+  qtyInStock: number;
+  productItemId?: number | null;
+  categoryId?: number | null;
   addedAt: string;
 }
 
-export const wishlistService = {
-  // Lấy danh sách wishlist
-  getWishlist(): WishlistItem[] {
-    if (typeof window === 'undefined') return [];
-    try {
-      const wishlist = localStorage.getItem('wishlist');
-      return wishlist ? JSON.parse(wishlist) : [];
-    } catch (error) {
-      console.error('Error getting wishlist:', error);
-      return [];
-    }
-  },
-
-  // Thêm sản phẩm vào wishlist
-  addToWishlist(productId: number): boolean {
-    if (typeof window === 'undefined') return false;
-    try {
-      const wishlist = this.getWishlist();
-      const exists = wishlist.some(item => item.productId === productId);
-      
-      if (!exists) {
-        wishlist.push({
-          productId,
-          addedAt: new Date().toISOString(),
-        });
-        localStorage.setItem('wishlist', JSON.stringify(wishlist));
-        // Dispatch event để các component khác có thể cập nhật
-        window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-        return true; // Trả về true nếu thêm thành công
-      }
-      return false; // Trả về false nếu sản phẩm đã tồn tại
-    } catch (error) {
-      console.error('Error adding to wishlist:', error);
-      return false;
-    }
-  },
-
-  // Xóa sản phẩm khỏi wishlist
-  removeFromWishlist(productId: number): void {
-    if (typeof window === 'undefined') return;
-    try {
-      const wishlist = this.getWishlist();
-      const filtered = wishlist.filter(item => item.productId !== productId);
-      localStorage.setItem('wishlist', JSON.stringify(filtered));
-      // Dispatch event để các component khác có thể cập nhật
-      window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-    } catch (error) {
-      console.error('Error removing from wishlist:', error);
-    }
-  },
-
-  // Kiểm tra sản phẩm có trong wishlist không
-  isInWishlist(productId: number): boolean {
-    const wishlist = this.getWishlist();
-    return wishlist.some(item => item.productId === productId);
-  },
-
-  // Lấy số lượng sản phẩm trong wishlist
-  getWishlistCount(): number {
-    return this.getWishlist().length;
-  },
-
-  // Xóa toàn bộ wishlist
-  clearWishlist(): void {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('wishlist');
-    window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-  },
+type WishlistEventDetail = {
+  type: "synced" | "added" | "removed";
+  productId?: number;
 };
 
+const createAuthError = () => {
+  const error = new Error(AUTH_REQUIRED_ERROR);
+  (error as Error & { code?: string }).code = AUTH_REQUIRED_ERROR;
+  return error;
+};
+
+class WishlistService {
+  private items = new Map<number, WishlistItem>();
+  private initialized = false;
+  private syncing: Promise<void> | null = null;
+
+  private isBrowser() {
+    return typeof window !== "undefined";
+  }
+
+  private getToken() {
+    if (!this.isBrowser()) return null;
+    return localStorage.getItem("accessToken");
+  }
+
+  private dispatch(detail: WishlistEventDetail) {
+    if (!this.isBrowser()) return;
+    window.dispatchEvent(new CustomEvent<WishlistEventDetail>("wishlistUpdated", { detail }));
+  }
+
+  private async fetchFromApi() {
+    const token = this.getToken();
+    if (!token) {
+      this.clearCache();
+      throw createAuthError();
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/wishlist`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        this.clearCache();
+        throw createAuthError();
+      }
+
+      if (!response.ok) {
+        let errorMessage = "Không thể tải danh sách yêu thích";
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorMessage = errorJson.message || errorJson.title || errorText;
+            } catch {
+              errorMessage = errorText || errorMessage;
+            }
+          }
+        } catch {
+          // Use default error message if parsing fails
+        }
+        console.error(`Wishlist API error (${response.status}):`, errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const data: WishlistItem[] = await response.json();
+      this.items.clear();
+      data.forEach((item) => this.items.set(item.productId, item));
+      this.initialized = true;
+      this.dispatch({ type: "synced" });
+    } catch (error) {
+      if (error instanceof Error && error.message === AUTH_REQUIRED_ERROR) {
+        throw error;
+      }
+      console.error("Error fetching wishlist:", error);
+      throw error instanceof Error 
+        ? error 
+        : new Error("Không thể tải danh sách yêu thích");
+    }
+  }
+
+  async sync(force = false) {
+    if (!this.isBrowser()) return;
+    if (this.initialized && !force) return;
+    if (this.syncing) {
+      await this.syncing;
+      return;
+    }
+    this.syncing = this.fetchFromApi().finally(() => {
+      this.syncing = null;
+    });
+    await this.syncing;
+  }
+
+  async getWishlist(force = false) {
+    await this.sync(force);
+    return this.getCachedWishlist();
+  }
+
+  getCachedWishlist() {
+    return Array.from(this.items.values());
+  }
+
+  getWishlistCount() {
+    return this.items.size;
+  }
+
+  isInWishlist(productId: number) {
+    return this.items.has(productId);
+  }
+
+  async addToWishlist(productId: number) {
+    const token = this.getToken();
+    if (!token) {
+      this.clearCache();
+      throw createAuthError();
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/wishlist`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId }),
+    });
+
+    if (response.status === 401) {
+      this.clearCache();
+      throw createAuthError();
+    }
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Không thể thêm sản phẩm vào yêu thích");
+    }
+
+    const item: WishlistItem = await response.json();
+    this.items.set(item.productId, item);
+    this.initialized = true;
+    this.dispatch({ type: "added", productId: item.productId });
+    return item;
+  }
+
+  async removeFromWishlist(productId: number) {
+    const token = this.getToken();
+    if (!token) {
+      this.clearCache();
+      throw createAuthError();
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/wishlist/${productId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 401) {
+      this.clearCache();
+      throw createAuthError();
+    }
+
+    if (!response.ok && response.status !== 404) {
+      const message = await response.text();
+      throw new Error(message || "Không thể xóa sản phẩm khỏi yêu thích");
+    }
+
+    this.items.delete(productId);
+    this.dispatch({ type: "removed", productId });
+  }
+
+  clearCache() {
+    this.items.clear();
+    this.initialized = false;
+    if (this.isBrowser()) {
+      this.dispatch({ type: "synced" });
+    }
+  }
+}
+
+export const wishlistService = new WishlistService();

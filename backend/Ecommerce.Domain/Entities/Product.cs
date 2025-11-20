@@ -26,4 +26,5 @@ public class Product
     public List<UserViewHistory> UserViewHistories { get; set; }
     public List<ProductSimilarity> ProductSimilaritiesAsProduct1 { get; set; } 
     public List<ProductSimilarity> ProductSimilaritiesAsProduct2 { get; set; }
+    public List<WishlistItem> WishlistItems { get; set; } = new();
 }
