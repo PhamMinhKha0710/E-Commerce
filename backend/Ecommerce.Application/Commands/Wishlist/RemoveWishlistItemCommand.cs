@@ -8,3 +8,4 @@ public class RemoveWishlistItemCommand : IRequest<bool>
     public int ProductId { get; set; }
 }
 
+

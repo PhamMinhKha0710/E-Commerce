@@ -10,3 +10,4 @@ public interface IWishlistRepository
     Task RemoveAsync(WishlistItem wishlistItem, CancellationToken cancellationToken = default);
 }
 
+

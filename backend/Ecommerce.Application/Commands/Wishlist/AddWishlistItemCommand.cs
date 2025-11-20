@@ -9,3 +9,4 @@ public class AddWishlistItemCommand : IRequest<WishlistItemDto>
     public int ProductId { get; set; }
 }
 
+

@@ -42,7 +42,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getUserInfo, isAuthenticated, logout } from "@/lib/api/auth"
+import { getUserInfo, isAuthenticated, logout, getCurrentUser, checkIsAdmin } from "@/lib/api/auth"
 import { useEffect, useState } from "react"
 
 export function AdminDashboardLayout({
@@ -62,14 +62,93 @@ export function AdminDashboardLayout({
       return;
     }
     
-    // Lấy thông tin người dùng từ localStorage
-    const userInfo = getUserInfo();
-    if (userInfo) {
-      setUser({
-        name: userInfo.name,
-        email: userInfo.email,
-      });
-    }
+    // Lấy thông tin người dùng từ API để có thông tin đầy đủ và kiểm tra role
+    const fetchUserInfo = async () => {
+      try {
+        // Thử lấy từ API trước
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          // Kiểm tra role admin
+          const userRole = currentUser.role?.toLowerCase();
+          if (userRole !== 'admin') {
+            // Xóa token và redirect về login
+c            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_info');
+            document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            toast.error("Bạn không có quyền truy cập admin. Chỉ có role admin mới được phép.");
+            router.push('/login');
+            return;
+          }
+          
+          // Tạo name từ firstName và lastName nếu có
+          const displayName = currentUser.name || 
+            (currentUser.firstName && currentUser.lastName 
+              ? `${currentUser.firstName} ${currentUser.lastName}`.trim()
+              : currentUser.firstName || currentUser.lastName || '');
+          
+          setUser({
+            name: displayName || currentUser.email.split('@')[0],
+            email: currentUser.email,
+          });
+        } else {
+          // Fallback: lấy từ localStorage và kiểm tra role
+          const userInfo = getUserInfo();
+          if (userInfo) {
+            const userRole = userInfo.role?.toLowerCase();
+            if (userRole !== 'admin') {
+              // Xóa token và redirect về login
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('user_info');
+              document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+              toast.error("Bạn không có quyền truy cập admin. Chỉ có role admin mới được phép.");
+              router.push('/login');
+              return;
+            }
+            
+            const displayName = userInfo.name || 
+              (userInfo.firstName && userInfo.lastName 
+                ? `${userInfo.firstName} ${userInfo.lastName}`.trim()
+                : userInfo.firstName || userInfo.lastName || '');
+            
+            setUser({
+              name: displayName || userInfo.email.split('@')[0],
+              email: userInfo.email,
+            });
+          } else {
+            // Không có thông tin user, redirect về login
+            router.push('/login');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+        // Fallback: lấy từ localStorage và kiểm tra role
+        const userInfo = getUserInfo();
+        if (userInfo) {
+          const userRole = userInfo.role?.toLowerCase();
+          if (userRole !== 'admin') {
+            // Xóa token và redirect về login
+            logout();
+            toast.error("Bạn không có quyền truy cập admin. Chỉ có role admin mới được phép.");
+            router.push('/login');
+            return;
+          }
+          
+          const displayName = userInfo.name || 
+            (userInfo.firstName && userInfo.lastName 
+              ? `${userInfo.firstName} ${userInfo.lastName}`.trim()
+              : userInfo.firstName || userInfo.lastName || '');
+          
+          setUser({
+            name: displayName || userInfo.email.split('@')[0],
+            email: userInfo.email,
+          });
+        } else {
+          router.push('/login');
+        }
+      }
+    };
+    
+    fetchUserInfo();
   }, [router]);
 
   const handleLogout = () => {

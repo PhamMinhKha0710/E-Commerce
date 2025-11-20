@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Bell, Globe, Lock, Save, User } from "lucide-react"
+import { Bell, Globe, Lock, Save, User, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,15 +14,115 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { getUserProfile, updateUserProfile, getUserInfo, getAuthToken, type UserProfile } from "@/lib/api/auth"
 
 export function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    bio: "",
+  })
 
-  const handleSave = () => {
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true)
+        
+        // Check if token exists first
+        const token = getAuthToken()
+        
+        if (!token) {
+          console.warn('No auth token found. User may need to login.')
+          // Try to get from localStorage as fallback
+          const userInfo = getUserInfo()
+          if (userInfo) {
+            console.log('Using cached user info')
+            setFormData({
+              firstName: userInfo.firstName || "",
+              lastName: userInfo.lastName || "",
+              email: userInfo.email || "",
+              bio: userInfo.bio || "",
+            })
+            setIsLoading(false)
+            return
+          } else {
+            toast.error("Vui lòng đăng nhập để xem thông tin tài khoản.")
+            setIsLoading(false)
+            return
+          }
+        }
+        
+        const userProfile = await getUserProfile()
+        
+        if (userProfile) {
+          setProfile(userProfile)
+          const formDataToSet = {
+            firstName: userProfile.firstName || "",
+            lastName: userProfile.lastName || "",
+            email: userProfile.email || "",
+            bio: userProfile.bio || "",
+          }
+          setFormData(formDataToSet)
+        } else {
+          console.warn('No profile data received')
+          // Try to get from localStorage as fallback
+          const userInfo = getUserInfo()
+          if (userInfo) {
+            console.log('Using cached user info')
+            setFormData({
+              firstName: userInfo.firstName || "",
+              lastName: userInfo.lastName || "",
+              email: userInfo.email || "",
+              bio: userInfo.bio || "",
+            })
+          } else {
+            toast.error("Không thể tải thông tin người dùng. Vui lòng đăng nhập lại.")
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error)
+        toast.error("Đã xảy ra lỗi khi tải thông tin người dùng")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleSave = async () => {
+    if (!profile) return
+
     setIsSaving(true)
-    setTimeout(() => {
+    try {
+      const updatedProfile = await updateUserProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        bio: formData.bio,
+      })
+
+      setProfile(updatedProfile)
+      toast.success("Cập nhật thông tin thành công!")
+    } catch (error: any) {
+      console.error("Error updating profile:", error)
+      toast.error(error?.message || "Cập nhật thông tin thất bại. Vui lòng thử lại.")
+    } finally {
       setIsSaving(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -72,35 +173,86 @@ export function SettingsPage() {
               <CardDescription>Cập nhật thông tin cá nhân và hồ sơ của bạn</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="first-name">Họ</Label>
-                    <Input id="first-name" defaultValue="Admin" />
+              {isLoading ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="last-name">Tên</Label>
-                    <Input id="last-name" defaultValue="User" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-24 w-full" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="admin@smartmile.com" />
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="first-name">Họ</Label>
+                      <Input
+                        id="first-name"
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange("firstName", e.target.value)}
+                        placeholder="Nhập họ của bạn"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last-name">Tên</Label>
+                      <Input
+                        id="last-name"
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange("lastName", e.target.value)}
+                        placeholder="Nhập tên của bạn"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
+                      placeholder="Email của bạn"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Giới thiệu</Label>
+                    <Textarea
+                      id="bio"
+                      placeholder="Viết một vài dòng về bạn"
+                      value={formData.bio}
+                      onChange={(e) => handleInputChange("bio", e.target.value)}
+                      rows={4}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Giới thiệu</Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Viết một vài dòng về bạn"
-                    defaultValue="Quản trị viên hệ thống SmartMile"
-                  />
-                </div>
-              </div>
+              )}
             </CardContent>
             <CardFooter className="flex justify-end">
-              <Button onClick={handleSave} disabled={isSaving}>
-                <Save className="mr-2 h-4 w-4" />
-                {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+              <Button onClick={handleSave} disabled={isSaving || isLoading}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Lưu thay đổi
+                  </>
+                )}
               </Button>
             </CardFooter>
           </Card>

@@ -50,9 +50,33 @@ export function LoginForm() {
 
     try {
       const response = await login(data)
+      console.log('Login successful')
+      
+      // Kiểm tra role trước khi lưu token
+      const userRole = response.user?.role?.toLowerCase()
+      if (userRole !== 'admin') {
+        // Xóa token nếu đã lưu
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('user_info')
+        document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        
+        toast.error("Bạn không có quyền đăng nhập vào admin. Chỉ có role admin mới được phép truy cập.")
+        setIsLoading(false)
+        return
+      }
       
       // Lưu token
-      setAuth(response.token, response.user)
+      if (response.token) {
+        setAuth(response.token, response.user)
+        console.log('Token saved to localStorage')
+        
+        // Verify token was saved
+        const savedToken = localStorage.getItem('auth_token')
+        console.log('Token verification:', savedToken ? 'Token saved successfully' : 'Token NOT saved!')
+      } else {
+        console.error('No token in login response')
+        throw new Error('No token received from server')
+      }
       
       toast.success("Đăng nhập thành công")
       router.push("/dashboard")

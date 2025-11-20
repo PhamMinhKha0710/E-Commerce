@@ -8,3 +8,4 @@ public class GetUserWishlistQuery : IRequest<List<WishlistItemDto>>
     public int UserId { get; set; }
 }
 
+
