@@ -29,3 +29,11 @@ public class WishlistItemConfiguration : IEntityTypeConfiguration<WishlistItem>
 }
 
 
+
+
+
+
+
+
+
+

@@ -22,8 +22,14 @@ export default function AccessDeniedPage() {
     }
   }, [searchParams])
 
+  const buildLoginUrl = () => {
+    const redirectPath = searchParams.get('from') || '/dashboard'
+    const params = new URLSearchParams({ redirect: redirectPath })
+    return `/login?${params.toString()}`
+  }
+
   const handleGoHome = () => {
-    router.push('/')
+    router.push(buildLoginUrl())
   }
 
   const handleGoBack = () => {
@@ -31,7 +37,7 @@ export default function AccessDeniedPage() {
     if (from && from !== '/403' && from !== '/access-denied') {
       router.push(from)
     } else {
-      router.back()
+      router.push(buildLoginUrl())
     }
   }
 
