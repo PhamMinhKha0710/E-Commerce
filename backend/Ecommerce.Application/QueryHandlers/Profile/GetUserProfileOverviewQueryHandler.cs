@@ -1,4 +1,4 @@
-using Ecommerce.Application.Common.DTOs;
+using Ecommerce.Application.Common.DTOs.User;
 using Ecommerce.Application.Common.DTOs.Profile;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.Interfaces.Repositories;

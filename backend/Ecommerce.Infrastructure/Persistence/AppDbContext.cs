@@ -51,7 +51,6 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AddressConfiguration());
         modelBuilder.ApplyConfiguration(new BrandConfiguration());
         modelBuilder.ApplyConfiguration(new OrderLineConfiguration());
-        modelBuilder.ApplyConfiguration(new OrderStatusConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentMethodConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentLogConfiguration());

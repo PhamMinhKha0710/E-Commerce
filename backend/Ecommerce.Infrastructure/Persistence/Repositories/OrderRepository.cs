@@ -18,6 +18,9 @@ namespace Ecommerce.Infrastructure.Repositories
         {
             return await _context.ShopOrders
                 .Include(o => o.OrderLines)
+                    .ThenInclude(ol => ol.ProductItem)
+                        .ThenInclude(pi => pi.Product)
+                            .ThenInclude(p => p.ProductImages)
                 .Include(o => o.Payments)
                 .Include(o => o.OrderStatusHistories)
                     .ThenInclude(h => h.OrderStatus)
@@ -60,6 +63,12 @@ namespace Ecommerce.Infrastructure.Repositories
         {
             return await _context.ProductItems
                 .FirstOrDefaultAsync(pi => pi.Id == productItemId);
+        }
+
+        public async Task<ProductItem> GetDefaultProductItemByProductIdAsync(int productId)
+        {
+            return await _context.ProductItems
+                .FirstOrDefaultAsync(pi => pi.ProductId == productId && pi.IsDefault);
         }
 
         public async Task<ShoppingCartItem> GetCartItemByProductItemIdAsync(int userId, int productItemId)
@@ -136,6 +145,18 @@ namespace Ecommerce.Infrastructure.Repositories
             }
 
             return order.User.Email;
+        }
+
+        public async Task DeleteOrderAsync(ShopOrder order)
+        {
+            _context.ShopOrders.Remove(order);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddOrderStatusAsync(OrderStatus status)
+        {
+            _context.OrderStatuses.Add(status);
+            await _context.SaveChangesAsync();
         }
         public async Task<Promotion> GetPromotionByCodeAsync(string code)
         {

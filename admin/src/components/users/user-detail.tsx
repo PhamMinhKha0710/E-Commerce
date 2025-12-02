@@ -2,8 +2,8 @@
 
 import type React from "react";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Edit, Save, Trash, X } from "lucide-react";
 
@@ -42,51 +42,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
-
-// Mock user data - in a real app, this would come from an API
-const userData = {
-  id: "USR-1001",
-  name: "Nguyễn Văn An",
-  email: "an.nguyen@example.com",
-  phone: "0912345678",
-  role: "Khách hàng",
-  status: "Hoạt động",
-  lastActive: "15/04/2023",
-  avatar: "/placeholder-user.jpg",
-  initials: "NA",
-  address: "123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh",
-  bio: "Khách hàng thân thiết từ năm 2020",
-  createdAt: "01/01/2020",
-  orders: 15,
-  totalSpent: "₫12,500,000",
-  wishlist: 8,
-  notifications: {
-    email: true,
-    sms: false,
-    app: true,
-  },
-  permissions: {
-    canReview: true,
-    canSell: false,
-  },
-};
+import { getUserById, type UserDetail } from "@/lib/api/users";
 
 // Type for form data
 interface FormData {
-  id: string;
+  id: number;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   role: string;
   status: string;
-  lastActive: string;
-  avatar: string;
+  lastActive: string | null;
+  avatar: string | null;
   initials: string;
-  address: string;
-  bio: string;
+  address: string | null;
+  bio: string | null;
   createdAt: string;
   orders: number;
-  totalSpent: string;
+  totalSpent: number;
   wishlist: number;
   notifications: {
     email: boolean;
@@ -104,41 +79,128 @@ type NestedKeys = "notifications" | "permissions";
 
 export function UserDetail() {
   const router = useRouter();
+  const params = useParams();
+  const userId = params?.id ? parseInt(params.id as string) : null;
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<FormData>({ ...userData });
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState<FormData | null>(null);
+
+  // Fetch user data from API
+  useEffect(() => {
+    if (userId) {
+      fetchUserData();
+    }
+  }, [userId]);
+
+  const fetchUserData = async () => {
+    if (!userId) return;
+    
+    try {
+      setLoading(true);
+      const userData = await getUserById(userId);
+      
+      setFormData({
+        id: userData.id,
+        name: userData.name,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        phone: userData.phoneNumber,
+        role: userData.role,
+        status: userData.status,
+        lastActive: userData.lastActive,
+        avatar: userData.avatarUrl,
+        initials: userData.initials,
+        address: userData.address,
+        bio: userData.bio,
+        createdAt: userData.createdAt,
+        orders: userData.ordersCount,
+        totalSpent: userData.totalSpent,
+        wishlist: userData.wishlistCount,
+        notifications: {
+          email: true, // Default values, can be fetched from API if available
+          sms: false,
+          app: true,
+        },
+        permissions: {
+          canReview: true, // Default values, can be fetched from API if available
+          canSell: userData.role === "Người bán" || userData.role === "Quản trị viên",
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Không thể tải thông tin người dùng",
+        variant: "destructive",
+      });
+      router.push("/dashboard/users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || !formData) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="text-muted-foreground">Đang tải thông tin người dùng...</span>
+        </div>
+      </div>
+    );
+  }
 
   // Handle input changes for text fields and textarea
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    if (!formData) return;
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      if (!prev) return null;
+      return { ...prev, [name]: value };
+    });
   };
 
   // Handle select changes
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (!formData) return;
+    setFormData((prev) => {
+      if (!prev) return null;
+      return { ...prev, [name]: value };
+    });
   };
 
   // Handle switch changes for nested properties (e.g., notifications.email)
   const handleSwitchChange = (name: string, checked: boolean) => {
+    if (!formData) return;
     if (name.includes(".")) {
       const [parent, child] = name.split(".") as [NestedKeys, string];
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: checked,
-        },
-      }));
+      setFormData((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: checked,
+          },
+        };
+      });
     } else {
-      setFormData((prev) => ({ ...prev, [name]: checked }));
+      setFormData((prev) => {
+        if (!prev) return null;
+        return { ...prev, [name]: checked };
+      });
     }
   };
 
   // Handle save action
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!formData) return;
+
     setIsSaving(true);
 
     // Validate required fields
@@ -152,28 +214,55 @@ export function UserDetail() {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // TODO: Implement update user API call
+      // await updateUser(formData.id, { ... });
+      
+      // Simulate API call for now
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       setIsSaving(false);
       setIsEditing(false);
       toast({
         title: "Thành công!",
         description: "Thông tin người dùng đã được cập nhật.",
       });
-    }, 1000);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Không thể cập nhật thông tin người dùng",
+        variant: "destructive",
+      });
+      setIsSaving(false);
+    }
   };
 
   // Handle delete action
-  const handleDelete = () => {
-    // Simulate API call
-    setTimeout(() => {
+  const handleDelete = async () => {
+    if (!formData) return;
+
+    try {
+      // TODO: Implement delete user API call
+      // await deleteUser(formData.id);
+      
+      // Simulate API call for now
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       router.push("/dashboard/users");
       toast({
         title: "Đã xóa người dùng",
         description: "Người dùng đã được xóa khỏi hệ thống.",
         variant: "destructive",
       });
-    }, 500);
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Không thể xóa người dùng",
+        variant: "destructive",
+      });
+    }
   };
 
   // Get status color using Tailwind CSS variables
@@ -186,6 +275,27 @@ export function UserDetail() {
       default:
         return "bg-muted";
     }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Chưa có";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
   };
 
   return (
@@ -312,11 +422,11 @@ export function UserDetail() {
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Ngày tham gia</span>
-                <span className="font-medium">{formData.createdAt}</span>
+                <span className="font-medium">{formatDate(formData.createdAt)}</span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Hoạt động cuối</span>
-                <span className="font-medium">{formData.lastActive}</span>
+                <span className="font-medium">{formatDate(formData.lastActive)}</span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-muted-foreground">Đơn hàng</span>
@@ -400,7 +510,7 @@ export function UserDetail() {
                     <Input
                       id="address"
                       name="address"
-                      value={formData.address}
+                      value={formData.address || ""}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                     />
@@ -410,7 +520,7 @@ export function UserDetail() {
                     <Textarea
                       id="bio"
                       name="bio"
-                      value={formData.bio}
+                      value={formData.bio || ""}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       rows={3}
@@ -434,7 +544,7 @@ export function UserDetail() {
                           Tổng chi tiêu
                         </p>
                         <p className="text-2xl font-bold">
-                          {formData.totalSpent}
+                          {formatCurrency(formData.totalSpent)}
                         </p>
                       </div>
                     </div>

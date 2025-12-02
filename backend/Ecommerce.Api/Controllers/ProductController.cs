@@ -80,7 +80,7 @@ public class ProductsController : ControllerBase
 
         var command = new SyncProductCommand { ProductId = productId, Action = action };
         await _mediator.Send(command);
-        return Ok(new { Message = "Product sync message sent to queue" });
+        return Ok(new { message = $"Product sync message sent to queue {productId}" });
     }
 
     [HttpPost("update-elasticsearch-id")]

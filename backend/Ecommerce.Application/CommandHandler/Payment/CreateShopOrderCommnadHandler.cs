@@ -99,10 +99,31 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
             // Tạo OrderLines và tính tổng giá
             foreach (var item in request.Request.CartPayments)
             {
-                var productItem = await _orderRepository.GetProductItemByIdAsync(item.ProductItemId);
+                ProductItem productItem = null;
+                
+                // Nếu ProductItemId > 0, thử tìm ProductItem trực tiếp
+                if (item.ProductItemId > 0)
+                {
+                    productItem = await _orderRepository.GetProductItemByIdAsync(item.ProductItemId);
+                }
+                
+                // Nếu không tìm thấy ProductItem (hoặc ProductItemId = 0) và có ProductId, thử tìm ProductItem mặc định
+                if (productItem == null && item.ProductId.HasValue && item.ProductId.Value > 0)
+                {
+                    _logger.LogInformation($"Product item {item.ProductItemId} not found or invalid, trying to find default ProductItem for ProductId {item.ProductId.Value}");
+                    productItem = await _orderRepository.GetDefaultProductItemByProductIdAsync(item.ProductId.Value);
+                    
+                    if (productItem != null)
+                    {
+                        _logger.LogInformation($"Found default ProductItem {productItem.Id} for ProductId {item.ProductId.Value}");
+                        // Cập nhật ProductItemId để dùng ProductItem mặc định
+                        item.ProductItemId = productItem.Id;
+                    }
+                }
+                
                 if (productItem == null)
                 {
-                    _logger.LogWarning($"Product item {item.ProductItemId} not found");
+                    _logger.LogWarning($"Product item {item.ProductItemId} not found and no valid ProductId provided (ProductId: {item.ProductId?.ToString() ?? "null"})");
                     throw new InvalidOperationException($"Product item {item.ProductItemId} not found");
                 }
                 if (productItem.QtyInStock < item.Quantity)

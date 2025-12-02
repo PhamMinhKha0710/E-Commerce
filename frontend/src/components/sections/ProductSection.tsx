@@ -31,7 +31,7 @@ const ProductSection = ({ productsData }: ProductSectionProps) => {
   const [activeTab, setActiveTab] = useState<string>("tab-1");
 
   const tabs = [
-    { id: "tab-1", title: "Dành cho bạn", url: "danh-cho-ban" },
+    { id: "tab-1", title: "Dành cho bạn", url: "collections/all" },
     { id: "tab-2", title: "Deal siêu hot", url: "deal-sieu-hot" },
     { id: "tab-3", title: "Freeship", url: "freeship" },
     { id: "tab-4", title: "Xu hướng", url: "xu-huong" },

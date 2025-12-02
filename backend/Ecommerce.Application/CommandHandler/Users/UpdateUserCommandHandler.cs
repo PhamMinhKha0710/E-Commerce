@@ -1,5 +1,5 @@
 using Ecommerce.Application.Commands.Users;
-using Ecommerce.Application.Common.DTOs;
+using Ecommerce.Application.Common.DTOs.User;
 using Ecommerce.Application.Interfaces.Repositories;
 using MediatR;
 

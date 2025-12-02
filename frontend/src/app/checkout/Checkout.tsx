@@ -269,7 +269,7 @@ export default function Checkout() {
             quantity: cartItems[index].quantity,
             currency: cartItems[index].currency || 'VND',
             hasVariations: cartItems[index].hasVariations,
-            productItemId: cartItems[index].productItemId,
+            productItemId: cartItems[index].productItemId, // Giữ nguyên null nếu null (sản phẩm thường)
           }));
 
         if (items.length === 0) {
@@ -516,19 +516,21 @@ export default function Checkout() {
       return;
     }
 
-    const selectedItems = JSON.parse(localStorage.getItem('selectedItems') || '[]') as number[];
-    const cartItems = JSON.parse(localStorage.getItem('cart') || '[]') as CartItem[];
-
-    const cartPayments = selectedItems
-      .filter((index) => index >= 0 && index < cartItems.length)
-      .map((index) => ({
-        productItemId: cartItems[index].productItemId,
-        quantity: cartItems[index].quantity,
-        price: cartItems[index].price,
-      }))
+    const cartPayments = checkoutItems
+      .map((item) => {
+        // Sản phẩm có biến thể: gửi ProductItemId
+        // Sản phẩm thường: gửi ProductItemId = 0 và ProductId
+        const hasValidProductItemId = item.productItemId != null && item.productItemId > 0;
+        return {
+          productItemId: hasValidProductItemId ? (item.productItemId as number) : 0, // Gửi 0 nếu không có ProductItemId hợp lệ
+          productId: hasValidProductItemId ? null : item.productId, // Chỉ gửi ProductId nếu không có ProductItemId hợp lệ
+          quantity: item.quantity,
+          price: item.price,
+        };
+      })
       .filter(
         (item) =>
-          item.productItemId != null &&
+          (item.productItemId > 0 || (item.productId != null && item.productId > 0)) && // Chấp nhận nếu có ProductItemId > 0 HOẶC ProductId > 0
           typeof item.quantity === 'number' &&
           item.quantity > 0 &&
           typeof item.price === 'number' &&

@@ -137,14 +137,14 @@ const Header = () => {
   const handleSuggestionClick = (suggestion: string) => {
     setInputValue(suggestion);
     setIsSearchOpen(false);
-    router.push(`/danh-cho-ban?query=${encodeURIComponent(suggestion)}`);
+    router.push(`/collections/all?query=${encodeURIComponent(suggestion)}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
       setIsSearchOpen(false); // Đóng ô gợi ý
-      router.push(`/danh-cho-ban?query=${encodeURIComponent(inputValue)}`);
+      router.push(`/collections/all?query=${encodeURIComponent(inputValue)}`);
     }
   };
 
@@ -153,7 +153,7 @@ const Header = () => {
       e.preventDefault();
       if (inputValue.trim()) {
         setIsSearchOpen(false); // Đóng ô gợi ý
-        router.push(`/danh-cho-ban?query=${encodeURIComponent(inputValue)}`);
+        router.push(`/collections/all?query=${encodeURIComponent(inputValue)}`);
       }
     }
   };
@@ -199,7 +199,7 @@ const Header = () => {
       window.dispatchEvent(event);
   
       // Chuyển hướng đến trang kết quả tìm kiếm
-      router.push("/danh-cho-ban?imageSearch=true");
+      router.push("/collections/all?imageSearch=true");
     } catch (error) {
       console.error("Error uploading image:", error);
       setUploadError("Không thể tải lên hình ảnh. Vui lòng thử lại.");
@@ -387,7 +387,7 @@ const Header = () => {
                             ))}
                             {(suggestions.length > 0 || productNames.length > 0) && (
                               <Link
-                                href={`/danh-cho-ban?query=${encodeURIComponent(inputValue)}`}
+                                href={`/collections/all?query=${encodeURIComponent(inputValue)}`}
                                 className="see-more"
                               >
                                 Xem thêm

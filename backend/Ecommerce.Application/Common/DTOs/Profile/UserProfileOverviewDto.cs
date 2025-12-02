@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Ecommerce.Application.Common.DTOs;
+using Ecommerce.Application.Common.DTOs.User;
 
 namespace Ecommerce.Application.Common.DTOs.Profile;
 

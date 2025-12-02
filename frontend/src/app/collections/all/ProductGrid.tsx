@@ -7,32 +7,29 @@ import { useFilters } from "@/app/collections/all/FilterContext";
 import WishlistNotification from "@/components/WishlistNotification";
 
 interface Product {
-  id: number;
+  productId: number;
+  itemId: number;
   name: string;
-  slug: string;
-  description: string;
-  category: string;
-  brand: string;
-  imageUrl: string;
+  description?: string;
+  category?: string;
+  subCategory?: string;
+  brand?: string;
   price: number;
-  oldPrice: number;
-  currency: string;
+  oldPrice?: number | null;
+  stock?: number;
+  sku?: string;
+  imageUrl?: string;
   hasVariation: boolean;
-  qtyInStock: number;
-  averageRating: number;
-  totalReviews: number;
+  tags?: string[];
+  rating?: number;
+  totalRatingCount?: number;
 }
 
-interface ProductsResponse {
-  products: Product[];
-  totalCount: number;
-  currentPage: number;
+interface SearchResponse {
+  total: number;
+  page: number;
   pageSize: number;
-  totalPages: number;
-  categories: string[];
-  brands: string[];
-  minPrice: number;
-  maxPrice: number;
+  results: Product[];
 }
 
 const ProductGrid: React.FC = () => {
@@ -47,7 +44,7 @@ const ProductGrid: React.FC = () => {
   const [totalProducts, setTotalProducts] = useState<number>(0);
   const { filters, updateMetadata } = useFilters();
   const [showWishlistNotification, setShowWishlistNotification] = useState(false);
-  const pageSize = 25;
+  const pageSize = 24;
 
   // Hàm tải dữ liệu từ localStorage
   const loadImageSearchResults = () => {
@@ -99,41 +96,21 @@ const ProductGrid: React.FC = () => {
 
         const backendSort = sortMap[filters.sort] ?? '';
 
-        // Build query params
-        const params = new URLSearchParams({
-          page: currentPage.toString(),
-          pageSize: pageSize.toString(),
-        });
+        const { sort, ...filterPayload } = filters;
 
-        // Add filters
-        if (filters.category && filters.category.length > 0) {
-          params.append('category', filters.category.join(','));
-        }
-        if (filters.brand && filters.brand.length > 0) {
-          params.append('brand', filters.brand.join(','));
-        }
-        if (filters.priceRange.min > 0) {
-          params.append('minPrice', filters.priceRange.min.toString());
-        }
-        if (filters.priceRange.max < 100000000) {
-          params.append('maxPrice', filters.priceRange.max.toString());
-        }
-        
-        // Add sort
-        if (backendSort === 'price_asc') {
-          params.append('sortBy', 'price');
-          params.append('sortDesc', 'false');
-        } else if (backendSort === 'price_desc') {
-          params.append('sortBy', 'price');
-          params.append('sortDesc', 'true');
-        }
-
-        const response = await fetch(`http://localhost:5130/api/Products?${params.toString()}`, {
-          method: "GET",
+        const response = await fetch(`http://localhost:5130/api/Search/search`, {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
           },
+          body: JSON.stringify({
+            query: query || "",
+            filters: filterPayload,
+            sort: backendSort,
+            page: currentPage,
+            pageSize: pageSize,
+          }),
         });
   
         if (!response.ok) {
@@ -147,17 +124,34 @@ const ProductGrid: React.FC = () => {
           throw new Error("Failed to fetch products");
         }
   
-        const data: ProductsResponse = await response.json();
-        setProducts(data.products);
-        setTotalProducts(data.totalCount);
-        setTotalPages(data.totalPages);
+        const data: SearchResponse = await response.json();
+        setProducts(data.results);
+        setTotalProducts(Number(data.total));
+        setTotalPages(Math.max(1, Math.ceil(Number(data.total) / pageSize)));
         
-        // Update filter metadata
+        const categories = Array.from(
+          new Set(
+            data.results
+              .map((product) => product.category)
+              .filter((value): value is string => Boolean(value))
+          )
+        );
+        const brands = Array.from(
+          new Set(
+            data.results
+              .map((product) => product.brand)
+              .filter((value): value is string => Boolean(value))
+          )
+        );
+        const priceValues = data.results
+          .map((product) => product.price)
+          .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
+
         updateMetadata({
-          categories: data.categories || [],
-          brands: data.brands || [],
-          minPrice: data.minPrice || 0,
-          maxPrice: data.maxPrice || 100000000,
+          categories,
+          brands,
+          minPrice: priceValues.length ? Math.min(...priceValues) : 0,
+          maxPrice: priceValues.length ? Math.max(...priceValues) : 100000000,
         });
         
         // Xóa dữ liệu tìm kiếm hình ảnh khi thực hiện tìm kiếm văn bản
@@ -236,11 +230,11 @@ const ProductGrid: React.FC = () => {
           <div className="row margin">
             {products.map((product) => (
           <ProductItem
-            key={product.id}
-            id={product.id.toString()}
+                key={product.productId}
+                id={product.productId.toString()}
             title={product.name}
-            href={`/products/${product.id}`}
-            imgSrc={product.imageUrl}
+                href={`/products/${product.productId}`}
+                imgSrc={product.imageUrl || "/placeholder-product.jpg"}
             alt={product.name}
             price={product.price.toLocaleString("vi-VN") + "₫"}
             comparePrice={
@@ -255,7 +249,7 @@ const ProductGrid: React.FC = () => {
                   )}%`
                 : undefined
             }
-            variantId={product.id.toString()}
+                variantId={product.itemId.toString()}
             formAction="/cart/add"
             hasOptions={product.hasVariation}
             isContact={product.price === 0}

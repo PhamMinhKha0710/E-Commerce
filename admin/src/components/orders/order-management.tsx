@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Calendar, ChevronDown, Download, Eye, Filter, MoreHorizontal, Search, Trash } from "lucide-react"
 
@@ -19,129 +19,90 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
-
-const orders = [
-  {
-    id: "ORD-1234",
-    customer: "Nguyễn Văn A",
-    email: "nguyenvana@example.com",
-    date: "15/04/2023",
-    total: "₫1,250,000",
-    status: "Đang xử lý",
-    payment: "Đã thanh toán",
-    paymentMethod: "Thẻ tín dụng",
-  },
-  {
-    id: "ORD-1235",
-    customer: "Trần Thị B",
-    email: "tranthib@example.com",
-    date: "15/04/2023",
-    total: "₫2,345,000",
-    status: "Đang xử lý",
-    payment: "Đã thanh toán",
-    paymentMethod: "Ví điện tử",
-  },
-  {
-    id: "ORD-1236",
-    customer: "Lê Văn C",
-    email: "levanc@example.com",
-    date: "14/04/2023",
-    total: "₫890,000",
-    status: "Đang vận chuyển",
-    payment: "Đã thanh toán",
-    paymentMethod: "Chuyển khoản",
-  },
-  {
-    id: "ORD-1237",
-    customer: "Phạm Thị D",
-    email: "phamthid@example.com",
-    date: "14/04/2023",
-    total: "₫1,750,000",
-    status: "Đã hủy",
-    payment: "Hoàn tiền",
-    paymentMethod: "Thẻ tín dụng",
-  },
-  {
-    id: "ORD-1238",
-    customer: "Hoàng Văn E",
-    email: "hoangvane@example.com",
-    date: "13/04/2023",
-    total: "₫3,450,000",
-    status: "Đã giao hàng",
-    payment: "Đã thanh toán",
-    paymentMethod: "COD",
-  },
-  {
-    id: "ORD-1239",
-    customer: "Ngô Thị F",
-    email: "ngothif@example.com",
-    date: "13/04/2023",
-    total: "₫1,890,000",
-    status: "Đang xử lý",
-    payment: "Chờ thanh toán",
-    paymentMethod: "Chuyển khoản",
-  },
-  {
-    id: "ORD-1240",
-    customer: "Vũ Văn G",
-    email: "vuvang@example.com",
-    date: "12/04/2023",
-    total: "₫2,150,000",
-    status: "Đang vận chuyển",
-    payment: "Đã thanh toán",
-    paymentMethod: "Ví điện tử",
-  },
-  {
-    id: "ORD-1241",
-    customer: "Đặng Thị H",
-    email: "dangthih@example.com",
-    date: "12/04/2023",
-    total: "₫950,000",
-    status: "Đã giao hàng",
-    payment: "Đã thanh toán",
-    paymentMethod: "COD",
-  },
-]
+import { deleteAdminOrder, fetchAdminOrders, updateAdminOrderStatus, type AdminOrderListItem } from "@/lib/api/orders"
 
 export function OrderManagement() {
   const { toast } = useToast()
+  const [orders, setOrders] = useState<AdminOrderListItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [keyword, setKeyword] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<AdminOrderListItem | null>(null)
+  const [updateStatusValue, setUpdateStatusValue] = useState("processing")
+  const [updateNote, setUpdateNote] = useState("")
 
-  // Hàm chuyển đổi từ tên trạng thái sang giá trị
+  const statusOptions = useMemo(
+    () => [
+      { value: "pending", label: "Chờ thanh toán", color: "bg-yellow-500" },
+      { value: "processing", label: "Đang xử lý", color: "bg-blue-500" },
+      { value: "confirmed", label: "Đã xác nhận", color: "bg-indigo-500" },
+      { value: "shipping", label: "Đang vận chuyển", color: "bg-purple-500" },
+      { value: "completed", label: "Đã giao hàng", color: "bg-green-500" },
+      { value: "cancelled", label: "Đã hủy", color: "bg-red-500" },
+      { value: "refunded", label: "Hoàn tiền", color: "bg-rose-500" },
+    ],
+    [],
+  )
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value)
+
+  const formatDate = (value: string) => new Intl.DateTimeFormat("vi-VN").format(new Date(value))
+
   const getStatusValue = (status: string) => {
-    switch (status) {
-      case "Đang xử lý":
-        return "pending"
-      case "Đang chuẩn bị hàng":
-        return "processing"
-      case "Đang vận chuyển":
-        return "shipping"
-      case "Đã giao hàng":
-        return "delivered"
-      case "Đã hủy":
-        return "cancelled"
-      default:
-        return "pending"
+    const normalized = status.toLowerCase()
+    if (normalized.includes("pending") || normalized.includes("waiting")) return "pending"
+    if (normalized.includes("confirm")) return "confirmed"
+    if (normalized.includes("shipping") || normalized.includes("transport")) return "shipping"
+    if (normalized.includes("complete") || normalized.includes("deliver") || normalized.includes("success")) return "completed"
+    if (normalized.includes("refund")) return "refunded"
+    if (normalized.includes("cancel")) return "cancelled"
+    return "processing"
+  }
+
+  const refreshOrders = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetchAdminOrders({
+        keyword,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        page,
+        pageSize,
+      })
+      setOrders(response.orders)
+      setTotal(response.total)
+      setSelectedOrders([])
+    } catch (error) {
+      console.error("Failed to fetch orders:", error)
+      toast({
+        title: "Không thể tải đơn hàng",
+        description: "Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    refreshOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, statusFilter, keyword])
 
   const toggleSelectAll = () => {
     if (selectedOrders.length === orders.length) {
       setSelectedOrders([])
     } else {
-      setSelectedOrders(orders.map((order) => order.id))
+      setSelectedOrders(orders.map((order) => order.orderId.toString()))
     }
   }
 
@@ -154,32 +115,89 @@ export function OrderManagement() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Đã giao hàng":
+    const value = getStatusValue(status)
+    return statusOptions.find((opt) => opt.value === value)?.color || "bg-gray-500"
+  }
+
+  const getPaymentColor = (payment: string) => {
+    switch (payment) {
+      case "completed":
+      case "paid":
         return "bg-green-500"
-      case "Đang xử lý":
-        return "bg-blue-500"
-      case "Đang vận chuyển":
+      case "pending":
+      case "waiting":
         return "bg-yellow-500"
-      case "Đã hủy":
+      case "refunded":
         return "bg-red-500"
       default:
         return "bg-gray-500"
     }
   }
 
-  const getPaymentColor = (payment: string) => {
-    switch (payment) {
-      case "Đã thanh toán":
-        return "bg-green-500"
-      case "Chờ thanh toán":
-        return "bg-yellow-500"
-      case "Hoàn tiền":
-        return "bg-red-500"
-      default:
-        return "bg-gray-500"
+  const handleOpenStatusDialog = (order: AdminOrderListItem) => {
+    setEditingOrder(order)
+    setUpdateStatusValue(getStatusValue(order.status))
+    setUpdateNote(order.adminNote || "")
+  }
+
+  const handleUpdateStatus = async () => {
+    if (!editingOrder) return
+    try {
+      await updateAdminOrderStatus(editingOrder.orderId, {
+        status: updateStatusValue,
+        adminNote: updateNote,
+      })
+      toast({
+        title: "Cập nhật thành công",
+        description: `Đơn hàng ${editingOrder.orderNumber} đã được cập nhật.`,
+      })
+      setEditingOrder(null)
+      refreshOrders()
+    } catch (error) {
+      console.error("Failed to update order:", error)
+      toast({
+        title: "Cập nhật thất bại",
+        description: "Không thể cập nhật trạng thái đơn hàng.",
+        variant: "destructive",
+      })
     }
   }
+
+  const handleDeleteSelected = async (ids?: string[]) => {
+    const targets = ids ?? selectedOrders
+    if (!targets.length) {
+      toast({ title: "Chưa chọn đơn hàng", description: "Hãy chọn ít nhất một đơn trước khi xóa." })
+      return
+    }
+
+    const confirmMessage =
+      targets.length === 1
+        ? "Bạn có chắc chắn muốn xóa đơn hàng đã chọn?"
+        : `Bạn có chắc chắn muốn xóa ${targets.length} đơn hàng đã chọn?`
+
+    if (!window.confirm(confirmMessage)) return
+
+    try {
+      setIsDeleting(true)
+      await Promise.all(targets.map((id) => deleteAdminOrder(Number(id))))
+      toast({
+        title: "Đã xóa",
+        description: `${targets.length} đơn hàng đã được xóa khỏi hệ thống.`,
+      })
+      await refreshOrders()
+    } catch (error) {
+      console.error("Failed to delete orders:", error)
+      toast({
+        title: "Không thể xóa đơn hàng",
+        description: "Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
     <div className="flex flex-col gap-5">
@@ -201,7 +219,16 @@ export function OrderManagement() {
               <div className="flex flex-1 items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="search" placeholder="Tìm kiếm đơn hàng..." className="pl-8 w-full" />
+                  <Input
+                    type="search"
+                    placeholder="Tìm kiếm đơn hàng..."
+                    className="pl-8 w-full"
+                    value={keyword}
+                    onChange={(e) => {
+                      setPage(1)
+                      setKeyword(e.target.value)
+                    }}
+                  />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -209,7 +236,7 @@ export function OrderManagement() {
                       <Filter className="h-4 w-4" />
                       Lọc
                       <ChevronDown className="h-4 w-4" />
-                    </Button>
+                </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-[200px]">
                     <DropdownMenuLabel>Lọc theo</DropdownMenuLabel>
@@ -220,13 +247,38 @@ export function OrderManagement() {
                     <DropdownMenuItem>Ngày đặt hàng</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                  <Select
+                  value={statusFilter}
+                    onValueChange={(value) => {
+                    setPage(1)
+                    setStatusFilter(value)
+                    }}
+                  >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 <Button variant="outline" className="gap-2">
                   <Calendar className="h-4 w-4" />
                   Ngày
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <Select defaultValue="10">
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => {
+                    setPage(1)
+                    setPageSize(Number(value))
+                  }}
+                >
                   <SelectTrigger className="w-[80px]">
                     <SelectValue placeholder="10" />
                   </SelectTrigger>
@@ -242,9 +294,15 @@ export function OrderManagement() {
             {selectedOrders.length > 0 && (
               <div className="flex items-center gap-2 bg-muted p-2 rounded-md">
                 <span className="text-sm">{selectedOrders.length} đơn hàng đã chọn</span>
-                <Button variant="outline" size="sm" className="gap-1 ml-auto">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1 ml-auto"
+                  onClick={() => handleDeleteSelected()}
+                  disabled={isDeleting}
+                >
                   <Trash className="h-3 w-3" />
-                  Xóa
+                  {isDeleting ? "Đang xóa..." : "Xóa"}
                 </Button>
               </div>
             )}
@@ -253,7 +311,7 @@ export function OrderManagement() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[40px]">
-                      <Checkbox checked={selectedOrders.length === orders.length} onCheckedChange={toggleSelectAll} />
+                      <Checkbox checked={selectedOrders.length === orders.length && orders.length > 0} onCheckedChange={toggleSelectAll} />
                     </TableHead>
                     <TableHead>Mã đơn</TableHead>
                     <TableHead>Khách hàng</TableHead>
@@ -265,152 +323,110 @@ export function OrderManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedOrders.includes(order.id)}
-                          onCheckedChange={() => toggleSelectOrder(order.id)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{order.id}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">{order.customer}</span>
-                          <span className="text-xs text-muted-foreground">{order.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{order.date}</TableCell>
-                      <TableCell>{order.total}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`${getStatusColor(order.status)} text-white border-none`}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`${getPaymentColor(order.payment)} text-white border-none`}>
-                          {order.payment}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Mở menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/orders/${order.id.toLowerCase()}`} className="flex items-center">
-                                <Eye className="mr-2 h-4 w-4" />
-                                Xem chi tiết
-                              </Link>
-                            </DropdownMenuItem>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  Cập nhật trạng thái
-                                </DropdownMenuItem>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                  <DialogTitle>Cập nhật trạng thái đơn hàng</DialogTitle>
-                                  <DialogDescription>Thay đổi trạng thái đơn hàng {order.id}</DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                  <div className="grid gap-2">
-                                    <Label htmlFor={`status-${order.id}`}>Trạng thái mới</Label>
-                                    <Select defaultValue={getStatusValue(order.status)}>
-                                      <SelectTrigger id={`status-${order.id}`}>
-                                        <SelectValue placeholder="Chọn trạng thái" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="pending">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                            <span>Đang xử lý</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="processing">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                                            <span>Đang chuẩn bị hàng</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="shipping">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-purple-500" />
-                                            <span>Đang vận chuyển</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="delivered">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                                            <span>Đã giao hàng</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="cancelled">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full bg-red-500" />
-                                            <span>Đã hủy</span>
-                                          </div>
-                                        </SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="grid gap-2">
-                                    <Label htmlFor={`note-${order.id}`}>Ghi chú (tùy chọn)</Label>
-                                    <Textarea
-                                      id={`note-${order.id}`}
-                                      placeholder="Nhập ghi chú về việc thay đổi trạng thái..."
-                                    />
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Checkbox id={`notify-${order.id}`} defaultChecked />
-                                    <Label htmlFor={`notify-${order.id}`}>Thông báo cho khách hàng</Label>
-                                  </div>
-                                </div>
-                                <DialogFooter>
-                                  <Button
-                                    onClick={() => {
-                                      toast({
-                                        title: "Cập nhật trạng thái",
-                                        description: `Đơn hàng ${order.id} đã được cập nhật trạng thái.`,
-                                      })
-                                    }}
-                                  >
-                                    Cập nhật
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">Hủy đơn hàng</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {isLoading && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6">
+                          Đang tải dữ liệu...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
+                  {!isLoading && orders.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        Không có đơn hàng nào.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!isLoading &&
+                    orders.map((order) => {
+                      const key = order.orderId.toString()
+                      return (
+                        <TableRow key={key}>
+                        <TableCell>
+                          <Checkbox
+                          checked={selectedOrders.includes(key)}
+                          onCheckedChange={() => toggleSelectOrder(key)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                          <span className="text-sm font-medium">{order.customerName || "Khách hàng"}</span>
+                            <span className="text-xs text-muted-foreground">{order.customerEmail}</span>
+                          </div>
+                        </TableCell>
+                      <TableCell>{formatDate(order.orderDate)}</TableCell>
+                        <TableCell>{formatCurrency(order.orderTotal)}</TableCell>
+                        <TableCell>
+                        <Badge variant="outline" className={`${getStatusColor(order.status)} text-white border-none`}>
+                          {statusOptions.find((opt) => opt.value === getStatusValue(order.status))?.label || order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                        <Badge variant="outline" className={`${getPaymentColor(order.paymentStatus.toLowerCase())} text-white border-none`}>
+                          {order.paymentStatus}
+                        </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Mở menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/orders/${order.orderId}`} className="flex items-center">
+                                <Eye className="mr-2 h-4 w-4" />
+                                  Xem chi tiết
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                              onSelect={(e) => {
+                                e.preventDefault()
+                                handleOpenStatusDialog(order)
+                                }}
+                              >
+                                Cập nhật trạng thái
+                              </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onSelect={(e) => {
+                                e.preventDefault()
+                                handleDeleteSelected([key])
+                              }}
+                            >
+                              Xóa đơn hàng
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
             <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">Hiển thị 1-8 của 156 đơn hàng</div>
+              <div className="text-sm text-muted-foreground">
+                Hiển thị {(page - 1) * pageSize + 1}-
+                {Math.min(page * pageSize, total)} của {total} đơn hàng
+              </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>
+                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((prev) => Math.max(1, prev - 1))}>
                   Trước
                 </Button>
-                <Button variant="outline" size="sm" className="bg-primary text-primary-foreground">
-                  1
-                </Button>
-                <Button variant="outline" size="sm">
-                  2
-                </Button>
-                <Button variant="outline" size="sm">
-                  3
-                </Button>
-                <Button variant="outline" size="sm">
+                <span className="text-sm">
+                  Trang {page}/{totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                >
                   Sau
                 </Button>
               </div>
@@ -418,6 +434,42 @@ export function OrderManagement() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cập nhật trạng thái đơn hàng</DialogTitle>
+            {editingOrder && <DialogDescription>Thay đổi trạng thái đơn hàng {editingOrder.orderNumber}</DialogDescription>}
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="status-select">Trạng thái mới</Label>
+              <Select value={updateStatusValue} onValueChange={setUpdateStatusValue}>
+                <SelectTrigger id="status-select">
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${option.color}`} />
+                        <span>{option.label}</span>
+                      </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="note">Ghi chú (tùy chọn)</Label>
+              <Textarea id="note" placeholder="Nhập ghi chú về việc thay đổi trạng thái..." value={updateNote} onChange={(e) => setUpdateNote(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleUpdateStatus}>Cập nhật</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

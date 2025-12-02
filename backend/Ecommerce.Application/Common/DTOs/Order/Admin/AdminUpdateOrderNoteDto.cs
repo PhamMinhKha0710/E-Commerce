@@ -1,0 +1,19 @@
+namespace Ecommerce.Application.Common.DTOs.Order.Admin;
+
+public class AdminUpdateOrderNoteDto
+{
+    public string Note { get; set; } = string.Empty;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

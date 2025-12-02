@@ -1,4 +1,4 @@
-using Ecommerce.Application.Common.DTOs;
+using Ecommerce.Application.Common.DTOs.User;
 using MediatR;
 
 namespace Ecommerce.Application.Commands.Users;

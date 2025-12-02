@@ -8,6 +8,7 @@ import Banner from "@/components/home/Banner";
 import SalesPop from "@/components/Pop/SalesPop";
 import { AuthProvider } from "@/context/AuthContext"; // Import AuthProvider
 import { CartProvider } from "@/context/CartContext"; // Import CartProvider
+import { QueryProvider } from "@/providers/QueryProvider"; // Import QueryProvider
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from "react-toastify";
 
@@ -55,18 +56,20 @@ export default function RootLayout({
                 />
             </head>
             <body style={{ backgroundColor: "#e7eef6" }}>
-                <AuthProvider>
-                    <CartProvider>
-                        {" "}
-                        {/* Bao bọc toàn bộ nội dung bằng AuthProvider */}
-                        <Header />
-                        {children}
-                        <SalesPop />
-                        <Footer />
-                        <Banner />
-                        <ToastContainer />
-                    </CartProvider>
-                </AuthProvider>
+                <QueryProvider>
+                    <AuthProvider>
+                        <CartProvider>
+                            {" "}
+                            {/* Bao bọc toàn bộ nội dung bằng AuthProvider */}
+                            <Header />
+                            {children}
+                            <SalesPop />
+                            <Footer />
+                            <Banner />
+                            <ToastContainer />
+                        </CartProvider>
+                    </AuthProvider>
+                </QueryProvider>
 
                 {/* Load JavaScript */}
                 <Script

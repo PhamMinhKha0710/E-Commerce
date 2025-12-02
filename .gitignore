@@ -331,6 +331,14 @@ paket-files/
 __pycache__/
 *.pyc
 
+# Virtual environments
+# Ignore common virtualenv folders anywhere in the repo
+venv/
+**/venv/
+.venv/
+env/
+ENV/
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config

@@ -1,6 +1,6 @@
 using Ecommerce.Application.Queries.Profile;
 using Ecommerce.Application.Commands.Users;
-using Ecommerce.Application.Common.DTOs;
+using Ecommerce.Application.Common.DTOs.User;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

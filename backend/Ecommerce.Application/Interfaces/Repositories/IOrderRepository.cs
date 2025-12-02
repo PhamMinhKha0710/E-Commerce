@@ -11,6 +11,7 @@ namespace Ecommerce.Application.Interfaces.Repositories
         Task<PaymentMethod> GetPaymentMethodByNameAsync(string name);
         Task<OrderStatus> GetOrderStatusByNameAsync(string name);
         Task<ProductItem> GetProductItemByIdAsync(int productItemId);
+        Task<ProductItem> GetDefaultProductItemByProductIdAsync(int productId);
         Task<ShoppingCartItem> GetCartItemByProductItemIdAsync(int userId, int productItemId);
         Task CreateOrderAsync(ShopOrder order);
         Task UpdateOrderAsync(ShopOrder order);
@@ -19,6 +20,8 @@ namespace Ecommerce.Application.Interfaces.Repositories
         Task DeleteCartItemAsync(ShoppingCartItem cartItem);
         Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action);
         Task<string> GetUserEmailByShopOrderIdAsync(int shopOrderId);
+        Task DeleteOrderAsync(ShopOrder order);
+        Task AddOrderStatusAsync(OrderStatus status);
 
         // Phương thức cho khuyến mãi khi order
         Task<Promotion> GetPromotionByCodeAsync(string code);

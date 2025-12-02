@@ -10,8 +10,8 @@ export function cn(...inputs: ClassValue[]) {
  * @returns Token xác thực hoặc null nếu chưa đăng nhập
  */
 export function getAuthToken(): string | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
-  return localStorage.getItem('token');
+  return localStorage.getItem("auth_token") ?? localStorage.getItem("token");
 }

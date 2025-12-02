@@ -1,4 +1,4 @@
-namespace Ecommerce.Application.Common.DTOs;
+namespace Ecommerce.Application.Common.DTOs.User;
 
 public class UserDto
 {
@@ -14,27 +14,3 @@ public class UserDto
     public bool IsLocked { get; set; }
     public DateTime CreatedAt { get; set; }
 }
-
-public class UserListDto
-{
-    public List<UserDto> Users { get; set; } = new();
-    public int TotalCount { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages { get; set; }
-}
-
-public class UpdateUserDto
-{
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
-    public string? PhoneNumber { get; set; }
-    public string? Role { get; set; }
-    public bool? IsVerified { get; set; }
-}
-
-public class UserStatusDto
-{
-    public bool IsLocked { get; set; }
-}
-

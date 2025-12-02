@@ -44,6 +44,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { getUserInfo, isAuthenticated, logout, getCurrentUser } from "@/lib/api/auth"
 import { useEffect, useState } from "react"
+import { getUsers } from "@/lib/api/users"
 
 // Type cho route navigation
 interface NavRoute {
@@ -63,6 +64,7 @@ export function AdminDashboardLayout({
   const router = useRouter();
   const { isOpen, isMobileOpen, toggleSidebar, toggleMobileSidebar, closeMobileSidebar } = useSidebar()
   const [user, setUser] = useState<{ name?: string; email: string } | null>(null);
+  const [userCount, setUserCount] = useState<number | null>(null);
 
   useEffect(() => {
     // Kiểm tra xác thực khi component được mount
@@ -163,6 +165,19 @@ export function AdminDashboardLayout({
     };
     
     fetchUserInfo();
+    
+    // Fetch user count for badge
+    const fetchUserCount = async () => {
+      try {
+        const response = await getUsers({ page: 1, pageSize: 1 });
+        setUserCount(response.total);
+      } catch (error) {
+        console.error('Error fetching user count:', error);
+        // Silently fail - don't show badge if error
+      }
+    };
+    
+    fetchUserCount();
   }, [router, pathname]);
 
   const handleLogout = () => {
@@ -183,7 +198,7 @@ export function AdminDashboardLayout({
       icon: Users,
       href: "/dashboard/users",
       active: pathname === "/dashboard/users",
-      badge: "25+",
+      badge: userCount !== null ? (userCount > 99 ? "99+" : userCount.toString()) : undefined,
     },
     {
       label: "Sản phẩm",
@@ -214,14 +229,14 @@ export function AdminDashboardLayout({
       icon: ShoppingBag,
       href: "/dashboard/orders",
       active: pathname === "/dashboard/orders",
-      badge: "12",
+      // badge: undefined, // Removed hardcoded badge - can be added later with real data
     },
     {
       label: "Đánh giá",
       icon: Star,
       href: "/dashboard/reviews",
       active: pathname === "/dashboard/reviews",
-      badge: "5",
+      // badge: undefined, // Removed hardcoded badge - can be added later with real data
     },
     {
       label: "Báo cáo",
