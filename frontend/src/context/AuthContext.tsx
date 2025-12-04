@@ -165,8 +165,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
+        const errorData = await response.json().catch(() => ({}));
+        // Xử lý cả hai format: { message: "..." } hoặc { error: "..." } hoặc string trực tiếp
+        const errorMessage = errorData.message || errorData.error || errorData.detail || "Đăng nhập thất bại. Vui lòng thử lại.";
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       localStorage.setItem("accessToken", data.accessToken);

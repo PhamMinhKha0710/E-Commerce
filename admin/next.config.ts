@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'bizweb.dktcdn.net',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
         hostname: '**',
         pathname: '**',
       }

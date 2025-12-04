@@ -91,8 +91,25 @@ public class SyncProductCommandHandler : IRequestHandler<SyncProductCommand, Uni
         };
 
         var messageJson = JsonSerializer.Serialize(message);
-        await _rabbiMQService.PublishMessageAsync("product_sync_queue", messageJson);
-        _logger.LogInformation("Sent message to product_sync_queue for productId={ProductId}, action={Action}", request.ProductId, request.Action);
+        
+        _logger.LogInformation("=== RABBITMQ PUBLISH ATTEMPT (Handler) ===");
+        _logger.LogInformation("Queue: product_sync_queue");
+        _logger.LogInformation("ProductId: {ProductId}, Action: {Action}", request.ProductId, request.Action);
+        _logger.LogInformation("Payload: {Payload}", messageJson);
+        _logger.LogInformation("Payload Length: {Length} bytes", messageJson.Length);
+        
+        try
+        {
+            await _rabbiMQService.PublishMessageAsync("product_sync_queue", messageJson);
+            _logger.LogInformation("=== RABBITMQ PUBLISH SUCCESS (Handler) ===");
+            _logger.LogInformation("Sent message to product_sync_queue for productId={ProductId}, action={Action}", request.ProductId, request.Action);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "=== RABBITMQ PUBLISH FAILED (Handler) ===");
+            _logger.LogError("Error publishing message to product_sync_queue for productId={ProductId}, action={Action}", request.ProductId, request.Action);
+            throw;
+        }
 
         return Unit.Value;
     }

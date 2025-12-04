@@ -34,7 +34,10 @@ public class LoginCommandHandler
                 return Result<LoginResponseDto>.Failure("Invalid credentials");
 
             if (!user.IsVerified)
-                return Result<LoginResponseDto>.Failure("Email not verified");
+                return Result<LoginResponseDto>.Failure("Email chưa được xác thực. Vui lòng xác thực email trước khi đăng nhập.");
+
+            if (user.IsLocked)
+                return Result<LoginResponseDto>.Failure("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.");
 
             // Tạo access token
             var accessToken = _tokenService.GenerateAccessToken(user);

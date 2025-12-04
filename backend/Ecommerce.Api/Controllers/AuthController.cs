@@ -58,7 +58,10 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var result = await _loginHandler.Handle(new LoginCommand(dto));
-        if (!result.IsSuccess) return BadRequest(result.Error);
+        if (!result.IsSuccess) 
+        {
+            return BadRequest(new { message = result.Error });
+        }
         return Ok(result.Value);
     }
 

@@ -29,18 +29,30 @@ export function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
     }
   }
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Đã giao hàng":
-        return "bg-green-500"
-      case "Đang xử lý":
-        return "bg-blue-500"
-      case "Đang vận chuyển":
-        return "bg-yellow-500"
-      case "Đã hủy":
-        return "bg-red-500"
-      default:
-        return "bg-gray-500"
+    const statusLower = status.toLowerCase().trim()
+    
+    // Completed / Đã giao hàng / Hoàn thành
+    if (statusLower === "completed" || statusLower === "đã giao hàng" || statusLower === "hoàn thành" || statusLower === "delivered") {
+      return "bg-green-500"
     }
+    
+    // Cancelled / Đã hủy / Hủy
+    if (statusLower === "cancelled" || statusLower === "đã hủy" || statusLower === "hủy" || statusLower === "canceled") {
+      return "bg-red-500"
+    }
+    
+    // Processing / Đang xử lý
+    if (statusLower === "processing" || statusLower === "đang xử lý" || statusLower === "pending") {
+      return "bg-blue-500"
+    }
+    
+    // Shipping / Đang vận chuyển
+    if (statusLower === "shipping" || statusLower === "đang vận chuyển" || statusLower === "in transit") {
+      return "bg-yellow-500"
+    }
+    
+    // Default
+    return "bg-gray-500"
   }
 
   return (

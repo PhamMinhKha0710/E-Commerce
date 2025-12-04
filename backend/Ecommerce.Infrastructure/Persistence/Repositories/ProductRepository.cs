@@ -199,20 +199,96 @@ public class ProductRepository : IProductRepository
         return items;
     }
 
-    public async Task<(List<Product> Products, int TotalCount)> GetPaginatedProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
+    public async Task<(List<Product> Products, int TotalCount)> GetPaginatedProductsAsync(
+        int pageNumber, 
+        int pageSize, 
+        string? sortBy = null,
+        int? categoryId = null,
+        int? brandId = null,
+        string? status = null,
+        decimal? minPrice = null,
+        decimal? maxPrice = null,
+        CancellationToken cancellationToken = default)
     {
         var query = _dbContext.Products
             .Include(p => p.Brand)
             .Include(p => p.ProductCategory)
             .Include(p => p.ProductItems)
             .Include(p => p.ProductImages)
-            .OrderByDescending(p => p.Id);
+            .AsQueryable();
 
-        var totalCount = await query.CountAsync(cancellationToken);
-        var products = await query
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
+        // Apply filters
+        if (categoryId.HasValue)
+        {
+            query = query.Where(p => p.ProductCategoryId == categoryId.Value);
+        }
+
+        if (brandId.HasValue)
+        {
+            query = query.Where(p => p.BrandId == brandId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = status.ToLower() switch
+            {
+                "in stock" => query.Where(p => p.QtyInStock > 0),
+                "out of stock" => query.Where(p => p.QtyInStock == 0),
+                "discontinued" => query.Where(p => p.QtyInStock < 0), // Assuming negative stock means discontinued
+                _ => query
+            };
+        }
+
+        // Price filtering - need to filter by ProductItems price
+        if (minPrice.HasValue || maxPrice.HasValue)
+        {
+            query = query.Where(p => p.ProductItems.Any(pi => 
+                (!minPrice.HasValue || pi.Price >= minPrice.Value) &&
+                (!maxPrice.HasValue || pi.Price <= maxPrice.Value)
+            ));
+        }
+
+        // Apply sorting
+        List<Product> products;
+        int totalCount;
+
+        // For price sorting, we need to sort after loading because price is in ProductItems
+        if (sortBy?.ToLower() == "price_asc" || sortBy?.ToLower() == "price_desc")
+        {
+            // Load all products first, then sort in memory
+            var allProducts = await query.ToListAsync(cancellationToken);
+            var sortedProducts = sortBy.ToLower() == "price_asc"
+                ? allProducts.OrderBy(p => 
+                    p.ProductItems?.Where(pi => pi.IsDefault).FirstOrDefault()?.Price 
+                    ?? p.ProductItems?.FirstOrDefault()?.Price 
+                    ?? 0)
+                : allProducts.OrderByDescending(p => 
+                    p.ProductItems?.Where(pi => pi.IsDefault).FirstOrDefault()?.Price 
+                    ?? p.ProductItems?.FirstOrDefault()?.Price 
+                    ?? 0);
+            
+            totalCount = sortedProducts.Count();
+            products = sortedProducts
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+        else
+        {
+            // For other sorting options, use database sorting
+            query = sortBy?.ToLower() switch
+            {
+                "name_asc" => query.OrderBy(p => p.Name),
+                "name_desc" => query.OrderByDescending(p => p.Name),
+                _ => query.OrderByDescending(p => p.Id) // Default: sort by ID descending
+            };
+
+            totalCount = await query.CountAsync(cancellationToken);
+            products = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+        }
 
         // Initialize empty collections if they're null
         foreach (var product in products)
@@ -240,6 +316,24 @@ public class ProductRepository : IProductRepository
             .ToListAsync(cancellationToken);
 
         return (categories, brands);
+    }
+
+    public async Task<(List<(int Id, string Name)> Categories, List<(int Id, string Name)> Brands)> GetProductFilterOptionsWithIdsAsync(CancellationToken cancellationToken)
+    {
+        var categories = await _dbContext.ProductCategories
+            .Select(c => new { c.Id, c.Name })
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var brands = await _dbContext.Brands
+            .Select(b => new { b.Id, b.Name })
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return (
+            categories.Select(c => (c.Id, c.Name)).ToList(),
+            brands.Select(b => (b.Id, b.Name)).ToList()
+        );
     }
 
     public async Task<ProductItem> GetProductVariantByIdAsync(int productId, int variantId, CancellationToken cancellationToken)

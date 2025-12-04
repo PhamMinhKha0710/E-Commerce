@@ -1,4 +1,5 @@
 using Ecommerce.Application.Queries.Users;
+using Ecommerce.Application.Commands.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -75,7 +76,30 @@ public class UsersController : ControllerBase
             return StatusCode(500, new { message = "Không thể lấy thông tin người dùng, vui lòng thử lại sau." });
         }
     }
+
+    // PUT: api/admin/users/{id}
+    [HttpPut("{id}")]
+    [AllowAnonymous] // Remove this in production and use proper authorization
+    public async Task<ActionResult> UpdateUser(int id, [FromBody] Ecommerce.Application.Common.DTOs.User.UpdateUserDto updateDto)
+    {
+        try
+        {
+            var command = new Ecommerce.Application.Commands.Users.UpdateUserCommand(id, updateDto);
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user {UserId}", id);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
 }
+
+
+
+
+
 
 
 

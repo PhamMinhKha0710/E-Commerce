@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
-import { getUserById, type UserDetail } from "@/lib/api/users";
+import { getUserById, updateUser, type UserDetail } from "@/lib/api/users";
 
 // Type for form data
 interface FormData {
@@ -215,11 +215,27 @@ export function UserDetail() {
     }
 
     try {
-      // TODO: Implement update user API call
-      // await updateUser(formData.id, { ... });
+      // Map status to IsLocked
+      const isLocked = formData.status === "Bị khóa";
       
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Map role from Vietnamese to English
+      const roleMap: Record<string, string> = {
+        "Khách hàng": "User",
+        "Người bán": "Seller",
+        "Quản trị viên": "Admin"
+      };
+      const role = roleMap[formData.role] || formData.role;
+
+      await updateUser(formData.id, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phone,
+        role: role,
+        isLocked: isLocked
+      });
+      
+      // Refresh user data
+      await fetchUserData();
       
       setIsSaving(false);
       setIsEditing(false);

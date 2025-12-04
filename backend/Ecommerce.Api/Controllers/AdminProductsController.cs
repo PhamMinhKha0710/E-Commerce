@@ -1,6 +1,8 @@
 using Ecommerce.Application.Commands.Products;
+using Ecommerce.Application.Common.DTOs;
 using Ecommerce.Application.Common.DTOs.Product;
 using Ecommerce.Application.Queries.Products;
+using Ecommerce.Infrastructure.Elasticsearch;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +14,12 @@ namespace Ecommerce.Api.Controllers;
 public class AdminProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IElasticsearchService _elasticsearchService;
 
-    public AdminProductsController(IMediator mediator)
+    public AdminProductsController(IMediator mediator, IElasticsearchService elasticsearchService)
     {
         _mediator = mediator;
+        _elasticsearchService = elasticsearchService;
     }
 
     // GET: api/admin/products
@@ -23,14 +27,72 @@ public class AdminProductsController : ControllerBase
     [AllowAnonymous] // Remove this in production and use proper authorization
     public async Task<ActionResult<AdminProductListResponse>> GetProducts(
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] int? categoryId = null,
+        [FromQuery] int? brandId = null,
+        [FromQuery] string? status = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null)
     {
         try
         {
+            // If searchTerm is provided, use Elasticsearch
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var searchRequest = new ProductSearchRequestDto
+                {
+                    Query = searchTerm,
+                    Page = pageNumber,
+                    PageSize = pageSize,
+                    Sort = sortBy
+                };
+
+                var searchResult = await _elasticsearchService.SearchProductsAsync(searchRequest);
+                
+                // Map Elasticsearch results to AdminProductListResponse
+                var adminProducts = searchResult.Results.Select(r => new AdminProductListItemDto
+                {
+                    Id = r.ProductId,
+                    Name = r.Name,
+                    Slug = "", // Will need to fetch from database if needed
+                    SKU = r.Sku,
+                    Price = (decimal)r.Price,
+                    SalePrice = r.OldPrice.HasValue ? (decimal)r.OldPrice.Value : 0,
+                    Stock = r.Stock,
+                    Status = r.Stock > 0 ? "In Stock" : "Out of Stock",
+                    CategoryId = 0, // Will need to fetch from database if needed
+                    CategoryName = r.Category,
+                    BrandId = 0, // Will need to fetch from database if needed
+                    BrandName = r.Brand,
+                    HasVariants = r.HasVariation,
+                    ImageUrl = r.ImageUrl
+                }).ToList();
+
+                return Ok(new AdminProductListResponse
+                {
+                    Products = adminProducts,
+                    Categories = new List<string>(), // Can be populated if needed
+                    Brands = new List<string>(), // Can be populated if needed
+                    TotalCount = (int)searchResult.Total,
+                    PageNumber = searchResult.Page,
+                    PageSize = searchResult.PageSize,
+                    TotalPages = (int)Math.Ceiling(searchResult.Total / (double)searchResult.PageSize)
+                });
+            }
+
+            // Otherwise, use regular database query
             var query = new GetAdminProductsQuery
             {
                 PageNumber = pageNumber,
-                PageSize = pageSize
+                PageSize = pageSize,
+                SortBy = sortBy,
+                CategoryId = categoryId,
+                BrandId = brandId,
+                Status = status,
+                MinPrice = minPrice,
+                MaxPrice = maxPrice
             };
 
             var result = await _mediator.Send(query);

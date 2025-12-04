@@ -40,9 +40,27 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, AdminUs
             .Where(o => o.UserId == user.Id)
             .CountAsync(cancellationToken);
 
-        var totalSpent = await _orderRepository.GetOrdersQueryable()
-            .Where(o => o.UserId == user.Id && o.Payments.Any(p => p.PaymentStatus == "paid"))
-            .SumAsync(o => o.OrderTotal, cancellationToken);
+        // Calculate total spent from all orders (excluding cancelled orders)
+        // Include OrderStatusHistories to check order status
+        var orders = await _orderRepository.GetOrdersQueryable()
+            .Where(o => o.UserId == user.Id)
+            .Include(o => o.OrderStatusHistories)
+                .ThenInclude(h => h.OrderStatus)
+            .ToListAsync(cancellationToken);
+
+        // Filter out cancelled orders and sum the total
+        var totalSpent = orders
+            .Where(o =>
+            {
+                // Get the latest order status
+                var latestStatus = o.OrderStatusHistories?
+                    .OrderByDescending(h => h.CreateAt)
+                    .FirstOrDefault()?.OrderStatus?.Status?.ToLowerInvariant() ?? "";
+
+                // Exclude cancelled or failed orders
+                return !latestStatus.Contains("cancel") && !latestStatus.Contains("fail");
+            })
+            .Sum(o => o.OrderTotal);
 
         var wishlistItems = await _wishlistRepository.GetByUserIdAsync(user.Id, cancellationToken);
         var wishlistCount = wishlistItems.Count;

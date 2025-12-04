@@ -37,6 +37,9 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserD
         if (command.UpdateDto.IsVerified.HasValue)
             user.IsVerified = command.UpdateDto.IsVerified.Value;
 
+        if (command.UpdateDto.IsLocked.HasValue)
+            user.IsLocked = command.UpdateDto.IsLocked.Value;
+
         await _userRepository.UpdateAsync(user);
 
         var userDto = new UserDto

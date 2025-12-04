@@ -36,7 +36,14 @@ namespace Ecommerce.Infrastructure.Persistence.Repositories
 
             if (!string.IsNullOrEmpty(tag))
             {
-                query = query.Where(p => p.Tags.Contains(tag));
+                // Tags is stored as comma-separated string, so we need to check if the tag exists in the string
+                // Check: tag at start, tag at end, tag in middle, or tag is the only value
+                query = query.Where(p => p.Tags != null && 
+                    (p.Tags == tag || 
+                     p.Tags.StartsWith(tag + ",") || 
+                     p.Tags.EndsWith("," + tag) || 
+                     EF.Functions.Like(p.Tags, "%, " + tag + ",%") ||
+                     EF.Functions.Like(p.Tags, "%," + tag + ",%")));
             }
 
             return await query
@@ -62,7 +69,14 @@ namespace Ecommerce.Infrastructure.Persistence.Repositories
 
             if (!string.IsNullOrEmpty(tag))
             {
-                query = query.Where(p => p.Tags.Contains(tag));
+                // Tags is stored as comma-separated string, so we need to check if the tag exists in the string
+                // Check: tag at start, tag at end, tag in middle, or tag is the only value
+                query = query.Where(p => p.Tags != null && 
+                    (p.Tags == tag || 
+                     p.Tags.StartsWith(tag + ",") || 
+                     p.Tags.EndsWith("," + tag) || 
+                     EF.Functions.Like(p.Tags, "%, " + tag + ",%") ||
+                     EF.Functions.Like(p.Tags, "%," + tag + ",%")));
             }
 
             return await query.CountAsync();
@@ -105,12 +119,45 @@ namespace Ecommerce.Infrastructure.Persistence.Repositories
             var post = await GetPostByIdAsync(postId);
             if (post == null) return new List<BlogPost>();
 
-            return await _context.BlogPosts
-                .Where(p => p.IsPublished && p.Id != postId && 
-                       (p.Category == post.Category || p.Tags.Any(t => post.Tags.Contains(t))))
+            // Get post tags as array for comparison
+            var postTags = string.IsNullOrEmpty(post.Tags) 
+                ? new List<string>() 
+                : post.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                           .Select(t => t.Trim())
+                           .ToList();
+
+            // First, get posts by category
+            var categoryPosts = await _context.BlogPosts
+                .Where(p => p.IsPublished && p.Id != postId && p.Category == post.Category)
+                .ToListAsync();
+
+            // Then, get posts by matching tags (if post has tags)
+            var tagPosts = new List<BlogPost>();
+            if (postTags.Any())
+            {
+                var allPosts = await _context.BlogPosts
+                    .Where(p => p.IsPublished && p.Id != postId)
+                    .ToListAsync();
+
+                tagPosts = allPosts
+                    .Where(p => !string.IsNullOrEmpty(p.Tags) && 
+                           postTags.Any(tag => 
+                               p.Tags.Equals(tag, StringComparison.OrdinalIgnoreCase) ||
+                               p.Tags.StartsWith(tag + ",", StringComparison.OrdinalIgnoreCase) ||
+                               p.Tags.EndsWith("," + tag, StringComparison.OrdinalIgnoreCase) ||
+                               p.Tags.Contains("," + tag + ",", StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+            }
+
+            // Combine and remove duplicates, prioritize category matches
+            var relatedPosts = categoryPosts
+                .Union(tagPosts)
+                .DistinctBy(p => p.Id)
                 .OrderByDescending(p => p.PublishedDate)
                 .Take(limit)
-                .ToListAsync();
+                .ToList();
+
+            return relatedPosts;
         }
 
         public async Task<BlogPost> CreatePostAsync(BlogPost post)

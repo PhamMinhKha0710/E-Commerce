@@ -185,3 +185,75 @@ export async function getUserById(userId: number): Promise<UserDetail> {
   }
 }
 
+export interface UpdateUserDto {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  role?: string;
+  isVerified?: boolean;
+  isLocked?: boolean;
+}
+
+/**
+ * Update user by ID
+ */
+export async function updateUser(userId: number, updateData: UpdateUserDto): Promise<UserDetail> {
+  const token = getAuthToken();
+
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_info');
+        throw new Error('Authentication expired. Please login again.');
+      }
+      if (response.status === 404) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'User not found');
+      }
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to update user: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Map API response to match frontend interface
+    return {
+      id: data.id || data.Id,
+      name: data.name || data.Name || `${data.firstName || data.FirstName || ''} ${data.lastName || data.LastName || ''}`.trim(),
+      firstName: data.firstName || data.FirstName || '',
+      lastName: data.lastName || data.LastName || '',
+      email: data.email || data.Email || '',
+      phoneNumber: data.phoneNumber || data.PhoneNumber || '',
+      role: data.role || data.Role || '',
+      status: data.isLocked || data.IsLocked ? 'Bị khóa' : 'Hoạt động',
+      lastActive: data.lastActive || data.LastActive || null,
+      createdAt: data.createdAt || data.CreatedAt || '',
+      avatarUrl: data.avatarUrl || data.AvatarUrl || null,
+      initials: data.initials || data.Initials || '',
+      address: null,
+      bio: null,
+      ordersCount: 0,
+      totalSpent: 0,
+      wishlistCount: 0,
+    };
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
+}
+

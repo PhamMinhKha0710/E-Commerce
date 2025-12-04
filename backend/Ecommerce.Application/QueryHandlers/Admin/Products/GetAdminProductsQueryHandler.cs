@@ -27,6 +27,12 @@ public class GetAdminProductsQueryHandler : IRequestHandler<GetAdminProductsQuer
             var (products, totalCount) = await _productRepository.GetPaginatedProductsAsync(
                 request.PageNumber,
                 request.PageSize,
+                request.SortBy,
+                request.CategoryId,
+                request.BrandId,
+                request.Status,
+                request.MinPrice,
+                request.MaxPrice,
                 cancellationToken);
 
             // Map to DTOs
@@ -55,12 +61,15 @@ public class GetAdminProductsQueryHandler : IRequestHandler<GetAdminProductsQuer
 
             // Get filter options
             var (categories, brands) = await _productRepository.GetProductFilterOptionsAsync(cancellationToken);
+            var (categoryOptions, brandOptions) = await _productRepository.GetProductFilterOptionsWithIdsAsync(cancellationToken);
 
             return new AdminProductListResponse
             {
                 Products = productDtos,
                 Categories = categories,
                 Brands = brands,
+                CategoryOptions = categoryOptions.Select(c => new CategoryFilterOption { Id = c.Id, Name = c.Name }).ToList(),
+                BrandOptions = brandOptions.Select(b => new BrandFilterOption { Id = b.Id, Name = b.Name }).ToList(),
                 TotalCount = totalCount,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize,

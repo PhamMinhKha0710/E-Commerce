@@ -80,7 +80,7 @@ export function DashboardOverview() {
                   <CardContent>
                     <div className="text-2xl font-bold">{formatCurrency(dashboardData.stats.totalRevenue)}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className={dashboardData.stats.revenueChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center>
+                      <span className={`${dashboardData.stats.revenueChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center`}>
                         {dashboardData.stats.revenueChangePercent >= 0 ? (
                           <ArrowUp className="mr-1 h-3 w-3" />
                         ) : (
@@ -100,7 +100,7 @@ export function DashboardOverview() {
                   <CardContent>
                     <div className="text-2xl font-bold">+{dashboardData.stats.totalOrders}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className={dashboardData.stats.ordersChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center>
+                      <span className={`${dashboardData.stats.ordersChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center`}>
                         {dashboardData.stats.ordersChangePercent >= 0 ? (
                           <ArrowUp className="mr-1 h-3 w-3" />
                         ) : (
@@ -120,7 +120,7 @@ export function DashboardOverview() {
                   <CardContent>
                     <div className="text-2xl font-bold">{dashboardData.stats.totalProducts.toLocaleString("vi-VN")}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className={dashboardData.stats.productsChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center>
+                      <span className={`${dashboardData.stats.productsChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center`}>
                         {dashboardData.stats.productsChangePercent >= 0 ? (
                           <ArrowUp className="mr-1 h-3 w-3" />
                         ) : (
@@ -140,7 +140,7 @@ export function DashboardOverview() {
                   <CardContent>
                     <div className="text-2xl font-bold">+{dashboardData.stats.newUsers}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className={dashboardData.stats.newUsersChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center>
+                      <span className={`${dashboardData.stats.newUsersChangePercent >= 0 ? "text-emerald-500" : "text-rose-500"} inline-flex items-center`}>
                         {dashboardData.stats.newUsersChangePercent >= 0 ? (
                           <ArrowUp className="mr-1 h-3 w-3" />
                         ) : (

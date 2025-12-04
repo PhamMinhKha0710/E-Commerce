@@ -38,8 +38,10 @@ const LoginForm = () => {
       const redirectUrl = localStorage.getItem('redirectAfterLogin') || '/';
       localStorage.removeItem('redirectAfterLogin');
       router.push(redirectUrl);
-    } catch  {
-      setFormError("Đăng nhập thất bại. Vui lòng thử lại.");
+    } catch (error: any) {
+      // Hiển thị thông báo lỗi cụ thể từ backend
+      const errorMessage = error?.message || "Đăng nhập thất bại. Vui lòng thử lại.";
+      setFormError(errorMessage);
     } finally {
       setIsLoading(false);
     }
