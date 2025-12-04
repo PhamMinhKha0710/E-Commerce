@@ -51,7 +51,6 @@ export function LoginForm() {
 
     try {
       const response = await login(data)
-      console.log('Login successful, response:', response)
       
       // Lưu token
       if (response.token) {
@@ -75,11 +74,12 @@ export function LoginForm() {
           setAuth(response.token, userInfo)
         }
         
-        console.log('Token saved to localStorage')
-        
-        // Verify token was saved
-        const savedToken = localStorage.getItem('auth_token')
-        console.log('Token verification:', savedToken ? 'Token saved successfully' : 'Token NOT saved!')
+        if (process.env.NODE_ENV !== "production") {
+          const savedToken = localStorage.getItem("auth_token")
+          if (!savedToken) {
+            console.warn("Token was not persisted to storage as expected.")
+          }
+        }
       } else {
         console.error('No token in login response')
         throw new Error('No token received from server')

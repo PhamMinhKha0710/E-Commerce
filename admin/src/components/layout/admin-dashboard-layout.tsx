@@ -23,6 +23,7 @@ import {
   Bell,
   HelpCircle,
   ChevronRight,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -45,6 +46,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getUserInfo, isAuthenticated, logout, getCurrentUser } from "@/lib/api/auth"
 import { useEffect, useState } from "react"
 import { getUsers } from "@/lib/api/users"
+import { fetchAdminOrders } from "@/lib/api/orders"
+import { getProducts } from "@/lib/api/products"
 
 // Type cho route navigation
 interface NavRoute {
@@ -53,6 +56,29 @@ interface NavRoute {
   href: string;
   active: boolean;
   badge?: string;
+}
+
+interface DashboardNotification {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  category: "order" | "product" | "user" | "system";
+  read?: boolean;
+}
+
+const formatNotificationTime = (dateInput?: string) => {
+  const date = dateInput ? new Date(dateInput) : new Date()
+  if (Number.isNaN(date.getTime())) {
+    return "Vừa xong"
+  }
+  return date.toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
 }
 
 export function AdminDashboardLayout({
@@ -65,6 +91,9 @@ export function AdminDashboardLayout({
   const { isOpen, isMobileOpen, toggleSidebar, toggleMobileSidebar, closeMobileSidebar } = useSidebar()
   const [user, setUser] = useState<{ name?: string; email: string } | null>(null);
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
 
   useEffect(() => {
     // Kiểm tra xác thực khi component được mount
@@ -180,13 +209,92 @@ export function AdminDashboardLayout({
     fetchUserCount();
   }, [router, pathname]);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setNotificationsLoading(true)
+      setNotificationsError(null)
+      try {
+        const [ordersResponse, productsResponse, usersResponse] = await Promise.all([
+          fetchAdminOrders({ page: 1, pageSize: 5 }),
+          getProducts(1, 25),
+          getUsers({ page: 1, pageSize: 5 }),
+        ])
+
+        const orderNotifications: DashboardNotification[] = (ordersResponse.orders || [])
+          .slice(0, 3)
+          .map((order) => ({
+            id: `order-${order.orderId}`,
+            title: "Đơn hàng mới",
+            description: `Đơn hàng ${order.orderNumber} của ${order.customerName} vừa được tạo`,
+            timestamp: order.orderDate,
+            category: "order" as const,
+          }))
+
+        const lowStockNotifications: DashboardNotification[] = (productsResponse.products || [])
+          .filter((product) => typeof product.stock === "number" && product.stock <= 5)
+          .slice(0, 3)
+          .map((product) => ({
+            id: `product-${product.id}`,
+            title: "Sản phẩm sắp hết hàng",
+            description: `'${product.name}' chỉ còn ${product.stock} sản phẩm trong kho`,
+            timestamp: (product as any).updatedAt || new Date().toISOString(),
+            category: "product" as const,
+          }))
+
+        const userNotifications: DashboardNotification[] = (usersResponse.users || [])
+          .slice(0, 3)
+          .map((user) => ({
+            id: `user-${user.id}`,
+            title: "Người dùng mới",
+            description: `${user.name || user.email} vừa đăng ký tài khoản`,
+            timestamp: user.createdAt,
+            category: "user" as const,
+          }))
+
+        const merged = [...orderNotifications, ...lowStockNotifications, ...userNotifications]
+
+        setNotifications((prev) => {
+          const readMap = new Map(prev.map((notification) => [notification.id, notification.read]))
+          const next = merged
+            .map((notification) => ({
+              ...notification,
+              read: readMap.get(notification.id) ?? false,
+            }))
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          return next
+        })
+      } catch (error) {
+        console.error("Error fetching notifications:", error)
+        setNotificationsError("Không thể tải thông báo. Vui lòng thử lại sau.")
+      } finally {
+        setNotificationsLoading(false)
+      }
+    }
+
+    fetchNotifications()
+  }, [])
+
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification,
+      ),
+    );
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
+  };
+
   const handleLogout = () => {
     logout();
     toast.success("Đăng xuất thành công");
     router.push('/login');
   };
 
-  const mainRoutes = [
+  const mainRoutes: NavRoute[] = [
     {
       label: "Dashboard",
       icon: LayoutDashboard,
@@ -208,7 +316,7 @@ export function AdminDashboardLayout({
     },
   ]
 
-  const catalogRoutes = [
+  const catalogRoutes: NavRoute[] = [
     {
       label: "Danh mục",
       icon: Tag,
@@ -223,7 +331,7 @@ export function AdminDashboardLayout({
     },
   ]
 
-  const salesRoutes = [
+  const salesRoutes: NavRoute[] = [
     {
       label: "Đơn hàng",
       icon: ShoppingBag,
@@ -349,6 +457,78 @@ export function AdminDashboardLayout({
           <LogOut className="mr-2 h-4 w-4" />
           <span>Đăng xuất</span>
         </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const renderNotificationDropdown = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon" className="relative">
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-4 min-w-[16px] rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground flex items-center justify-center">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 p-0">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold">Thông báo</p>
+            <p className="text-xs text-muted-foreground">
+              {unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Bạn đã xem tất cả thông báo"}
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={markAllNotificationsAsRead}>
+            Đánh dấu tất cả
+          </Button>
+        </div>
+        <div className="max-h-80 overflow-y-auto">
+          {notificationsLoading ? (
+            <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Đang tải thông báo...
+            </div>
+          ) : notificationsError ? (
+            <div className="px-4 py-6 text-center text-sm text-destructive">
+              {notificationsError}
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+              Hiện chưa có thông báo nào
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <button
+                key={notification.id}
+                className={cn(
+                  "w-full px-4 py-3 text-left transition-colors hover:bg-muted",
+                  !notification.read && "bg-muted/40",
+                )}
+                onClick={() => markNotificationAsRead(notification.id)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold">{notification.title}</p>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    {formatNotificationTime(notification.timestamp)}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{notification.description}</p>
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  <Badge variant="outline">
+                    {notification.category === "order" && "Đơn hàng"}
+                    {notification.category === "product" && "Sản phẩm"}
+                    {notification.category === "user" && "Người dùng"}
+                    {notification.category === "system" && "Hệ thống"}
+                  </Badge>
+                  {!notification.read && <span className="h-2 w-2 rounded-full bg-green-500" />}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -547,19 +727,7 @@ export function AdminDashboardLayout({
               </div>
             </form>
             <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="relative">
-                      <Bell className="h-5 w-5" />
-                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground flex items-center justify-center">
-                        3
-                      </span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Thông báo</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {renderNotificationDropdown()}
               <ModeToggle />
               {renderUserMenu()}
             </div>

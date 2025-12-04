@@ -9,6 +9,9 @@ import { RecentOrdersTable } from "@/components/dashboard/recent-orders-table"
 import { TopSellingProducts } from "@/components/dashboard/top-selling-products"
 import { RevenueChart } from "@/components/dashboard/revenue-chart"
 import { NewUsersTable } from "@/components/dashboard/new-users-table"
+import { AnalyticsTab } from "@/components/dashboard/analytics-tab"
+import { ReportsTab } from "@/components/dashboard/reports-tab"
+import { NotificationsTab } from "@/components/dashboard/notifications-tab"
 import { getDashboardStats, type DashboardData } from "@/lib/api/dashboard"
 import { toast } from "@/components/ui/use-toast"
 
@@ -200,37 +203,13 @@ export function DashboardOverview() {
           )}
         </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Phân tích chi tiết</CardTitle>
-              <CardDescription>Xem phân tích chi tiết về doanh thu, đơn hàng và người dùng</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] flex items-center justify-center">
-              <p className="text-muted-foreground">Đang phát triển...</p>
-            </CardContent>
-          </Card>
+          <AnalyticsTab initialData={dashboardData} />
         </TabsContent>
         <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Báo cáo</CardTitle>
-              <CardDescription>Tạo và xem các báo cáo chi tiết</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] flex items-center justify-center">
-              <p className="text-muted-foreground">Đang phát triển...</p>
-            </CardContent>
-          </Card>
+          <ReportsTab />
         </TabsContent>
         <TabsContent value="notifications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Thông báo</CardTitle>
-              <CardDescription>Xem tất cả thông báo hệ thống</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] flex items-center justify-center">
-              <p className="text-muted-foreground">Đang phát triển...</p>
-            </CardContent>
-          </Card>
+          <NotificationsTab />
         </TabsContent>
       </Tabs>
     </div>

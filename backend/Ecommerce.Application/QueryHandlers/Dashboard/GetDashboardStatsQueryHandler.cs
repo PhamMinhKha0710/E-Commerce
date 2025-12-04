@@ -46,8 +46,10 @@ public class GetDashboardStatsQueryHandler : IRequestHandler<GetDashboardStatsQu
             .Where(o => o.OrderDate >= startDate && o.OrderDate <= endDate)
             .ToListAsync(cancellationToken);
 
+        // Tính doanh thu từ các đơn hàng đã thanh toán thành công
+        // Bao gồm: Completed (thanh toán online thành công), COD (thanh toán tiền mặt)
         var currentPaidOrders = currentOrders
-            .Where(o => o.Payments.Any(p => p.PaymentStatus == "paid"))
+            .Where(o => o.Payments.Any(p => p.PaymentStatus == "Completed" || p.PaymentStatus == "COD"))
             .ToList();
 
         var currentRevenue = currentPaidOrders.Sum(o => o.OrderTotal);
@@ -67,7 +69,7 @@ public class GetDashboardStatsQueryHandler : IRequestHandler<GetDashboardStatsQu
             .ToListAsync(cancellationToken);
 
         var previousPaidOrders = previousOrders
-            .Where(o => o.Payments.Any(p => p.PaymentStatus == "paid"))
+            .Where(o => o.Payments.Any(p => p.PaymentStatus == "Completed" || p.PaymentStatus == "COD"))
             .ToList();
 
         var previousRevenue = previousPaidOrders.Sum(o => o.OrderTotal);
@@ -150,7 +152,7 @@ public class GetDashboardStatsQueryHandler : IRequestHandler<GetDashboardStatsQu
                 .ToListAsync(cancellationToken);
             
             var monthRevenue = monthOrders
-                .Where(o => o.Payments.Any(p => p.PaymentStatus == "paid"))
+                .Where(o => o.Payments.Any(p => p.PaymentStatus == "Completed" || p.PaymentStatus == "COD"))
                 .Sum(o => o.OrderTotal);
 
             chartData.Add(new RevenueChartDataDto

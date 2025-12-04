@@ -67,12 +67,11 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
     }
 
     const data = await response.json();
-    console.log('Login response:', data);
     
     // Handle both 'token', 'accessToken' (camelCase) and 'AccessToken' (PascalCase) from API
     const token = data.token || data.accessToken || data.AccessToken;
     if (!token) {
-      console.error('No token found in login response. Response data:', data);
+      console.error('No token found in login response.');
       throw new Error('No token received from server');
     }
     
