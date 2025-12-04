@@ -159,21 +159,24 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
             // Áp dụng khuyến mãi nếu hợp lệ
             if (promotion != null)
             {
+                decimal applicableTotal = 0;
                 bool hasEligibleProduct = false;
+                
+                // Tính tổng giá trị các sản phẩm áp dụng mã giảm giá
                 foreach (var orderLine in orderLines)
                 {
                     var productItem = await _orderRepository.GetProductItemByIdAsync(orderLine.ProductItemId);
                     if (await _orderRepository.IsProductInPromotionCategoryAsync(productItem.ProductId, promotion.Id))
                     {
                         hasEligibleProduct = true;
-                        break;
+                        applicableTotal += orderLine.Price * orderLine.Qty;
                     }
                 }
 
                 if (hasEligibleProduct)
                 {
-                    // Tính toán giảm giá
-                    decimal discount = orderTotal * promotion.DiscountRate / 100;
+                    // Tính toán giảm giá chỉ trên các sản phẩm áp dụng mã giảm giá
+                    decimal discount = applicableTotal * promotion.DiscountRate / 100;
                     if (promotion.LimitDiscountPrice > 0 && discount > promotion.LimitDiscountPrice)
                     {
                         discount = promotion.LimitDiscountPrice; // Giới hạn giảm giá tối đa
@@ -181,6 +184,7 @@ public class CreateShopOrderCommnadHandler : IRequestHandler<CreateShopOrderComm
                     discountAmount = discount;
                     promotion.UsedQuantity += 1; // Tăng số lượng đã sử dụng
                     await _orderRepository.UpdatePromotionAsync(promotion);
+                    _logger.LogInformation($"Applied promotion {request.Request.CodePromotion}: discount {discountAmount} on applicable total {applicableTotal}");
                 }
                 else
                 {

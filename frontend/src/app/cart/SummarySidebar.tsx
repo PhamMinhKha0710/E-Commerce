@@ -10,6 +10,7 @@ import 'swiper/css/navigation';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 // Define the type for address
 interface AddressType {
@@ -34,6 +35,25 @@ interface CartItemType {
   productItemId: number | null;
 }
 
+// Define the type for promotion response
+interface PromotionResponseDto {
+  discountRate: number;
+  limitDiscountPrice: number;
+  isAvailable: boolean;
+  remainingQuantity: number;
+  startDate: string;
+  endDate: string;
+  listCartIdPromotion: number[];
+}
+
+// Define the type for coupon
+interface Coupon {
+  code: string;
+  discountPercent: number;
+  limitDiscountPrice: number;
+  listCartIdPromotion: number[];
+}
+
 interface SummarySidebarProps {
   selectedItems: number[];
   cartItems: CartItemType[];
@@ -45,6 +65,11 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
   const [address, setAddress] = useState<AddressType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [isCouponInputVisible, setIsCouponInputVisible] = useState<boolean>(false);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState<boolean>(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   // Fetch default address
   useEffect(() => {
@@ -94,6 +119,169 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
     fetchDefaultAddress();
   }, [isLoggedIn]);
 
+  // Load coupons from localStorage
+  useEffect(() => {
+    const savedCoupons = localStorage.getItem('cartCoupons');
+    if (savedCoupons) {
+      try {
+        const parsedCoupons = JSON.parse(savedCoupons);
+        if (Array.isArray(parsedCoupons)) {
+          // Validate coupon structure
+          const validCoupons = parsedCoupons.filter(coupon => 
+            coupon && 
+            coupon.code && 
+            typeof coupon.discountPercent === 'number' &&
+            typeof coupon.limitDiscountPrice === 'number' &&
+            Array.isArray(coupon.listCartIdPromotion)
+          );
+          if (validCoupons.length > 0) {
+            setCoupons(validCoupons);
+            console.log('Loaded coupons from localStorage:', validCoupons);
+          }
+        }
+      } catch (err) {
+        console.error('Error parsing saved coupons:', err);
+      }
+    }
+  }, []);
+
+  // Save coupons to localStorage
+  useEffect(() => {
+    if (coupons.length > 0) {
+      localStorage.setItem('cartCoupons', JSON.stringify(coupons));
+    } else {
+      localStorage.removeItem('cartCoupons');
+    }
+  }, [coupons]);
+
+  const checkCoupon = async (code: string): Promise<PromotionResponseDto | null> => {
+    try {
+      const response = await fetch(`http://localhost:5130/api/admin/Promotions/client/${code}`, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*',
+        },
+      });
+
+      if (response.ok) {
+        const data: PromotionResponseDto = await response.json();
+        const now = new Date();
+        const startDate = new Date(data.startDate);
+        const endDate = new Date(data.endDate);
+
+        if (!data.isAvailable) {
+          setCouponError('Mã khuyến mãi hiện không khả dụng.');
+          toast.error('Mã khuyến mãi hiện không khả dụng.');
+          return null;
+        }
+
+        if (data.remainingQuantity <= 0) {
+          setCouponError('Mã khuyến mãi đã hết lượt sử dụng.');
+          toast.error('Mã khuyến mãi đã hết lượt sử dụng.');
+          return null;
+        }
+
+        if (now < startDate) {
+          setCouponError('Mã khuyến mãi chưa bắt đầu.');
+          toast.error(`Mã khuyến mãi chưa bắt đầu. Hiệu lực từ ${startDate.toLocaleDateString('vi-VN')}.`);
+          return null;
+        }
+
+        if (now > endDate) {
+          setCouponError('Mã khuyến mãi đã hết hạn.');
+          toast.error(`Mã khuyến mãi đã hết hạn vào ${endDate.toLocaleDateString('vi-VN')}.`);
+          return null;
+        }
+
+        // Check if coupon applies to any selected items
+        const selectedCartItems = selectedItems
+          .filter(index => index >= 0 && index < cartItems.length && cartItems[index].available)
+          .map(index => cartItems[index]);
+
+        const applicableItems = selectedCartItems.filter((item) =>
+          data.listCartIdPromotion.includes(item.categoryId)
+        );
+        
+        if (applicableItems.length === 0 && selectedItems.length > 0) {
+          setCouponError('Mã khuyến mãi không áp dụng cho sản phẩm nào trong đơn hàng.');
+          toast.error('Mã khuyến mãi không áp dụng cho sản phẩm nào trong đơn hàng.');
+          return null;
+        }
+
+        return data;
+      } else if (response.status === 404) {
+        setCouponError('Mã khuyến mãi không hợp lệ.');
+        toast.error('Mã khuyến mãi không hợp lệ.');
+        return null;
+      } else {
+        throw new Error(`Lỗi không xác định: ${response.status}`);
+      }
+    } catch {
+      setCouponError('Lỗi khi kiểm tra mã khuyến mãi.');
+      toast.error('Lỗi khi kiểm tra mã khuyến mãi.');
+      return null;
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Vui lòng nhập mã khuyến mãi.');
+      toast.error('Vui lòng nhập mã khuyến mãi.');
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponError(null);
+
+    try {
+      const couponData = await checkCoupon(couponCode.trim());
+      if (!couponData) {
+        return;
+      }
+
+      const newCoupon: Coupon = {
+        code: couponCode.trim(),
+        discountPercent: couponData.discountRate,
+        limitDiscountPrice: couponData.limitDiscountPrice,
+        listCartIdPromotion: couponData.listCartIdPromotion,
+      };
+
+      // Check if coupon already exists
+      if (coupons.some(c => c.code === newCoupon.code)) {
+        setCouponError('Mã khuyến mãi này đã được áp dụng.');
+        toast.error('Mã khuyến mãi này đã được áp dụng.');
+        return;
+      }
+
+      // Limit to 2 coupons
+      if (coupons.length >= 2) {
+        setCouponError('Bạn chỉ có thể áp dụng tối đa 2 mã khuyến mãi.');
+        toast.error('Bạn chỉ có thể áp dụng tối đa 2 mã khuyến mãi.');
+        return;
+      }
+
+      setCoupons([...coupons, newCoupon]);
+      setCouponCode('');
+      setIsCouponInputVisible(false);
+      toast.success(`Áp dụng mã khuyến mãi thành công! Còn ${couponData.remainingQuantity} lượt.`);
+    } catch {
+      setCouponError('Lỗi khi áp dụng mã khuyến mãi.');
+      toast.error('Lỗi khi áp dụng mã khuyến mãi.');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = (code: string) => {
+    setCoupons(coupons.filter((coupon) => coupon.code !== code));
+    toast.info('Đã bỏ mã khuyến mãi.');
+  };
+
+  const handleToggleCouponInput = () => {
+    setIsCouponInputVisible(!isCouponInputVisible);
+    setCouponError(null);
+  };
+
   const banners = [
     {
       href: 'https://tiki.vn/khuyen-mai/dien-tu-dien-gia-dung-dien-lanh?itm_campaign=UNK_YPD_TKA_BNA_UNK_ALL_UNK_UNK_UNK_UNK_X.213283_Y.1795603_Z.3934240_CN.Default-banners-for-all-display-placements&itm_medium=CPM&itm_source=tiki-ads',
@@ -121,6 +309,47 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
   const totalPrice = selectedItems
     .filter(index => index >= 0 && index < cartItems.length && cartItems[index].available)
     .reduce((total, index) => total + cartItems[index].price * cartItems[index].quantity, 0);
+
+  // Calculate discount from coupons
+  let discount = 0;
+  if (coupons.length > 0 && cartItems.length > 0) {
+    // Use all cart items if no items are selected, otherwise use selected items
+    const itemsToCheck = selectedItems.length > 0
+      ? selectedItems
+          .filter(index => index >= 0 && index < cartItems.length && cartItems[index].available)
+          .map(index => cartItems[index])
+      : cartItems.filter(item => item.available);
+
+    coupons.forEach((coupon) => {
+      // Check if coupon applies to any items
+      const applicableItems = itemsToCheck.filter((item) => {
+        // If listCartIdPromotion is empty or undefined, apply to all items
+        if (!coupon.listCartIdPromotion || coupon.listCartIdPromotion.length === 0) {
+          return true;
+        }
+        // Otherwise, check if item's categoryId is in the promotion list
+        return coupon.listCartIdPromotion.includes(item.categoryId);
+      });
+      
+      if (applicableItems.length > 0) {
+        const applicableTotal = applicableItems.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0
+        );
+        
+        const discountAmount = (applicableTotal * coupon.discountPercent) / 100;
+        
+        // Apply limit if specified (limitDiscountPrice > 0 means there's a limit)
+        const limitedDiscount = coupon.limitDiscountPrice > 0 
+          ? Math.min(discountAmount, coupon.limitDiscountPrice)
+          : discountAmount;
+        
+        discount += limitedDiscount;
+      }
+    });
+  }
+
+  const finalTotal = Math.max(0, totalPrice - discount);
 
   // Count selected items
   const selectedCount = selectedItems.length;
@@ -150,6 +379,10 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
     // Save selectedCartItems to localStorage
     localStorage.setItem('selectedCartItems', JSON.stringify(selectedCartItems));
     localStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+    // Save coupons to localStorage for checkout page
+    if (coupons.length > 0) {
+      localStorage.setItem('cartCoupons', JSON.stringify(coupons));
+    }
 
     router.push('/checkout');
   };
@@ -224,6 +457,60 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
           font-size: 14px;
           color: var(--maincolor);
           cursor: pointer;
+        }
+        .coupon-input-section {
+          margin-top: 12px;
+        }
+        .coupon-input-wrapper {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .coupon-input {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #e0e0e0;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+        .coupon-apply-button {
+          padding: 8px 16px;
+          background: var(--maincolor);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          font-size: 14px;
+          cursor: pointer;
+        }
+        .coupon-apply-button:hover {
+          opacity: 0.9;
+        }
+        .coupon-apply-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .coupon-error {
+          color: red;
+          font-size: 12px;
+          margin-top: 4px;
+        }
+        .coupon-list {
+          margin-top: 8px;
+        }
+        .coupon-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px;
+          background: #f5f5f5;
+          border-radius: 4px;
+          margin-bottom: 4px;
+          font-size: 12px;
+        }
+        .coupon-remove {
+          color: red;
+          cursor: pointer;
+          font-size: 12px;
         }
         .order-total {
           margin-top: 16px;
@@ -329,7 +616,7 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
           <div className="section-header">
             <h2>Smile Khuyến Mãi</h2>
             <div className="coupon-usage">
-              <span>Có thể chọn 2</span>
+              <span>{coupons.length > 0 ? `Đã áp dụng ${coupons.length} mã` : 'Có thể chọn 2'}</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -356,57 +643,100 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
               </svg>
             </div>
           </div>
-          <div className="coupon-add">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="coupon-icon"
-            >
-              <g clipPath="url(#clip0_1392_114948)">
-                <path
-                  d="M7.9165 9.16659C8.60686 9.16659 9.1665 8.60694 9.1665 7.91659C9.1665 7.22623 8.60686 6.66659 7.9165 6.66659C7.22615 6.66659 6.6665 7.22623 6.6665 7.91659C6.6665 8.60694 7.22615 9.16659 7.9165 9.16659Z"
-                  fill="var(--maincolor)"
-                />
-                <path
-                  d="M13.3332 12.0833C13.3332 12.7736 12.7735 13.3333 12.0832 13.3333C11.3928 13.3333 10.8332 12.7736 10.8332 12.0833C10.8332 11.3929 11.3928 10.8333 12.0832 10.8333C12.7735 10.8333 13.3332 11.3929 13.3332 12.0833Z"
-                  fill="var(--maincolor)"
-                />
-                <path
-                  d="M12.2558 8.92251C12.5812 8.59707 12.5812 8.06943 12.2558 7.744C11.9303 7.41856 11.4027 7.41856 11.0772 7.744L7.74392 11.0773C7.41848 11.4028 7.41848 11.9304 7.74392 12.2558C8.06935 12.5813 8.59699 12.5813 8.92243 12.2558L12.2558 8.92251Z"
-                  fill="var(--maincolor)"
-                />
+          {coupons.length > 0 && (
+            <div className="coupon-list">
+              {coupons.map((coupon) => (
+                <div key={coupon.code} className="coupon-item">
+                  <span>Mã: {coupon.code} - Giảm {coupon.discountPercent}%</span>
+                  <span className="coupon-remove" onClick={() => handleRemoveCoupon(coupon.code)}>
+                    Xóa
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="coupon-input-section">
+            <div className="coupon-add" onClick={handleToggleCouponInput}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="coupon-icon"
+              >
+                <g clipPath="url(#clip0_1392_114948)">
+                  <path
+                    d="M7.9165 9.16659C8.60686 9.16659 9.1665 8.60694 9.1665 7.91659C9.1665 7.22623 8.60686 6.66659 7.9165 6.66659C7.22615 6.66659 6.6665 7.22623 6.6665 7.91659C6.6665 8.60694 7.22615 9.16659 7.9165 9.16659Z"
+                    fill="var(--maincolor)"
+                  />
+                  <path
+                    d="M13.3332 12.0833C13.3332 12.7736 12.7735 13.3333 12.0832 13.3333C11.3928 13.3333 10.8332 12.7736 10.8332 12.0833C10.8332 11.3929 11.3928 10.8333 12.0832 10.8333C12.7735 10.8333 13.3332 11.3929 13.3332 12.0833Z"
+                    fill="var(--maincolor)"
+                  />
+                  <path
+                    d="M12.2558 8.92251C12.5812 8.59707 12.5812 8.06943 12.2558 7.744C11.9303 7.41856 11.4027 7.41856 11.0772 7.744L7.74392 11.0773C7.41848 11.4028 7.41848 11.9304 7.74392 12.2558C8.06935 12.5813 8.59699 12.5813 8.92243 12.2558L12.2558 8.92251Z"
+                    fill="var(--maincolor)"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M3.33317 3.33325C2.4127 3.33325 1.6665 4.07944 1.6665 4.99992V7.64295C1.6665 7.86396 1.7543 8.07592 1.91058 8.23221L2.49978 8.82141C3.15066 9.47228 3.15066 10.5276 2.49978 11.1784L1.91058 11.7676C1.7543 11.9239 1.6665 12.1359 1.6665 12.3569V14.9999C1.6665 15.9204 2.4127 16.6666 3.33317 16.6666L16.6665 16.6666C17.587 16.6666 18.3332 15.9204 18.3332 14.9999V12.3569C18.3332 12.127 18.2387 11.9125 18.0798 11.7584L17.4998 11.1784C16.8489 10.5276 16.8489 9.47228 17.4998 8.82141L18.0798 8.24143C18.2387 8.08737 18.3332 7.87288 18.3332 7.64295V4.99992C18.3332 4.07945 17.587 3.33325 16.6665 3.33325H3.33317ZM16.3213 12.3569L16.6665 12.7022V14.9999H3.33317V12.7021L3.6783 12.3569C4.98004 11.0552 4.98004 8.94464 3.6783 7.6429L3.33317 7.29777V4.99992L16.6665 4.99992V7.29766L16.3213 7.6429C15.0195 8.94464 15.0195 11.0552 16.3213 12.3569Z"
+                    fill="var(--maincolor)"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip0_1392_114948">
+                    <rect width="16.6667" height="16.6667" fill="white" transform="translate(1.6665 1.66663)" />
+                  </clipPath>
+                </defs>
+              </svg>
+              <span>Chọn hoặc nhập mã khác</span>
+              <svg
+                className="more"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  transform: isCouponInputVisible ? 'rotate(90deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                }}
+              >
                 <path
                   fillRule="evenodd"
                   clipRule="evenodd"
-                  d="M3.33317 3.33325C2.4127 3.33325 1.6665 4.07944 1.6665 4.99992V7.64295C1.6665 7.86396 1.7543 8.07592 1.91058 8.23221L2.49978 8.82141C3.15066 9.47228 3.15066 10.5276 2.49978 11.1784L1.91058 11.7676C1.7543 11.9239 1.6665 12.1359 1.6665 12.3569V14.9999C1.6665 15.9204 2.4127 16.6666 3.33317 16.6666L16.6665 16.6666C17.587 16.6666 18.3332 15.9204 18.3332 14.9999V12.3569C18.3332 12.127 18.2387 11.9125 18.0798 11.7584L17.4998 11.1784C16.8489 10.5276 16.8489 9.47228 17.4998 8.82141L18.0798 8.24143C18.2387 8.08737 18.3332 7.87288 18.3332 7.64295V4.99992C18.3332 4.07945 17.587 3.33325 16.6665 3.33325H3.33317ZM16.3213 12.3569L16.6665 12.7022V14.9999H3.33317V12.7021L3.6783 12.3569C4.98004 11.0552 4.98004 8.94464 3.6783 7.6429L3.33317 7.29777V4.99992L16.6665 4.99992V7.29766L16.3213 7.6429C15.0195 8.94464 15.0195 11.0552 16.3213 12.3569Z"
+                  d="M8.46967 3.96967C8.76256 3.67678 9.23744 3.67678 9.53033 3.96967L17.0303 11.4697C17.3232 11.7626 17.3232 12.2374 17.0303 12.5303L9.53033 20.0303C9.23744 20.3232 8.76256 20.3232 8.46967 20.0303C8.17678 19.7374 8.17678 19.2626 8.46967 18.9697L15.4393 12L8.46967 5.03033C8.17678 4.73744 8.17678 4.26256 8.46967 3.96967Z"
                   fill="var(--maincolor)"
                 />
-              </g>
-              <defs>
-                <clipPath id="clip0_1392_114948">
-                  <rect width="16.6667" height="16.6667" fill="white" transform="translate(1.6665 1.66663)" />
-                </clipPath>
-              </defs>
-            </svg>
-            <span>Giảm 34k cho đơn từ 0đ</span>
-            <svg
-              className="more"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M8.46967 3.96967C8.76256 3.67678 9.23744 3.67678 9.53033 3.96967L17.0303 11.4697C17.3232 11.7626 17.3232 12.2374 17.0303 12.5303L9.53033 20.0303C9.23744 20.3232 8.76256 20.3232 8.46967 20.0303C8.17678 19.7374 8.17678 19.2626 8.46967 18.9697L15.4393 12L8.46967 5.03033C8.17678 4.73744 8.17678 4.26256 8.46967 3.96967Z"
-                fill="var(--maincolor)"
-              />
-            </svg>
+              </svg>
+            </div>
+            {isCouponInputVisible && (
+              <div className="coupon-input-wrapper">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  placeholder="Nhập mã khuyến mãi"
+                  className="coupon-input"
+                  disabled={isApplyingCoupon}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleApplyCoupon();
+                    }
+                  }}
+                />
+                <button
+                  className="coupon-apply-button"
+                  onClick={handleApplyCoupon}
+                  disabled={isApplyingCoupon}
+                >
+                  {isApplyingCoupon ? 'Đang áp dụng...' : 'Áp dụng'}
+                </button>
+              </div>
+            )}
+            {couponError && <div className="coupon-error">{couponError}</div>}
           </div>
         </div>
         <div className="order-total">
@@ -417,7 +747,7 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
             </li>
             <li className="total-item">
               <span>Giảm giá</span>
-              <span>0₫</span>
+              <span>{discount > 0 ? `-${discount.toLocaleString()}₫` : '0₫'}</span>
             </li>
           </ul>
           <div className="total-final">
@@ -427,7 +757,7 @@ const SummarySidebar: React.FC<SummarySidebarProps> = ({ selectedItems, cartItem
                 <span className="total-empty">Vui lòng chọn sản phẩm</span>
               ) : (
                 <>
-                  <span className="total-amount">{totalPrice.toLocaleString()}₫</span>
+                  <span className="total-amount">{finalTotal.toLocaleString()}₫</span>
                   <span className="total-note">(Đã bao gồm VAT nếu có)</span>
                 </>
               )}
