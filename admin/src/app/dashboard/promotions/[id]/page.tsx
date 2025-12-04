@@ -131,11 +131,16 @@ export default function PromotionDetailPage() {
         totalQuantity: Number(editedPromotion.totalQuantity)
       }
       
-      console.log("Sending update data to API:", updateDto);
       const updated = await updatePromotion(updateDto)
       setPromotion(updated)
       setIsEditing(false)
       toast.success("Thông tin khuyến mãi đã được cập nhật")
+      
+      // Redirect về trang danh sách sau khi update thành công
+      setTimeout(() => {
+        router.push('/dashboard/promotions')
+        router.refresh()
+      }, 500)
     } catch (error) {
       console.error("Failed to update promotion:", error)
       if (axios.isAxiosError(error) && error.response) {
@@ -594,6 +599,28 @@ export default function PromotionDetailPage() {
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Mức giảm giá</h3>
                   <p className="font-semibold">{promotion.discountRate}%</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Số lượng mã</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm">
+                      <span className="font-semibold">{promotion.usedQuantity || 0}</span> / {promotion.totalQuantity || "∞"}
+                    </p>
+                    {promotion.totalQuantity > 0 && (
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all" 
+                          style={{ 
+                            width: `${Math.min(((promotion.usedQuantity || 0) / promotion.totalQuantity) * 100, 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                    )}
+                    {promotion.totalQuantity > 0 && promotion.usedQuantity >= promotion.totalQuantity && (
+                      <Badge variant="destructive" className="text-xs">Đã hết mã</Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

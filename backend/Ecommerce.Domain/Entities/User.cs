@@ -12,6 +12,9 @@ public class User
     public string LastName { get; set; } 
     public string? AvatarUrl { get; set; } = string.Empty;
     public bool IsVerified { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastActive { get; set; }
+    public bool IsLocked { get; set; }
 
     // Navigation property
     public List <UserAddress> UserAddresses { get; set; } 
@@ -21,4 +24,5 @@ public class User
     public List<RefreshToken> RefreshTokens { get; set; } 
     public List<UserSearch> UserSearches { get; set; }
     public List<UserViewHistory> UserViewHistories { get; set; }
+    public List<WishlistItem> WishlistItems { get; set; } = new();
 }

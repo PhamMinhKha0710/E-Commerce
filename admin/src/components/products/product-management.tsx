@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import { ChevronDown, Download, Filter, MoreHorizontal, PackagePlus, Search, Trash } from "lucide-react"
+import { ChevronDown, Download, Filter, MoreHorizontal, PackagePlus, Search, Trash, X } from "lucide-react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +22,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getProducts, type ProductListResponse } from "@/lib/api/products"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
 
 export function ProductManagement() {
   const [loading, setLoading] = useState(true)
@@ -30,6 +39,8 @@ export function ProductManagement() {
     products: [],
     categories: [],
     brands: [],
+    categoryOptions: [],
+    brandOptions: [],
     totalCount: 0,
     pageNumber: 1,
     pageSize: 10,
@@ -37,12 +48,43 @@ export function ProductManagement() {
   })
   const [pageNumber, setPageNumber] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [sortBy, setSortBy] = useState<string>("")
+  const [searchTerm, setSearchTerm] = useState<string>("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>("")
+  const [filterOpen, setFilterOpen] = useState(false)
+  
+  // Filter states
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined)
+  const [brandId, setBrandId] = useState<number | undefined>(undefined)
+  const [status, setStatus] = useState<string | undefined>(undefined)
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined)
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined)
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+      setPageNumber(1) // Reset to first page when searching
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   useEffect(() => {
     async function fetchProducts() {
       setLoading(true)
       try {
-        const data = await getProducts(pageNumber, pageSize)
+        const data = await getProducts(
+          pageNumber, 
+          pageSize, 
+          sortBy || undefined,
+          debouncedSearchTerm || undefined,
+          categoryId,
+          brandId,
+          status,
+          minPrice,
+          maxPrice
+        )
         setProductData(data)
       } catch (error) {
         console.error("Failed to fetch products:", error)
@@ -52,7 +94,7 @@ export function ProductManagement() {
     }
 
     fetchProducts()
-  }, [pageNumber, pageSize])
+  }, [pageNumber, pageSize, sortBy, debouncedSearchTerm, categoryId, brandId, status, minPrice, maxPrice])
 
   const toggleSelectAll = () => {
     if (selectedProducts.length === productData.products.length) {
@@ -96,6 +138,22 @@ export function ProductManagement() {
     setPageNumber(1) // Reset to first page when changing page size
   }
 
+  const handleFilterChange = () => {
+    setPageNumber(1) // Reset to first page when filters change
+    setFilterOpen(false)
+  }
+
+  const clearFilters = () => {
+    setCategoryId(undefined)
+    setBrandId(undefined)
+    setStatus(undefined)
+    setMinPrice(undefined)
+    setMaxPrice(undefined)
+    setPageNumber(1)
+  }
+
+  const hasActiveFilters = categoryId !== undefined || brandId !== undefined || status !== undefined || minPrice !== undefined || maxPrice !== undefined
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
@@ -118,27 +176,163 @@ export function ProductManagement() {
               <div className="flex flex-1 items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input type="search" placeholder="Tìm kiếm sản phẩm..." className="pl-8 w-full" />
+                  <Input 
+                    type="search" 
+                    placeholder="Tìm kiếm sản phẩm..." 
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+                  <SheetTrigger asChild>
                     <Button variant="outline" className="gap-2">
                       <Filter className="h-4 w-4" />
                       Lọc
+                      {hasActiveFilters && (
+                        <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                          !
+                        </Badge>
+                      )}
                       <ChevronDown className="h-4 w-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[200px]">
-                    <DropdownMenuLabel>Lọc theo</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Danh mục</DropdownMenuItem>
-                    <DropdownMenuItem>Thương hiệu</DropdownMenuItem>
-                    <DropdownMenuItem>Trạng thái</DropdownMenuItem>
-                    <DropdownMenuItem>Giá</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </SheetTrigger>
+                  <SheetContent className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                      <SheetTitle>Lọc sản phẩm</SheetTitle>
+                      <SheetDescription>
+                        Chọn các tiêu chí để lọc danh sách sản phẩm
+                      </SheetDescription>
+                    </SheetHeader>
+                    <div className="mt-6 space-y-6">
+                      {/* Category Filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Danh mục</Label>
+                        <Select 
+                          value={categoryId?.toString() || "all"} 
+                          onValueChange={(value) => {
+                            setCategoryId(value === "all" ? undefined : parseInt(value))
+                          }}
+                        >
+                          <SelectTrigger id="category">
+                            <SelectValue placeholder="Chọn danh mục" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tất cả danh mục</SelectItem>
+                            {productData.categoryOptions?.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Brand Filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="brand">Thương hiệu</Label>
+                        <Select 
+                          value={brandId?.toString() || "all"} 
+                          onValueChange={(value) => {
+                            setBrandId(value === "all" ? undefined : parseInt(value))
+                          }}
+                        >
+                          <SelectTrigger id="brand">
+                            <SelectValue placeholder="Chọn thương hiệu" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tất cả thương hiệu</SelectItem>
+                            {productData.brandOptions?.map((brand) => (
+                              <SelectItem key={brand.id} value={brand.id.toString()}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Status Filter */}
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Trạng thái</Label>
+                        <Select 
+                          value={status || "all"} 
+                          onValueChange={(value) => {
+                            setStatus(value === "all" ? undefined : value)
+                          }}
+                        >
+                          <SelectTrigger id="status">
+                            <SelectValue placeholder="Chọn trạng thái" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                            <SelectItem value="In Stock">Còn hàng</SelectItem>
+                            <SelectItem value="Out of Stock">Hết hàng</SelectItem>
+                            <SelectItem value="Discontinued">Ngừng kinh doanh</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Price Range Filter */}
+                      <div className="space-y-2">
+                        <Label>Khoảng giá (VND)</Label>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Input
+                              type="number"
+                              placeholder="Từ"
+                              value={minPrice || ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                setMinPrice(value === "" ? undefined : parseFloat(value))
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              type="number"
+                              placeholder="Đến"
+                              value={maxPrice || ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                setMaxPrice(value === "" ? undefined : parseFloat(value))
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filter Actions */}
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={handleFilterChange} className="flex-1">
+                          Áp dụng bộ lọc
+                        </Button>
+                        {hasActiveFilters && (
+                          <Button variant="outline" onClick={clearFilters} className="flex-1">
+                            <X className="h-4 w-4 mr-2" />
+                            Xóa bộ lọc
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
               <div className="flex items-center gap-2">
+                <Select value={sortBy || "default"} onValueChange={(value) => {
+                  setSortBy(value === "default" ? "" : value)
+                  setPageNumber(1) // Reset to first page when sorting changes
+                }}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sắp xếp" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Mặc định</SelectItem>
+                    <SelectItem value="price_asc">Giá: Thấp đến cao</SelectItem>
+                    <SelectItem value="price_desc">Giá: Cao đến thấp</SelectItem>
+                    <SelectItem value="name_asc">Tên: A-Z</SelectItem>
+                    <SelectItem value="name_desc">Tên: Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant="outline" className="gap-2">
                   <Download className="h-4 w-4" />
                   Xuất

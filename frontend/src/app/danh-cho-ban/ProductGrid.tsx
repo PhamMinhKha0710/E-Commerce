@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductItem from "./ProductItem";
+import { useFilters } from "./FilterContext";
+import WishlistNotification from "@/components/WishlistNotification";
 
 interface Product {
   productId: number;
@@ -41,6 +43,12 @@ const ProductGrid: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalProducts, setTotalProducts] = useState<number>(0);
+  const { filters } = useFilters();
+  const [showWishlistNotification, setShowWishlistNotification] = useState(false);
+  const pageSize = 24;
 
   // Hàm tải dữ liệu từ localStorage
   const loadImageSearchResults = () => {
@@ -81,6 +89,17 @@ const ProductGrid: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
+        // Map frontend sort values to backend
+        const sortMap: Record<string, string> = {
+          'default': '',
+          'alpha-asc': '', // Backend không hỗ trợ sort theo tên
+          'alpha-desc': '', // Backend không hỗ trợ sort theo tên
+          'price-asc': 'price_asc',
+          'price-desc': 'price_desc',
+        };
+
+        const backendSort = sortMap[filters.sort] ?? '';
+
         const response = await fetch("http://localhost:5130/api/Search/search", {
           method: "POST",
           headers: {
@@ -88,17 +107,11 @@ const ProductGrid: React.FC = () => {
             Accept: "application/json",
           },
           body: JSON.stringify({
-            query: query,
-            filters: {
-              category: [],
-              subCategory: [],
-              priceRange: { min: 0, max: 100000000 },
-              brand: [],
-              variations: [],
-            },
-            sort: "",
-            page: 1,
-            pageSize: 20,
+            query: query || "", // Empty string để load tất cả sản phẩm
+            filters: filters,
+            sort: backendSort,
+            page: currentPage,
+            pageSize: pageSize,
           }),
         });
   
@@ -115,6 +128,8 @@ const ProductGrid: React.FC = () => {
   
         const data: SearchResponse = await response.json();
         setProducts(data.results);
+        setTotalProducts(Number(data.total));
+        setTotalPages(Math.ceil(Number(data.total) / pageSize));
         // Xóa dữ liệu tìm kiếm hình ảnh khi thực hiện tìm kiếm văn bản
         localStorage.removeItem("imageSearchResults");
         localStorage.removeItem("isImageSearch");
@@ -134,14 +149,23 @@ const ProductGrid: React.FC = () => {
     } else if (isImageSearch || isImageSearchStored) {
       loadImageSearchResults();
     } else {
-      // Không có query và không có tìm kiếm hình ảnh
-      setProducts([]);
-      setIsLoading(false);
+      // Load tất cả sản phẩm khi không có query
+      fetchProducts();
     }
-  }, [query, isImageSearch]);
+  }, [query, isImageSearch, filters, currentPage]);
 
-  const handleAddToWishlist = (wish: string) => {
-    console.log(`Added to wishlist: ${wish}`);
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleWishlistSuccess = () => {
+    setShowWishlistNotification(true);
   };
 
   const handleAddToCart = (variantId: string) => {
@@ -149,12 +173,36 @@ const ProductGrid: React.FC = () => {
   };
 
   return (
-    <div className="products-view products-view-grid list_hover_pro">
-      {isLoading && <div>Loading...</div>}
-      {error && <div className="error">{error}</div>}
-      {!isLoading && !error && products.length === 0 && (
-        <div>Không tìm thấy sản phẩm nào.</div>
+    <>
+      <WishlistNotification
+        show={showWishlistNotification}
+        onClose={() => setShowWishlistNotification(false)}
+        productCount={1}
+      />
+      <div className="products-view products-view-grid list_hover_pro">
+        {isLoading && (
+        <div className="loading-container" style={{ padding: '60px 0', textAlign: 'center' }}>
+          <div className="spinner-border text-danger" role="status">
+            <span className="sr-only">Đang tải...</span>
+          </div>
+          <p style={{ marginTop: '16px', color: '#666' }}>Đang tải sản phẩm...</p>
+        </div>
       )}
+      {error && (
+        <div className="alert alert-danger" style={{ margin: '20px 0' }}>
+          {error}
+        </div>
+      )}
+      {!isLoading && !error && products.length === 0 && (
+        <div className="no-products" style={{ padding: '60px 0', textAlign: 'center' }}>
+          <p style={{ fontSize: '18px', color: '#999' }}>Không tìm thấy sản phẩm nào.</p>
+        </div>
+      )}
+      {!isLoading && !error && products.length > 0 && (
+        <>
+          <div className="products-count" style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
+            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalProducts)} của {totalProducts} sản phẩm
+          </div>
       <div className="row margin">
         {products.map((product) => (
           <ProductItem
@@ -181,12 +229,81 @@ const ProductGrid: React.FC = () => {
             formAction="https://nd-mall.mysapo.net/cart/add"
             hasOptions={product.hasVariation}
             isContact={product.price === 0}
-            onAddToWishlist={handleAddToWishlist}
+            onAddToWishlist={handleWishlistSuccess}
             onAddToCart={handleAddToCart}
           />
         ))}
       </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '40px', marginBottom: '40px' }}>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '8px 12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  backgroundColor: currentPage === 1 ? '#f5f5f5' : 'white',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  color: currentPage === 1 ? '#ccc' : '#333',
+                }}
+              >
+                ‹ Trước
+              </button>
+
+              {[...Array(Math.min(totalPages, 7))].map((_, index) => {
+                let pageNum: number;
+                if (totalPages <= 7) {
+                  pageNum = index + 1;
+                } else if (currentPage <= 4) {
+                  pageNum = index + 1;
+                } else if (currentPage >= totalPages - 3) {
+                  pageNum = totalPages - 6 + index;
+                } else {
+                  pageNum = currentPage - 3 + index;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      backgroundColor: currentPage === pageNum ? '#e31837' : 'white',
+                      color: currentPage === pageNum ? 'white' : '#333',
+                      cursor: 'pointer',
+                      fontWeight: currentPage === pageNum ? 'bold' : 'normal',
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '8px 12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  backgroundColor: currentPage === totalPages ? '#f5f5f5' : 'white',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  color: currentPage === totalPages ? '#ccc' : '#333',
+                }}
+              >
+                Sau ›
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
+    </>
   );
 };
 

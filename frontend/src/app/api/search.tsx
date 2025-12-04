@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5130'; 
+import apiClient from '@/lib/apiClient'; 
 
 export interface ProductSearchRequestDto {
   Query: string;
@@ -60,27 +58,20 @@ export interface ErrorResponseDto {
   Message: string;
 }
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 export const searchProducts = async (request: ProductSearchRequestDto): Promise<ProductSearchResponseDto> => {
-  const response = await api.post<ProductSearchResponseDto>('/api/search', request);
+  const response = await apiClient.post<ProductSearchResponseDto>('/api/search', request);
   return response.data;
 };
 
 export const getSuggestions = async (query: string): Promise<SuggestResponseDto> => {
-  const response = await api.get<SuggestResponseDto>(`/api/suggest?query=${encodeURIComponent(query)}`);
+  const response = await apiClient.get<SuggestResponseDto>(`/api/suggest?query=${encodeURIComponent(query)}`);
   return response.data;
 };
 
 export const searchByImage = async (image: File): Promise<ProductSearchResponseDto> => {
   const formData = new FormData();
   formData.append('image', image);
-  const response = await api.post<ProductSearchResponseDto>('/api/search-by-image', formData, {
+  const response = await apiClient.post<ProductSearchResponseDto>('/api/search-by-image', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

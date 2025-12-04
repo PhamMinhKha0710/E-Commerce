@@ -58,7 +58,10 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var result = await _loginHandler.Handle(new LoginCommand(dto));
-        if (!result.IsSuccess) return BadRequest(result.Error);
+        if (!result.IsSuccess) 
+        {
+            return BadRequest(new { message = result.Error });
+        }
         return Ok(result.Value);
     }
 
@@ -91,8 +94,6 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> GetUserInfo()
     {
-        var authorizationHeader = Request.Headers["Authorization"].ToString() ?? "Không có header Authorization";
-        _logger.LogInformation("Received Authorization header: {Header}", authorizationHeader);
         var subClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (subClaim == null)
         {

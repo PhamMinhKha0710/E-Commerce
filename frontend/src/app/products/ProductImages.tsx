@@ -55,11 +55,12 @@ export default function ProductImages({ images, name, slug }: ProductImagesProps
           ))}
           <div className="product-reviews-wish">
             <a
-              href="javascript:void(0)"
+              href="#"
               className="action btn-compare js-btn-wishlist setWishlist btn-views"
               data-wish={slug}
               tabIndex={0}
               title="Thêm vào yêu thích"
+              onClick={(e) => e.preventDefault()}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

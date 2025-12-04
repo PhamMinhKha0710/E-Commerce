@@ -86,7 +86,12 @@ public class ProcessPaymentCallbackCommandHandler : IRequestHandler<ProcessPayme
                 var confirmedStatus = await _orderRepository.GetOrderStatusByNameAsync("Confirmed");
                 if (confirmedStatus != null)
                 {
-                    order.OrderStatusHistories.Add(new OrderStatusHistory { OrderStatusId = confirmedStatus.Id });
+                    order.OrderStatusHistories ??= new List<OrderStatusHistory>();
+                    order.OrderStatusHistories.Add(new OrderStatusHistory 
+                    { 
+                        OrderStatusId = confirmedStatus.Id,
+                        CreateAt = DateTime.UtcNow // QUAN TRỌNG: Set CreateAt để OrderByDescending hoạt động đúng
+                    });
                 }
             }
 

@@ -50,7 +50,7 @@ const SocialLoginButtons = () => {
     <div className="block social-login--facebooks">
       <p className="a-center">Hoặc đăng nhập bằng</p>
       {/* Không cần script nữa, hàm đã ở đây */}
-      <a href="javascript:void(0)" className="social-login--facebook" style={{ marginRight: '10px' }} onClick={loginFacebook}>
+      <a href="#" className="social-login--facebook" style={{ marginRight: '10px' }} onClick={(e) => { e.preventDefault(); loginFacebook(); }}>
         <Image
           src="http://bizweb.dktcdn.net/assets/admin/images/login/fb-btn.svg"
           alt="facebook-login-button"
@@ -58,7 +58,7 @@ const SocialLoginButtons = () => {
           height={37}
         />
       </a>
-      <a href="javascript:void(0)" className="social-login--google" onClick={loginGoogle}>
+      <a href="#" className="social-login--google" onClick={(e) => { e.preventDefault(); loginGoogle(); }}>
         <Image
           src="http://bizweb.dktcdn.net/assets/admin/images/login/gp-btn.svg"
           alt="google-login-button"

@@ -97,10 +97,15 @@ export const createPromotion = async (promotion: CreatePromotionDto): Promise<Pr
  */
 export const updatePromotion = async (promotion: UpdatePromotionDto): Promise<PromotionDto> => {
   try {
+    console.error('Sending update request:', JSON.stringify(promotion, null, 2));
     const response = await axios.put<PromotionDto>(`${API_BASE}/${promotion.id}`, promotion);
     return response.data;
   } catch (error) {
     console.error(`Error updating promotion with ID ${promotion.id}:`, error);
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     throw error;
   }
 };

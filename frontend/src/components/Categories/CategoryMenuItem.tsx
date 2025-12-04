@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { categoryService } from "@/services/categoryService";
 
 interface Subcategory {
   id: number; // ID duy nhất cho danh mục con
@@ -38,8 +39,9 @@ const CategoryMenuItem = ({ id, title }: CategoryMenuItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [loadingSub, setLoadingSub] = useState(false);
 
-  // Tạo href động cho danh mục chính
-  const href = `/danh-cho-ban/${id}`;
+  // Tạo href động cho danh mục chính dựa trên slug
+  const slug = categoryService.categoryNameToSlug(title);
+  const href = `/collections/${slug}`;
 
   useEffect(() => {
     if (!isHovered || subcategories.length > 0) return;
@@ -89,8 +91,9 @@ const CategoryMenuItem = ({ id, title }: CategoryMenuItemProps) => {
               <aside>Loading subcategories...</aside>
             ) : (
               subcategories.map((sub) => {
-                // Tạo href động cho danh mục con
-                const subHref = `/danh-cho-ban/${id}/sub/${sub.id}`;
+                // Tạo href động cho danh mục con dựa trên slug
+                const subSlug = categoryService.categoryNameToSlug(sub.title);
+                const subHref = `/collections/${subSlug}`;
                 return (
                   <aside key={sub.id}>
                     <Link className="nd-categories-main-sub" href={subHref} title={sub.title}>

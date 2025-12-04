@@ -13,5 +13,5 @@ interface UserDetailPageProps {
 }
 
 export default function UserDetailPage({ params }: UserDetailPageProps) {
-  return <UserDetail userId={params.id} />
+  return <UserDetail />
 }

@@ -69,11 +69,15 @@ public class UpdatePromotionCommandHandler : IRequestHandler<UpdatePromotionComm
         // Save to database
         var result = await _promotionRepository.UpdatePromotionAsync(existingPromotion);
         
+        // Reload promotion with navigation properties
+        var updatedPromotion = await _promotionRepository.GetPromotionByIdAsync(result.Id);
+        
         // Get all categories for response
         var categories = new List<CategoryDto>();
-        if (result.PromotionCategories != null)
+        if (updatedPromotion.PromotionCategories != null && updatedPromotion.PromotionCategories.Any())
         {
-            categories = result.PromotionCategories
+            categories = updatedPromotion.PromotionCategories
+                .Where(pc => pc.ProductCategory != null)  // Safety check
                 .Select(pc => new CategoryDto
                 {
                     id = pc.ProductCategory.Id,
@@ -85,17 +89,17 @@ public class UpdatePromotionCommandHandler : IRequestHandler<UpdatePromotionComm
         // Map to DTO and return
         return new PromotionDto
         {
-            Id = result.Id,
-            Name = result.Name,
-            Code = result.Code,
-            Description = result.Description,
-            DiscountRate = result.DiscountRate,
-            StartDate = result.StartDate,
-            EndDate = result.EndDate,
-            IsActive = result.IsActive,
-            TotalQuantity = result.TotalQuantity,
-            UsedQuantity = result.UsedQuantity,
-            CategoryIds = dto.CategoryIds,
+            Id = updatedPromotion.Id,
+            Name = updatedPromotion.Name,
+            Code = updatedPromotion.Code,
+            Description = updatedPromotion.Description,
+            DiscountRate = updatedPromotion.DiscountRate,
+            StartDate = updatedPromotion.StartDate,
+            EndDate = updatedPromotion.EndDate,
+            IsActive = updatedPromotion.IsActive,
+            TotalQuantity = updatedPromotion.TotalQuantity,
+            UsedQuantity = updatedPromotion.UsedQuantity,
+            CategoryIds = dto.CategoryIds ?? new List<int>(),
             Categories = categories
         };
     }

@@ -91,6 +91,21 @@ header.header .header-middle .header-wish svg {
 }
 header.header .header-middle .header-wish a {
     color: #fff;
+    position: relative;
+}
+header.header .header-middle .header-wish a .count_item {
+    background: #fff;
+    display: inline-block;
+    color: var(--maincolor);
+    line-height: 17px;
+    width: 17px;
+    height: 17px;
+    font-size: 13px;
+    border-radius: 17px;
+    position: absolute;
+    right: 5px;
+    top: -15px;
+    text-align: center;
 }
 header.header .header-middle .header-wish a:hover .text,
 header.header .header-middle .header-wish a:hover svg {
@@ -815,6 +830,11 @@ header.header .header-middle .header-cart .cart-head:hover svg {
         margin-right: 16px;
     }
     .cart-head .count_item {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+    }
+    header.header .header-middle .header-wish a .count_item {
         position: absolute;
         right: 5px;
         top: 5px;

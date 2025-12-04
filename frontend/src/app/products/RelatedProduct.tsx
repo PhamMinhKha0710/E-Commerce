@@ -23,7 +23,7 @@ export default function ProductRelated({ relatedProducts }: RelatedProductProps)
         <div className="bg">
           <div className="block-title">
             <h2>
-              <a href="danh-cho-ban.html" title="Sản phẩm cùng loại">Sản phẩm cùng loại</a>
+              <a href="/collections/all" title="Sản phẩm cùng loại">Sản phẩm cùng loại</a>
             </h2>
           </div>
           <div className="margin-am">
@@ -92,10 +92,11 @@ export default function ProductRelated({ relatedProducts }: RelatedProductProps)
                       <div className="action d-xl-block d-none">
                         <div className="actions-secondary">
                           <a
-                            href="javascript:void(0)"
+                            href="#"
                             className="action btn-compare js-btn-wishlist setWishlist btn-views"
                             data-wish={related.slug}
                             title="Thêm vào yêu thích"
+                            onClick={(e) => e.preventDefault()}
                           >
                             <svg className="icon">
                               <use xlinkHref="#icon-wishlist"></use>

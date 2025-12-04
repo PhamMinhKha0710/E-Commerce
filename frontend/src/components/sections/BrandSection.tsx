@@ -12,49 +12,49 @@ const BrandSection = () => {
   // Dữ liệu thương hiệu (có thể lấy từ API hoặc props nếu cần)
   const brands = [
     {
-      href: "collections/all.html",
+      href: "/collections/all",
       title: "ND Mall",
       imgSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/brand1.jpg?1736305669595",
       logoSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/logo_brand1.jpg?1736305669595",
       alt: "ND Mall",
     },
     {
-      href: "collections/all.html",
+      href: "/collections/all",
       title: "ND Mall",
       imgSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/brand2.jpg?1736305669595",
       logoSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/logo_brand2.jpg?1736305669595",
       alt: "ND Mall",
     },
     {
-      href: "collections/all.html",
+      href: "/collections/all",
       title: "ND Mall",
       imgSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/brand3.jpg?1736305669595",
       logoSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/logo_brand3.jpg?1736305669595",
       alt: "ND Mall",
     },
     {
-      href: "collections/all.html",
+      href: "/collections/all",
       title: "ND Mall",
       imgSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/brand4.jpg?1736305669595",
       logoSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/logo_brand4.jpg?1736305669595",
       alt: "ND Mall",
     },
     {
-      href: "collections/all.html",
+      href: "/collections/all",
       title: "ND Mall",
       imgSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/brand5.jpg?1736305669595",
       logoSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/logo_brand5.jpg?1736305669595",
       alt: "ND Mall",
     },
     {
-      href: "collections/all.html",
+      href: "/collections/all",
       title: "ND Mall",
       imgSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/brand6.jpg?1736305669595",
       logoSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/logo_brand6.jpg?1736305669595",
       alt: "ND Mall",
     },
     {
-      href: "collections/all.html",
+      href: "/collections/all",
       title: "ND Mall",
       imgSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/brand7.jpg?1736305669595",
       logoSrc: "http://bizweb.dktcdn.net/100/497/938/themes/938102/assets/logo_brand7.jpg?1736305669595",
@@ -76,7 +76,7 @@ const BrandSection = () => {
               />
               Thương hiệu chính hãng
             </h2>
-            <a href="collections/all.html" className="view_more" title="Xem tất cả">
+            <a href="/collections/all" className="view_more" title="Xem tất cả">
               Xem tất cả
               <svg
                 xmlns="http://www.w3.org/2000/svg"

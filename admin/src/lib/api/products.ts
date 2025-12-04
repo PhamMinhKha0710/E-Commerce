@@ -62,10 +62,22 @@ export interface ProductVariant {
   attributes: ProductAttribute[];
 }
 
+export interface CategoryFilterOption {
+  id: number;
+  name: string;
+}
+
+export interface BrandFilterOption {
+  id: number;
+  name: string;
+}
+
 export interface ProductListResponse {
   products: Product[];
   categories: string[];
   brands: string[];
+  categoryOptions: CategoryFilterOption[];
+  brandOptions: BrandFilterOption[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;
@@ -98,12 +110,55 @@ export interface ProductVariantDto {
 /**
  * Lấy danh sách sản phẩm từ API admin
  */
-export async function getProducts(pageNumber = 1, pageSize = 10): Promise<ProductListResponse> {
+export async function getProducts(
+  pageNumber = 1, 
+  pageSize = 10, 
+  sortBy?: string, 
+  searchTerm?: string,
+  categoryId?: number,
+  brandId?: number,
+  status?: string,
+  minPrice?: number,
+  maxPrice?: number
+): Promise<ProductListResponse> {
   const token = getAuthToken();
   
   try {
+    const params = new URLSearchParams({
+      pageNumber: pageNumber.toString(),
+      pageSize: pageSize.toString(),
+    });
+    
+    if (sortBy) {
+      params.append('sortBy', sortBy);
+    }
+    
+    if (searchTerm) {
+      params.append('searchTerm', searchTerm);
+    }
+
+    if (categoryId) {
+      params.append('categoryId', categoryId.toString());
+    }
+
+    if (brandId) {
+      params.append('brandId', brandId.toString());
+    }
+
+    if (status) {
+      params.append('status', status);
+    }
+
+    if (minPrice !== undefined) {
+      params.append('minPrice', minPrice.toString());
+    }
+
+    if (maxPrice !== undefined) {
+      params.append('maxPrice', maxPrice.toString());
+    }
+    
     const response = await fetch(
-      `${API_URL}/admin/products?pageNumber=${pageNumber}&pageSize=${pageSize}`,
+      `${API_URL}/admin/products?${params.toString()}`,
       {
         headers: {
           "Content-Type": "application/json",

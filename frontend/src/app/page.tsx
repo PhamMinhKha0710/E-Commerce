@@ -13,6 +13,7 @@ import CategorySection from '@/components/sections/CategorySection';
 import BestSellingSectionRight from '@/components/Section_two_col/BestSellingSectionRight';
 import BestSellingSectionLeft from '@/components/Section_two_col/BestSellingSectionLeft';
 import ProductTab from '@/components/product/ProductTab';
+import ProductSection from '@/components/sections/ProductSection';
 import BlogSection from '@/components/Section_two_col/BlogSection';
 import RecommendProduct from '@/components/sections/RecommendProduct';
 
@@ -46,6 +47,7 @@ export default function HomePage() {
           </div>
           <BrandSection />
           <ThreeBanner />
+
           <CategorySection />
           <div className="section_two_col">
             <div className="container">

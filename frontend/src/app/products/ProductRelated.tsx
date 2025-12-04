@@ -173,10 +173,11 @@ export default function ProductRelated({ productId }: ProductRelatedProps) {
                       <div className="action d-xl-block d-none">
                         <div className="actions-secondary">
                           <a
-                            href="javascript:void(0)"
+                            href="#"
                             className="action btn-compare js-btn-wishlist setWishlist btn-views"
                             data-wish={related.slug}
                             title="Thêm vào yêu thích"
+                            onClick={(e) => e.preventDefault()}
                           >
                             <svg className="icon">
                               <use xlinkHref="#icon-wishlist"></use>

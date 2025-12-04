@@ -24,6 +24,25 @@ export interface CurrentUser {
   email: string;
   name?: string;
   role: string;
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+}
+
+export interface UserProfile {
+  id: string | number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  bio?: string;
+  role?: string;
+}
+
+export interface UpdateUserProfileDto {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  bio?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5130';
@@ -47,7 +66,22 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
       throw new Error(errorData?.message || `Login failed with status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Handle both 'token', 'accessToken' (camelCase) and 'AccessToken' (PascalCase) from API
+    const token = data.token || data.accessToken || data.AccessToken;
+    if (!token) {
+      console.error('No token found in login response.');
+      throw new Error('No token received from server');
+    }
+    
+    // Backend không trả về user trong login response, cần gọi API /me để lấy user info
+    // Tạm thời return token, user sẽ được lấy sau khi set token
+    return {
+      token,
+      expiresAt: data.expiresAt || data.ExpiresIn ? new Date(Date.now() + (data.ExpiresIn || data.expiresIn || 900) * 1000).toISOString() : undefined,
+      user: data.user || data.User, // Có thể không có
+    };
   } catch (error) {
     console.error('Login error:', error);
     throw error;
@@ -81,7 +115,19 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     }
 
     const userData = await response.json();
-    return userData;
+    
+    // Map API response để đảm bảo tương thích với cả PascalCase và camelCase
+    const mappedUser: CurrentUser = {
+      id: userData.id || userData.Id,
+      email: userData.email || userData.Email || '',
+      name: userData.name || userData.Name,
+      role: userData.role || userData.Role || '',
+      firstName: userData.firstName || userData.FirstName,
+      lastName: userData.lastName || userData.LastName,
+      bio: userData.bio || userData.Bio,
+    };
+    
+    return mappedUser;
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
@@ -112,7 +158,11 @@ export function setAuth(token: string, user?: LoginResponse['user']): void {
  */
 export function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      console.warn('No auth token found in localStorage');
+    }
+    return token;
   }
   return null;
 }
@@ -139,6 +189,105 @@ export function getUserInfo(): CurrentUser | null {
  */
 export function isAuthenticated(): boolean {
   return !!getAuthToken();
+}
+
+/**
+ * Get user profile with full details
+ */
+export async function getUserProfile(): Promise<UserProfile | null> {
+  const token = getAuthToken();
+  if (!token) {
+    console.warn('No auth token found');
+    return null;
+  }
+  
+  try {
+    const response = await fetch(`${API_URL}/api/auth/me`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_info');
+        document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        return null;
+      }
+      throw new Error(`Failed to get user profile: ${response.status}`);
+    }
+
+    const userData = await response.json();
+    
+    // Map API response to UserProfile format
+    // Handle both camelCase and PascalCase from API
+    const profile: UserProfile = {
+      id: userData.id || userData.Id,
+      email: userData.email || userData.Email || '',
+      firstName: userData.firstName || userData.FirstName || '',
+      lastName: userData.lastName || userData.LastName || '',
+      bio: userData.bio || userData.Bio || '',
+      role: userData.role || userData.Role || '',
+    };
+    
+    return profile;
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    return null;
+  }
+}
+
+/**
+ * Update user profile
+ */
+export async function updateUserProfile(data: UpdateUserProfileDto): Promise<UserProfile> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  
+  try {
+    const response = await fetch(`${API_URL}/api/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_info');
+        document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        throw new Error('Authentication expired. Please login again.');
+      }
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to update profile: ${response.status}`);
+    }
+
+    const updatedProfile = await response.json();
+    
+    // Update user info in localStorage if available
+    const userInfo = getUserInfo();
+    if (userInfo) {
+      const updatedUserInfo = {
+        ...userInfo,
+        firstName: updatedProfile.firstName,
+        lastName: updatedProfile.lastName,
+        email: updatedProfile.email,
+      };
+      localStorage.setItem('user_info', JSON.stringify(updatedUserInfo));
+    }
+    
+    return updatedProfile;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
 }
 
 /**

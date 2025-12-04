@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import FilterGroup from './FilterGroup';
 import SortItem from './SortItem';
+import { useFilters } from './FilterContext';
 
 const sortData = [
   { label: 'Mặc định', value: 'default' },
@@ -73,21 +74,90 @@ const colorData = [
 ];
 
 const FilterContainer: React.FC = () => {
-  const [selectedSort, setSelectedSort] = useState('default');
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const { filters, updateFilters, clearAllFilters: clearFilters, selectedFilters } = useFilters();
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
   const handleSortChange = (value: string) => {
-    setSelectedSort(value);
+    updateFilters('sort', value);
+  };
+
+  const handlePriceChange = (priceLabel: string, checked: boolean) => {
+    let newPriceRanges = checked
+      ? [...selectedPriceRanges, priceLabel]
+      : selectedPriceRanges.filter((item) => item !== priceLabel);
+    
+    setSelectedPriceRanges(newPriceRanges);
+
+    // Parse price range and update filters
+    if (checked) {
+      const priceItem = priceData.find(p => p.label === priceLabel);
+      if (priceItem) {
+        // Extract min and max from value like "(<100000)" or "(>100000 AND <200000)"
+        const match = priceItem.value.match(/[<>]\d+/g);
+        if (match) {
+          let min = 0, max = 100000000;
+          match.forEach(m => {
+            const num = parseInt(m.slice(1));
+            if (m.startsWith('<')) max = num;
+            if (m.startsWith('>')) min = num;
+          });
+          updateFilters('priceRange', { min, max });
+        }
+      }
+    } else if (newPriceRanges.length === 0) {
+      updateFilters('priceRange', { min: 0, max: 100000000 });
+    }
+  };
+
+  const handleTypeChange = (typeLabel: string, checked: boolean) => {
+    let newTypes = checked
+      ? [...selectedTypes, typeLabel]
+      : selectedTypes.filter((item) => item !== typeLabel);
+    
+    setSelectedTypes(newTypes);
+    updateFilters('category', newTypes);
+  };
+
+  const handleBrandChange = (brandLabel: string, checked: boolean) => {
+    let newBrands = checked
+      ? [...selectedBrands, brandLabel]
+      : selectedBrands.filter((item) => item !== brandLabel);
+    
+    setSelectedBrands(newBrands);
+    updateFilters('brand', newBrands);
+  };
+
+  const handleColorChange = (colorLabel: string, checked: boolean) => {
+    let newColors = checked
+      ? [...selectedColors, colorLabel]
+      : selectedColors.filter((item) => item !== colorLabel);
+    
+    setSelectedColors(newColors);
+    updateFilters('variations', newColors);
   };
 
   const handleFilterChange = (value: string, checked: boolean) => {
-    setSelectedFilters((prev) =>
-      checked ? [...prev, value] : prev.filter((item) => item !== value)
-    );
+    // General handler - will be mapped to specific handlers
+    const priceItem = priceData.find(p => p.label === value);
+    const typeItem = typeData.find(t => t.label === value);
+    const brandItem = vendorData.find(v => v.label === value);
+    const colorItem = colorData.find(c => c.label === value);
+
+    if (priceItem) handlePriceChange(value, checked);
+    else if (typeItem) handleTypeChange(value, checked);
+    else if (brandItem) handleBrandChange(value, checked);
+    else if (colorItem) handleColorChange(value, checked);
   };
 
   const clearAllFilters = () => {
-    setSelectedFilters([]);
+    setSelectedPriceRanges([]);
+    setSelectedTypes([]);
+    setSelectedBrands([]);
+    setSelectedColors([]);
+    clearFilters();
   };
 
   return (
@@ -97,15 +167,15 @@ const FilterContainer: React.FC = () => {
           <div className="filter-containers">
             <div
               className="filter-container__selected-filter"
-              style={{ display: selectedFilters.length > 0 ? 'block' : 'none' }}
+              style={{ display: [...selectedPriceRanges, ...selectedTypes, ...selectedBrands, ...selectedColors].length > 0 ? 'block' : 'none' }}
             >
               <div className="filter-container__selected-filter-header clearfix">
                 <span className="filter-container__selected-filter-header-title">
                   Bạn chọn
                 </span>
                 <a
-                  href="javascript:void(0)"
-                  onClick={clearAllFilters}
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); clearAllFilters(); }}
                   className="filter-container__clear-all"
                   title="Bỏ hết"
                 >
@@ -114,7 +184,7 @@ const FilterContainer: React.FC = () => {
               </div>
               <div className="filter-container__selected-filter-list clearfix">
                 <ul>
-                  {selectedFilters.map((filter, index) => (
+                  {[...selectedPriceRanges, ...selectedTypes, ...selectedBrands, ...selectedColors].map((filter, index) => (
                     <li key={index}>{filter}</li>
                   ))}
                 </ul>
@@ -137,7 +207,7 @@ const FilterContainer: React.FC = () => {
                       key={item.value}
                       label={item.label}
                       value={item.value}
-                      isActive={selectedSort === item.value}
+                      isActive={filters.sort === item.value}
                       onSortChange={handleSortChange}
                     />
                   ))}

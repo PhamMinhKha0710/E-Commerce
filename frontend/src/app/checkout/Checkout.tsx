@@ -180,6 +180,32 @@ export default function Checkout() {
   const [isCouponInputVisible, setIsCouponInputVisible] = useState<boolean>(false);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState<boolean>(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+
+  // Load coupons from localStorage when component mounts
+  useEffect(() => {
+    const savedCoupons = localStorage.getItem('cartCoupons');
+    if (savedCoupons) {
+      try {
+        const parsedCoupons = JSON.parse(savedCoupons);
+        if (Array.isArray(parsedCoupons)) {
+          // Validate coupon structure
+          const validCoupons = parsedCoupons.filter(coupon => 
+            coupon && 
+            coupon.code && 
+            typeof coupon.discountPercent === 'number' &&
+            typeof coupon.limitDiscountPrice === 'number' &&
+            Array.isArray(coupon.listCartIdPromotion)
+          );
+          if (validCoupons.length > 0) {
+            setCoupons(validCoupons);
+            console.log('Loaded coupons from localStorage:', validCoupons);
+          }
+        }
+      } catch (err) {
+        console.error('Error parsing saved coupons:', err);
+      }
+    }
+  }, []);
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [selectedShippingMethod, setSelectedShippingMethod] = useState<number | null>(null);
   const { cart } = useCart();
@@ -269,7 +295,7 @@ export default function Checkout() {
             quantity: cartItems[index].quantity,
             currency: cartItems[index].currency || 'VND',
             hasVariations: cartItems[index].hasVariations,
-            productItemId: cartItems[index].productItemId,
+            productItemId: cartItems[index].productItemId, // Giữ nguyên null nếu null (sản phẩm thường)
           }));
 
         if (items.length === 0) {
@@ -378,7 +404,7 @@ export default function Checkout() {
 
   const checkCoupon = async (code: string): Promise<PromotionResponseDto | null> => {
     try {
-      const response = await fetch(`http://localhost:5130/api/Promotion/${code}`, {
+      const response = await fetch(`http://localhost:5130/api/admin/Promotions/client/${code}`, {
         method: 'GET',
         headers: {
           'Accept': '*/*',
@@ -516,19 +542,21 @@ export default function Checkout() {
       return;
     }
 
-    const selectedItems = JSON.parse(localStorage.getItem('selectedItems') || '[]') as number[];
-    const cartItems = JSON.parse(localStorage.getItem('cart') || '[]') as CartItem[];
-
-    const cartPayments = selectedItems
-      .filter((index) => index >= 0 && index < cartItems.length)
-      .map((index) => ({
-        productItemId: cartItems[index].productItemId,
-        quantity: cartItems[index].quantity,
-        price: cartItems[index].price,
-      }))
+    const cartPayments = checkoutItems
+      .map((item) => {
+        // Sản phẩm có biến thể: gửi ProductItemId
+        // Sản phẩm thường: gửi ProductItemId = 0 và ProductId
+        const hasValidProductItemId = item.productItemId != null && item.productItemId > 0;
+        return {
+          productItemId: hasValidProductItemId ? (item.productItemId as number) : 0, // Gửi 0 nếu không có ProductItemId hợp lệ
+          productId: hasValidProductItemId ? null : item.productId, // Chỉ gửi ProductId nếu không có ProductItemId hợp lệ
+          quantity: item.quantity,
+          price: item.price,
+        };
+      })
       .filter(
         (item) =>
-          item.productItemId != null &&
+          (item.productItemId > 0 || (item.productId != null && item.productId > 0)) && // Chấp nhận nếu có ProductItemId > 0 HOẶC ProductId > 0
           typeof item.quantity === 'number' &&
           item.quantity > 0 &&
           typeof item.price === 'number' &&
@@ -603,19 +631,36 @@ export default function Checkout() {
   const shippingFee = selectedMethod ? selectedMethod.fee * 1000 : 0;
   const totalPrice = checkoutItems.reduce((total, item) => total + item.price * item.quantity, 0);
   let discount = 0;
-  if (coupons.length > 0) {
-    const coupon = coupons[0];
-    const applicableItems = checkoutItems.filter((item) =>
-      coupon.listCartIdPromotion.includes(item.categoryId)
-    );
-    const applicableTotal = applicableItems.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
-    const discountAmount = (applicableTotal * coupon.discountPercent) / 100;
-    discount = Math.min(discountAmount, coupon.limitDiscountPrice);
+  if (coupons.length > 0 && checkoutItems.length > 0) {
+    coupons.forEach((coupon) => {
+      // Check if coupon applies to any items
+      const applicableItems = checkoutItems.filter((item) => {
+        // If listCartIdPromotion is empty or undefined, apply to all items
+        if (!coupon.listCartIdPromotion || coupon.listCartIdPromotion.length === 0) {
+          return true;
+        }
+        // Otherwise, check if item's categoryId is in the promotion list
+        return coupon.listCartIdPromotion.includes(item.categoryId);
+      });
+      
+      if (applicableItems.length > 0) {
+        const applicableTotal = applicableItems.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0
+        );
+        const discountAmount = (applicableTotal * coupon.discountPercent) / 100;
+        
+        // Apply limit if specified (limitDiscountPrice > 0 means there's a limit)
+        // If limitDiscountPrice = 0, it means no limit, so use the full discountAmount
+        const limitedDiscount = coupon.limitDiscountPrice > 0 
+          ? Math.min(discountAmount, coupon.limitDiscountPrice)
+          : discountAmount;
+        
+        discount += limitedDiscount;
+      }
+    });
   }
-  const finalTotal = totalPrice + shippingFee - discount;
+  const finalTotal = Math.max(0, totalPrice + shippingFee - discount);
 
   if (loading) {
     return <div>Đang tải...</div>;
@@ -923,7 +968,7 @@ export default function Checkout() {
                             </div>
                           )}
                           <h4 className={styles.couponDiscount}>
-                            Giảm {coupon.discountPercent}% tối đa {coupon.limitDiscountPrice.toLocaleString()} ₫
+                            Giảm {coupon.discountPercent}%{coupon.limitDiscountPrice > 0 ? ` tối đa ${coupon.limitDiscountPrice.toLocaleString()} ₫` : ''}
                           </h4>
                           <div className={styles.couponActions}>
                             <button className={styles.couponInfoButton}>

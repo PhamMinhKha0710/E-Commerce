@@ -1,59 +1,17 @@
 "use client"
 
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import type { RevenueChartData } from "@/lib/api/dashboard"
 
-const data = [
-  {
-    name: "T1",
-    revenue: 32400000,
-  },
-  {
-    name: "T2",
-    revenue: 45600000,
-  },
-  {
-    name: "T3",
-    revenue: 78900000,
-  },
-  {
-    name: "T4",
-    revenue: 67800000,
-  },
-  {
-    name: "T5",
-    revenue: 89100000,
-  },
-  {
-    name: "T6",
-    revenue: 102300000,
-  },
-  {
-    name: "T7",
-    revenue: 123400000,
-  },
-  {
-    name: "T8",
-    revenue: 145600000,
-  },
-  {
-    name: "T9",
-    revenue: 134500000,
-  },
-  {
-    name: "T10",
-    revenue: 156700000,
-  },
-  {
-    name: "T11",
-    revenue: 178900000,
-  },
-  {
-    name: "T12",
-    revenue: 198700000,
-  },
-]
+interface RevenueChartProps {
+  data: RevenueChartData[]
+}
 
-export function RevenueChart() {
+export function RevenueChart({ data }: RevenueChartProps) {
+  const chartData = data.map(item => ({
+    name: item.period,
+    revenue: item.revenue
+  }))
   const formatRevenue = (value: number) => {
     if (value >= 1000000000) {
       return `${(value / 1000000000).toFixed(1)}B`
@@ -64,9 +22,17 @@ export function RevenueChart() {
     return `${(value / 1000).toFixed(0)}K`
   }
 
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[350px] text-muted-foreground">
+        Không có dữ liệu để hiển thị
+      </div>
+    )
+  }
+
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <LineChart data={data}>
+      <LineChart data={chartData}>
         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={formatRevenue} />
         <Tooltip

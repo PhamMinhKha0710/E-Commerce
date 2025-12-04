@@ -127,7 +127,7 @@ const BestSellingSectionLeft: React.FC = () => {
             Thương hiệu bán chạy
           </Link>
         </h2>
-        <Link href="/san-pham-noi-bat.html" title="Xem tất cả" className="view_more">
+        <Link href="/collections/all" title="Xem tất cả" className="view_more">
           Xem tất cả
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -248,11 +248,12 @@ const BestSellingSectionLeft: React.FC = () => {
                   <div className="action d-xl-block d-none">
                     <div className="actions-secondary">
                       <a
-                        href="javascript:void(0)"
+                        href="#"
                         className="action btn-compare js-btn-wishlist setWishlist btn-views"
                         data-wish={product.href.split(".html")[0]}
                         tabIndex={0}
                         title="Thêm vào yêu thích"
+                        onClick={(e) => e.preventDefault()}
                       >
                         <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                           <path

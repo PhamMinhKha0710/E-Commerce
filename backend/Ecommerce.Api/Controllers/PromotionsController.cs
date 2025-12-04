@@ -18,9 +18,12 @@ namespace Ecommerce.API.Controllers;
 public class PromotionsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    public PromotionsController(IMediator mediator)
+    private readonly ILogger<PromotionsController> _logger;
+    
+    public PromotionsController(IMediator mediator, ILogger<PromotionsController> logger)
     {
         _mediator = mediator;
+        _logger = logger;
     }
 
     [HttpGet("client/{code}")]
@@ -103,16 +106,27 @@ public class PromotionsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<PromotionDto>> UpdatePromotion(int id, [FromBody] UpdatePromotionDto dto)
     {
+        _logger.LogInformation("Received update request for promotion {PromotionId}", id);
+        _logger.LogInformation("DTO: Name={Name}, Code={Code}, Discount={Discount}, Start={Start}, End={End}, Active={Active}, TotalQty={TotalQty}", 
+            dto.Name, dto.Code, dto.DiscountRate, dto.StartDate, dto.EndDate, dto.IsActive, dto.TotalQuantity);
+        
         if (id != dto.Id)
+        {
+            _logger.LogWarning("ID mismatch: route={RouteId}, body={BodyId}", id, dto.Id);
             return BadRequest("ID in route does not match ID in request body");
+        }
             
         try
         {
+            _logger.LogInformation("Updating promotion {PromotionId}", id);
             var result = await _mediator.Send(new UpdatePromotionCommand(dto));
+            _logger.LogInformation("Promotion {PromotionId} updated successfully", id);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning("Validation error updating promotion {PromotionId}: {Error}", id, ex.Message);
+            
             if (ex.Message.Contains("Không tìm thấy"))
                 return NotFound(ex.Message);
                 
@@ -120,6 +134,7 @@ public class PromotionsController : ControllerBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error updating promotion {PromotionId}", id);
             return BadRequest(ex.Message);
         }
     }

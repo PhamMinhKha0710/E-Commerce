@@ -13,13 +13,13 @@ const TrendingSearches = () => {
         Xu hướng tìm kiếm
       </div>
       <ul>
-        <li><Link href="search3e7c.html?q=tags:(Khỏe+đẹp)&type=product">Khỏe đẹp</Link></li>
-        <li><Link href="searchfaff.html?q=tags:(Nhà+cửa)&type=product">Nhà cửa</Link></li>
-        <li><Link href="search8fdf.html?q=tags:(Sách)&type=product">Sách</Link></li>
-        <li><Link href="searchb056.html?q=tags:(Bách+hóa)&type=product">Bách hóa</Link></li>
-        <li><Link href="searchf36d.html?q=tags:(Hải+sản)&type=product">Hải sản</Link></li>
-        <li><Link href="search6359.html?q=tags:(Điện+thoại)&type=product">Điện thoại</Link></li>
-        <li><Link href="search19a0.html?q=tags:(Laptop)&type=product">Laptop</Link></li>
+        <li><Link href="/collections/all?q=tags:(Khỏe+đẹp)">Khỏe đẹp</Link></li>
+        <li><Link href="/collections/all?q=tags:(Nhà+cửa)">Nhà cửa</Link></li>
+        <li><Link href="/collections/all?q=tags:(Sách)">Sách</Link></li>
+        <li><Link href="/collections/all?q=tags:(Bách+hóa)">Bách hóa</Link></li>
+        <li><Link href="/collections/all?q=tags:(Hải+sản)">Hải sản</Link></li>
+        <li><Link href="/collections/all?q=tags:(Điện+thoại)">Điện thoại</Link></li>
+        <li><Link href="/collections/all?q=tags:(Laptop)">Laptop</Link></li>
       </ul>
     </div>
   );

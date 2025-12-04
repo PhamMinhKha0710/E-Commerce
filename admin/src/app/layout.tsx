@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/layout/sidebar-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { GlobalToastHandler } from "@/components/global-toast-handler"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <SidebarProvider>
+            <GlobalToastHandler />
             {children}
             <Toaster />
           </SidebarProvider>

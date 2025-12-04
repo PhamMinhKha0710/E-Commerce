@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { login, setAuth } from "@/lib/api/auth"
+import { login, setAuth, getCurrentUser } from "@/lib/api/auth"
 
 // Validate schema
 const loginSchema = z.object({
@@ -31,6 +31,7 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   
@@ -52,14 +53,48 @@ export function LoginForm() {
       const response = await login(data)
       
       // Lưu token
-      setAuth(response.token, response.user)
+      if (response.token) {
+        // Nếu không có user trong response, gọi API /me để lấy user info
+        let userInfo = response.user
+        if (!userInfo) {
+          try {
+            // Set token trước để có thể gọi API /me
+            setAuth(response.token, undefined)
+            const currentUser = await getCurrentUser()
+            if (currentUser) {
+              userInfo = currentUser
+              // Update lại với user info
+              setAuth(response.token, userInfo)
+            }
+          } catch (err) {
+            console.warn('Could not fetch user info after login:', err)
+            // Vẫn tiếp tục với token, user info sẽ được lấy sau
+          }
+        } else {
+          setAuth(response.token, userInfo)
+        }
+        
+        if (process.env.NODE_ENV !== "production") {
+          const savedToken = localStorage.getItem("auth_token")
+          if (!savedToken) {
+            console.warn("Token was not persisted to storage as expected.")
+          }
+        }
+      } else {
+        console.error('No token in login response')
+        throw new Error('No token received from server')
+      }
       
       toast.success("Đăng nhập thành công")
-      router.push("/dashboard")
+      
+      // Redirect về trang được yêu cầu hoặc dashboard mặc định
+      const redirectTo = searchParams.get('redirect') || "/dashboard"
+      router.push(redirectTo)
       router.refresh() // Làm mới trạng thái toàn ứng dụng
     } catch (error) {
       console.error("Login error:", error)
-      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.")
+      const errorMessage = error instanceof Error ? error.message : "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu."
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

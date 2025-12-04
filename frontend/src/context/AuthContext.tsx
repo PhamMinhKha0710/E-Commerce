@@ -1,8 +1,10 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { wishlistService } from "@/services/wishlistService";
 
 interface User {
+  id: number;
   name: string;
   email: string;
   avatarUrl?: string;
@@ -21,16 +23,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
 
+  const resetAuthState = useCallback(() => {
+    setIsLoggedIn(false);
+    setUser(null);
+    wishlistService.clearCache();
+  }, []);
+
   const refreshToken = useCallback(async () => {
     if (typeof window === "undefined") {
-      setIsLoggedIn(false);
-      setUser(null);
+      resetAuthState();
       return;
     }
     const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) {
-      setIsLoggedIn(false);
-      setUser(null);
+      resetAuthState();
       localStorage.removeItem("cart");
       localStorage.removeItem("isCartMerged");
       localStorage.removeItem("lastSyncedCart");
@@ -60,7 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userData = await userResponse.json();
           setIsLoggedIn(true);
           setUser({
-            name: `${userData.firstName} ${userData.lastName}`,
+            id: userData.id,
+            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email,
             email: userData.email,
             avatarUrl: userData.avatarUrl || "https://example.com/default-avatar.png",
           });
@@ -74,8 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("isCartMerged");
         localStorage.removeItem("cart");
         localStorage.removeItem("lastSyncedCart");
-        setIsLoggedIn(false);
-        setUser(null);
+        resetAuthState();
       }
     } catch (error) {
       console.error("Refresh token error:", error);
@@ -85,10 +91,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem("isCartMerged");
       localStorage.removeItem("cart");
       localStorage.removeItem("lastSyncedCart");
-      setIsLoggedIn(false);
-      setUser(null);
+      resetAuthState();
     }
-  }, []);
+  }, [resetAuthState]);
 
   const fetchUserData = useCallback(
     async (accessToken: string) => {
@@ -102,7 +107,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userData = await response.json();
           setIsLoggedIn(true);
           setUser({
-            name: `${userData.firstName} ${userData.lastName}`,
+            id: userData.id,
+            name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email,
             email: userData.email,
             avatarUrl: userData.avatarUrl || "https://example.com/default-avatar.png",
           });
@@ -134,8 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("cart");
         localStorage.removeItem("isCartMerged");
         localStorage.removeItem("lastSyncedCart");
-        setIsLoggedIn(false);
-        setUser(null);
+        resetAuthState();
       }
     };
 
@@ -147,7 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const timer = setTimeout(() => refreshToken(), timeout > 0 ? timeout : 0);
       return () => clearTimeout(timer);
     }
-  }, [fetchUserData, refreshToken]);
+  }, [fetchUserData, refreshToken, resetAuthState]);
 
   const login = async (email: string, password: string) => {
     if (typeof window === "undefined") throw new Error("Cannot login on server-side");
@@ -160,8 +165,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password }),
       });
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
+        const errorData = await response.json().catch(() => ({}));
+        // Xử lý cả hai format: { message: "..." } hoặc { error: "..." } hoặc string trực tiếp
+        const errorMessage = errorData.message || errorData.error || errorData.detail || "Đăng nhập thất bại. Vui lòng thử lại.";
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       localStorage.setItem("accessToken", data.accessToken);
@@ -197,8 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("cart");
     localStorage.removeItem("isCartMerged");
     localStorage.removeItem("lastSyncedCart");
-    setIsLoggedIn(false);
-    setUser(null);
+    resetAuthState();
   };
 
   return (

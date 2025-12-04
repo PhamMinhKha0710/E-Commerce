@@ -31,7 +31,7 @@ const ProductSection = ({ productsData }: ProductSectionProps) => {
   const [activeTab, setActiveTab] = useState<string>("tab-1");
 
   const tabs = [
-    { id: "tab-1", title: "Dành cho bạn", url: "danh-cho-ban" },
+    { id: "tab-1", title: "Dành cho bạn", url: "collections/all" },
     { id: "tab-2", title: "Deal siêu hot", url: "deal-sieu-hot" },
     { id: "tab-3", title: "Freeship", url: "freeship" },
     { id: "tab-4", title: "Xu hướng", url: "xu-huong" },
@@ -99,7 +99,7 @@ const ProductSection = ({ productsData }: ProductSectionProps) => {
                               ))}
                             </div>
                             <Link
-                              href="/danh-cho-ban.html"
+                              href="/collections/all"
                               className="more bold border-radius-4"
                               title="Xem thêm"
                             >
@@ -258,11 +258,12 @@ const ProductCard = ({ product }: { product: Product }) => {
         <div className="action d-xl-block d-none">
           <div className="actions-secondary">
             <a
-              href="javascript:void(0)"
+              href="#"
               className="action btn-compare js-btn-wishlist setWishlist btn-views"
               data-wish={product.slug}
               tabIndex={0}
               title="Thêm vào yêu thích"
+              onClick={(e) => e.preventDefault()}
             >
               <svg
                 className="icon"

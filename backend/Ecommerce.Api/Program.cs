@@ -1,5 +1,7 @@
 using System.Text;
 using Ecommerce.API.Filters;
+using Ecommerce.Api.Extensions;
+using Ecommerce.Api.Middleware;
 using Ecommerce.Application.CommandHandler;
 using Ecommerce.Application.Common.DTOs;
 using Ecommerce.Application.Interfaces;
@@ -19,13 +21,47 @@ using Ecommere.Application.Common;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Nest;
+using Serilog;
 using Slugify;
 using StackExchange.Redis;
 
-var builder = WebApplication.CreateBuilder(args);
+// ============================================================
+// SERILOG CONFIGURATION - Phải đặt TRƯỚC khi tạo builder
+// ============================================================
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("serilog.json", optional: false, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .Build();
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithProcessId()
+    .Enrich.WithProperty("ApplicationName", "Ecommerce.Api")
+    .CreateLogger();
+
+try
+{
+    Log.Information("========================================");
+    Log.Information("Starting Ecommerce API");
+    Log.Information("Application starting at {Time}", DateTime.UtcNow);
+    Log.Information("Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production");
+    Log.Information("========================================");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Sử dụng Serilog - KHÔNG dùng built-in request logging
+    builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
@@ -43,6 +79,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             // Bật tính năng thử lại tối đa 3 lần nếu gặp lỗi tạm thời
             // Ví dụ: mất kết nối mạng hoặc cơ sở dữ liệu tạm thời không phản hồi
             sqlOptions.EnableRetryOnFailure(3);
+
+            // Cấu hình QuerySplittingBehavior để tối ưu performance khi load nhiều collections
+            // SplitQuery sẽ tách thành nhiều query riêng biệt thay vì một query lớn
+            // Điều này giúp tránh cảnh báo MultipleCollectionIncludeWarning và cải thiện performance
+            sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
         });
 
     // Tắt tính năng theo dõi thay đổi khi chỉ cần đọc dữ liệu (không sửa/xóa)
@@ -51,6 +92,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     {
         options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
     }
+
+    // Cấu hình logging cho Entity Framework Core warnings
+    // Đảm bảo cảnh báo MultipleCollectionIncludeWarning được log vào Serilog
+    // Mặc định EF Core sẽ log warnings, nhưng cần đảm bảo Serilog đã cấu hình để nhận chúng
+    options.ConfigureWarnings(warnings =>
+    {
+        // Giữ nguyên tất cả warnings (không bỏ qua) để Serilog có thể log
+        // MultipleCollectionIncludeWarning sẽ được log tự động nếu Serilog đã cấu hình đúng
+        warnings.Default(WarningBehavior.Log);
+    });
 });
 
 builder.Services.AddCors(options =>
@@ -74,6 +125,7 @@ builder.Services.AddScoped<SendOtpCommandHandler>();
 builder.Services.AddScoped<GetUserInfoQueryHandler>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 // builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<IRedisService, RedisService>();
@@ -117,6 +169,9 @@ builder.Services.AddHostedService<EmailConsumerWorker>();
 // register Rating
 builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 
+// register Review
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<IWishlistRepository, WishlistRepository>();
 
 // đăng ký Redis
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration["Redis:Connection"]));
@@ -140,6 +195,9 @@ builder.Services.AddScoped<ProductSimilarityService>();
 
 // Register ShippingMethod 
 builder.Services.AddScoped<IShippingMethodRepository, ShippingMethodRepository>();
+
+// Register Blog
+builder.Services.AddScoped<IBlogRepository, BlogRepository>();
 
 // Register Hangfire
 builder.Services.AddHangfire(config => config
@@ -239,31 +297,57 @@ builder.Services.AddAuthorization(options =>
 
 
 /// ************** ------------------------------ Buider.Build-----------------------------------///*********************
-var app = builder.Build();
+    var app = builder.Build();
 
-// Gọi AdminInitializer khi ứng dụng khởi động
-using (var scope = app.Services.CreateScope())
-{
-    var adminInitializer = scope.ServiceProvider.GetRequiredService<AdminInitializer>();
-    await adminInitializer.InitializeAsync();
-}
+    // ============================================================
+    // MIDDLEWARE PIPELINE - Thứ tự quan trọng!
+    // ============================================================
 
-app.UseHangfireDashboard("/hangfire");
+    // 1. Global Exception Handler - Phải đặt SỚM để catch tất cả exceptions
+    app.UseGlobalExceptionHandler();
 
-// đăng ký background chạy định kỳ cho cập nhật bảng popularity chạy lúc 0h để tránh trường hợp người dùng mua nhiều
-RecurringJob.AddOrUpdate<PopularityStatUpdateJob>(
-    "update-popularity-stats",
-    job => job.ExecuteAsync(),
-    // "0 59 23 * * *"); // Chạy hàng ngày lúc 23:59
-    "*/5 * * * * *"); // -- Chạy mỗi 5 phút dùng để test 
+    // 2. Request Logging - Log HTTP requests (TINH GỌN)
+    app.UseRequestLogging();
+
+    // Gọi AdminInitializer khi ứng dụng khởi động
+    using (var scope = app.Services.CreateScope())
+    {
+        var adminInitializer = scope.ServiceProvider.GetRequiredService<AdminInitializer>();
+        await adminInitializer.InitializeAsync();
+    }
+
+    app.UseHangfireDashboard("/hangfire");
+
+    // đăng ký background chạy định kỳ cho cập nhật bảng popularity chạy lúc 0h để tránh trường hợp người dùng mua nhiều
+    RecurringJob.AddOrUpdate<PopularityStatUpdateJob>(
+        "update-popularity-stats",
+        job => job.ExecuteAsync(),
+        // "0 59 23 * * *"); // Chạy hàng ngày lúc 23:59
+        "*/5 * * * * *"); // -- Chạy mỗi 5 phút dùng để test 
+        
+    app.UseCors("AllowAll");
     
-app.UseCors("AllowAll");
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+    
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    // Log application start
+    app.LogApplicationStart();
+
+    app.Run();
 }
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    SerilogExtensions.LogApplicationShutdown();
+}

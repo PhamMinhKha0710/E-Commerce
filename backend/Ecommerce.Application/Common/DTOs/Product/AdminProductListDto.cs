@@ -42,11 +42,25 @@ public class PaginatedList<T>
     public bool HasNextPage => PageIndex < TotalPages;
 }
 
+public class CategoryFilterOption
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+public class BrandFilterOption
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
 public class AdminProductListResponse
 {
     public List<AdminProductListItemDto> Products { get; set; }
     public List<string> Categories { get; set; } = new List<string>();
     public List<string> Brands { get; set; } = new List<string>();
+    public List<CategoryFilterOption> CategoryOptions { get; set; } = new List<CategoryFilterOption>();
+    public List<BrandFilterOption> BrandOptions { get; set; } = new List<BrandFilterOption>();
     public int TotalCount { get; set; }
     public int PageNumber { get; set; }
     public int PageSize { get; set; }
