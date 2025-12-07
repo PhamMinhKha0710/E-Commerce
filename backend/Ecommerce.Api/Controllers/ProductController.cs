@@ -83,6 +83,18 @@ public class ProductsController : ControllerBase
         return Ok(new { message = $"Product sync message sent to queue {productId}" });
     }
 
+    [HttpPost("sync-all")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SyncAllProducts([FromBody] string action = "add")
+    {
+        if (!new[] { "add", "update", "delete" }.Contains(action))
+            return BadRequest(new { Message = "Invalid action. Must be 'add', 'update', or 'delete'" });
+
+        var command = new SyncAllProductsCommand { Action = action };
+        var result = await _mediator.Send(command);
+        return Ok(result);
+    }
+
     [HttpPost("update-elasticsearch-id")]
     [AllowAnonymous]
     public async Task<IActionResult> UpdateElasticsearchId([FromBody] UpdateElasticsearchIdCommand command)

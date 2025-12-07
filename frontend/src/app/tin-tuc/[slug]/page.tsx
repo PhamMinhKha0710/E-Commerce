@@ -1,27 +1,36 @@
 import BlogDetail from '../BlogDetail';
-import { BlogPostDetail } from '@/services/blogService';
 import { Metadata } from 'next';
+import { getPostBySlug, BlogPostData } from '@/data/blogPosts';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5130';
+// Convert BlogPostData to BlogPostDetail format
+function convertToBlogPostDetail(post: BlogPostData): any {
+  return {
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || post.description || '',
+    content: post.content || post.description || '',
+    featuredImage: post.imageUrl,
+    author: post.author || 'Admin',
+    publishedDate: post.publishedDate || new Date().toISOString(),
+    category: post.category || '',
+    tags: post.tags || [],
+    isHighlighted: post.isHighlighted || false,
+    viewCount: 0,
+    metaTitle: post.title,
+    metaDescription: post.excerpt || post.description || '',
+    metaKeywords: post.tags?.join(', ') || '',
+    comments: [],
+    relatedPosts: [],
+  };
+}
 
-async function fetchInitialPost(slug: string): Promise<BlogPostDetail | undefined> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/blog/${slug}`, {
-      headers: {
-        'accept': 'application/json',
-      },
-      cache: 'no-store', // Always fetch fresh data
-    });
-    
-    if (!res.ok) {
-      return undefined;
-    }
-    
-    return res.json();
-  } catch (error) {
-    console.error('Error fetching blog post:', error);
+async function fetchInitialPost(slug: string): Promise<any | undefined> {
+  const post = getPostBySlug(slug);
+  if (!post) {
     return undefined;
   }
+  return convertToBlogPostDetail(post);
 }
 
 export async function generateMetadata({

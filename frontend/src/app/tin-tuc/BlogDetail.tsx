@@ -2,12 +2,49 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { blogService, BlogPostDetail } from '@/services/blogService';
 import './BlogDetail.css';
+import { getPostBySlug, BlogPostData } from '@/data/blogPosts';
+
+interface BlogPostDetail {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featuredImage: string;
+  author: string;
+  publishedDate: string;
+  category: string;
+  tags: string[];
+  isHighlighted?: boolean;
+  viewCount?: number;
+  comments?: any[];
+  relatedPosts?: any[];
+}
 
 interface BlogDetailProps {
   initialPost?: BlogPostDetail;
   slug: string;
+}
+
+// Convert BlogPostData to BlogPostDetail format
+function convertToBlogPostDetail(post: BlogPostData): BlogPostDetail {
+  return {
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt || post.description || '',
+    content: post.content || post.description || '',
+    featuredImage: post.imageUrl,
+    author: post.author || 'Admin',
+    publishedDate: post.publishedDate || new Date().toISOString(),
+    category: post.category || '',
+    tags: post.tags || [],
+    isHighlighted: post.isHighlighted || false,
+    viewCount: 0,
+    comments: [],
+    relatedPosts: [],
+  };
 }
 
 export default function BlogDetail({ initialPost, slug }: BlogDetailProps) {
@@ -17,21 +54,22 @@ export default function BlogDetail({ initialPost, slug }: BlogDetailProps) {
 
   useEffect(() => {
     if (!initialPost) {
-      const fetchPost = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const data = await blogService.getPostBySlug(slug);
-          setPost(data);
-        } catch (err: any) {
-          setError(err.message || 'Không thể tải bài viết');
+      setLoading(true);
+      setError(null);
+      try {
+        const postData = getPostBySlug(slug);
+        if (postData) {
+          setPost(convertToBlogPostDetail(postData));
+        } else {
+          setError('Không tìm thấy bài viết');
           setPost(null);
-        } finally {
-          setLoading(false);
         }
-      };
-
-      fetchPost();
+      } catch (err: any) {
+        setError(err.message || 'Không thể tải bài viết');
+        setPost(null);
+      } finally {
+        setLoading(false);
+      }
     }
   }, [slug, initialPost]);
 

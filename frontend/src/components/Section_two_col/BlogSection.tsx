@@ -3,74 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { bigNews, smallNews, getPostsByCategory } from '@/data/blogPosts';
 
-// Định nghĩa kiểu dữ liệu cho bài viết
-interface BlogPost {
-  title: string;
-  slug: string;
-  imageUrl: string;
-  description?: string; // Chỉ dành cho bài viết lớn
-}
-
-// Dữ liệu bài viết
-const bigNews: BlogPost = {
-  title: 'Xiaomi 13 đang được thử nghiệm MIUI 15 ổn định dựa trên Android 14',
-  slug: 'xiaomi-13-dang-duoc-thu-nghiem-miui-15-on-dinh-dua-tren-android-14',
-  imageUrl: 'https://bizweb.dktcdn.net/thumb/grande/100/497/938/articles/t12.jpg?v=1696325901413',
-  description:
-    'Xiaomi đang thử nghiệm bản cập nhật ổn định MIUI 15 cho Xiaomi 13 Series, theo báo cáo mới từ Xiaomiui. Điều này diễn ra sau một tuần Xiaomi tạm dừng phát triển MIUI 14 cho dòng Xiao...',
-};
-
-const smallNews: BlogPost[] = [
-  {
-    title: 'Apple Pencil 3 khả năng có cơ chế thay ngòi cùng với tính năng hoàn toàn mới',
-    slug: 'apple-pencil-3-kha-nang-co-co-che-thay-ngoi-cung-voi-tinh-nang-hoan-toan-moi',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t11.jpg?v=1696325869497',
-  },
-  {
-    title: 'Tư vấn chọn mua laptop HP hỗ trợ tác vụ học tập văn phòng cơ bản bán chạy tại TGDĐ',
-    slug: 'tu-van-chon-mua-laptop-hp-ho-tro-tac-vu-hoc-tap-van-phong-co-ban-ban-chay-tai-tgdd',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t10.jpg?v=1696325835147',
-  },
-  {
-    title: 'Apple dự kiến sẽ sớm đưa một công cụ mạnh mẽ tích hợp AI lên App Store',
-    slug: 'apple-du-kien-se-som-dua-mot-cong-cu-manh-me-tich-hop-ai-len-app-store',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t9.jpg?v=1696325755650',
-  },
-  {
-    title: 'Tầm giá 1 triệu, rinh ngay combo tai nghe + loa này, chất lượng khỏi bàn, chill nhạc miễn chê',
-    slug: 'tam-gia-1-trieu-rinh-ngay-combo-tai-nghe-loa-nay-chat-luong-khoi-ban-chill-nhac-mien-che',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t8.jpg?v=1696325716373',
-  },
-];
-
-const promotionNews: BlogPost[] = [
-  {
-    title: 'Xiaomi 13 đang được thử nghiệm MIUI 15 ổn định dựa trên Android 14',
-    slug: 'xiaomi-13-dang-duoc-thu-nghiem-miui-15-on-dinh-dua-tren-android-14',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t12.jpg?v=1696325901413',
-  },
-  {
-    title: 'Apple Pencil 3 khả năng có cơ chế thay ngòi cùng với tính năng hoàn toàn mới',
-    slug: 'apple-pencil-3-kha-nang-co-co-che-thay-ngoi-cung-voi-tinh-nang-hoan-toan-moi',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t11.jpg?v=1696325869497',
-  },
-  {
-    title: 'Tư vấn chọn mua laptop HP hỗ trợ tác vụ học tập văn phòng cơ bản bán chạy tại TGDĐ',
-    slug: 'tu-van-chon-mua-laptop-hp-ho-tro-tac-vu-hoc-tap-van-phong-co-ban-ban-chay-tai-tgdd',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t10.jpg?v=1696325835147',
-  },
-  {
-    title: 'Apple dự kiến sẽ sớm đưa một công cụ mạnh mẽ tích hợp AI lên App Store',
-    slug: 'apple-du-kien-se-som-dua-mot-cong-cu-manh-me-tich-hop-ai-len-app-store',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t9.jpg?v=1696325755650',
-  },
-  {
-    title: 'Tầm giá 1 triệu, rinh ngay combo tai nghe + loa này, chất lượng khỏi bàn, chill nhạc miễn chê',
-    slug: 'tam-gia-1-trieu-rinh-ngay-combo-tai-nghe-loa-nay-chat-luong-khoi-ban-chill-nhac-mien-che',
-    imageUrl: 'https://bizweb.dktcdn.net/thumb/medium/100/497/938/articles/t8.jpg?v=1696325716373',
-  },
-];
+// Lấy bài viết Mẹo vặt
+const promotionNews = getPostsByCategory('Mẹo vặt');
 
 // Component BlogSection
 const BlogSection: React.FC = () => {
@@ -95,7 +31,7 @@ const BlogSection: React.FC = () => {
           <div className="row">
             {/* Big News */}
             <div className="col-lg-4 col-md-6 index-big-news">
-              <Link href={`/${bigNews.slug}.html`} title={bigNews.title}>
+              <Link href={`/tin-tuc/${bigNews.slug}`} title={bigNews.title}>
                 <div className="zone-youtube">
                   <Image
                     src={bigNews.imageUrl}
@@ -114,7 +50,7 @@ const BlogSection: React.FC = () => {
             {/* Small News */}
             <div className="col-lg-5 col-md-6 index-small-news">
               {smallNews.map((post) => (
-                <Link key={post.slug} href={`/${post.slug}.html`} title={post.title}>
+                <Link key={post.slug} href={`/tin-tuc/${post.slug}`} title={post.title}>
                   <div className="zone-news">
                     <Image
                       src={post.imageUrl}
@@ -141,7 +77,7 @@ const BlogSection: React.FC = () => {
                 <div className="index-list">
                   {promotionNews.map((post) => (
                     <article key={post.slug} className="item clearfix">
-                      <Link href={`/${post.slug}.html`} title={post.title} className="thumb">
+                      <Link href={`/tin-tuc/${post.slug}`} title={post.title} className="thumb">
                         <Image
                           src={post.imageUrl}
                           alt={post.title}
@@ -153,7 +89,7 @@ const BlogSection: React.FC = () => {
                       </Link>
                       <div className="info">
                         <h4 className="title usmall">
-                          <Link href={`/${post.slug}.html`} title={post.title}>
+                          <Link href={`/tin-tuc/${post.slug}`} title={post.title}>
                             {post.title}
                           </Link>
                         </h4>

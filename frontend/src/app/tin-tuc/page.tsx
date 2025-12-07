@@ -1,104 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import './BlogPage.css';
-import { blogService } from '@/services/blogService';
-
-interface BlogPost {
-  id: number;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  featuredImage: string;
-  author: string;
-  publishedDate: string;
-  category: string;
-  tags: string[];
-  isHighlighted?: boolean;
-  viewCount?: number;
-  commentCount?: number;
-}
+import { getAllPosts, getHighlightedPosts, getPostsByCategory, BlogPostData } from '@/data/blogPosts';
 
 export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [highlightedPosts, setHighlightedPosts] = useState<BlogPost[]>([]);
-  const [tipsPosts, setTipsPosts] = useState<BlogPost[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
   const postsPerPage = 10;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch main posts
-        const data = await blogService.getPosts({
-          page: currentPage,
-          pageSize: postsPerPage,
-          onlyPublished: true
-        });
-        
-        // Map API response to component state
-        const mappedPosts: BlogPost[] = data.posts.map(post => ({
-          ...post,
-          publishedDate: new Date(post.publishedDate).toLocaleDateString('vi-VN')
-        }));
-        
-        setPosts(mappedPosts);
-        setTotalPages(data.totalPages);
+  // Sử dụng dữ liệu có sẵn
+  const allPosts = useMemo(() => getAllPosts(), []);
+  const highlightedPosts = useMemo(() => getHighlightedPosts(), []);
+  const tipsPosts = useMemo(() => getPostsByCategory('Mẹo vặt'), []);
 
-        // Fetch highlighted posts for sidebar
-        const highlightedData = await blogService.getHighlightedPosts(6);
-        setHighlightedPosts(highlightedData.posts.map(post => ({
-          ...post,
-          publishedDate: new Date(post.publishedDate).toLocaleDateString('vi-VN')
-        })));
-
-        // Fetch tips posts (Mẹo vặt)
-        const tipsData = await blogService.getPosts({
-          page: 1,
-          pageSize: 5,
-          category: 'Mẹo vặt',
-          onlyPublished: true
-        });
-        setTipsPosts(tipsData.posts.map(post => ({
-          ...post,
-          publishedDate: new Date(post.publishedDate).toLocaleDateString('vi-VN')
-        })));
-
-      } catch (error) {
-        console.error('Error loading posts:', error);
-        setPosts([]);
-        setHighlightedPosts([]);
-        setTipsPosts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [currentPage]);
+  // Tính toán phân trang
+  const totalPages = Math.ceil(allPosts.length / postsPerPage);
+  const startIndex = (currentPage - 1) * postsPerPage;
+  const endIndex = startIndex + postsPerPage;
+  const posts = allPosts.slice(startIndex, endIndex);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  if (loading) {
-    return (
-      <div className="blog-page">
-        <div className="container">
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-            <p>Đang tải bài viết...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="blog-page">
@@ -121,7 +46,7 @@ export default function BlogPage() {
                 <article key={post.id} className={`blog-card ${index === 0 ? 'featured' : ''}`}>
                   <Link href={`/tin-tuc/${post.slug}`} className="blog-card-link">
                     <div className="blog-card-image">
-                      <img src={post.featuredImage} alt={post.title} />
+                      <img src={post.imageUrl} alt={post.title} />
                       <div className="blog-card-overlay">
                         <span className="read-more-btn">Đọc thêm</span>
                       </div>
@@ -129,7 +54,7 @@ export default function BlogPage() {
                     <div className="blog-card-content">
                       <h2 className="blog-card-title">{post.title}</h2>
                       <div className="blog-card-meta">
-                        <span className="blog-date">{post.publishedDate}</span>
+                        <span className="blog-date">{post.publishedDate || new Date().toLocaleDateString('vi-VN')}</span>
                         {post.author && (
                           <>
                             <span className="separator">-</span>
@@ -137,7 +62,7 @@ export default function BlogPage() {
                           </>
                         )}
                       </div>
-                      <p className="blog-card-excerpt">{post.excerpt}</p>
+                      <p className="blog-card-excerpt">{post.excerpt || post.description || ''}</p>
                     </div>
                   </Link>
                 </article>
@@ -210,11 +135,11 @@ export default function BlogPage() {
                   <div key={post.id} className="sidebar-post-item">
                     <Link href={`/tin-tuc/${post.slug}`} className="sidebar-post-link">
                       <div className="sidebar-post-image">
-                        <img src={post.featuredImage} alt={post.title} />
+                        <img src={post.imageUrl} alt={post.title} />
                       </div>
                       <div className="sidebar-post-info">
                         <h4 className="sidebar-post-title-small">{post.title}</h4>
-                        <span className="sidebar-post-date">{post.publishedDate}</span>
+                        <span className="sidebar-post-date">{post.publishedDate || new Date().toLocaleDateString('vi-VN')}</span>
                       </div>
                     </Link>
                   </div>

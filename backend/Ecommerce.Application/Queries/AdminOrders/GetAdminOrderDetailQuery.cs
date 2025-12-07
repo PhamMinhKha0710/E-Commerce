@@ -26,3 +26,17 @@ public class GetAdminOrderDetailQuery : IRequest<AdminOrderDetailDto>
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

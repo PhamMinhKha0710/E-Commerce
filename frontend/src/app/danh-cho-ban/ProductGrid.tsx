@@ -141,15 +141,16 @@ const ProductGrid: React.FC = () => {
       }
     };
   
-    const isImageSearchStored = localStorage.getItem("isImageSearch") === "true";
-  
     // Ưu tiên tìm kiếm văn bản nếu có query
     if (query) {
       fetchProducts();
-    } else if (isImageSearch || isImageSearchStored) {
+    } else if (isImageSearch) {
+      // Chỉ load kết quả tìm kiếm hình ảnh khi có imageSearch=true trong URL
       loadImageSearchResults();
     } else {
-      // Load tất cả sản phẩm khi không có query
+      // Khi không có query và không có imageSearch trong URL, clear localStorage và load tất cả sản phẩm
+      localStorage.removeItem("imageSearchResults");
+      localStorage.removeItem("isImageSearch");
       fetchProducts();
     }
   }, [query, isImageSearch, filters, currentPage]);
