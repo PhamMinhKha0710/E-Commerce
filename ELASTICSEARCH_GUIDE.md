@@ -132,6 +132,11 @@ venv\Scripts\activate
 # Linux/Mac
 source venv/bin/activate
 
+#gitbash
+ source venv/bin/activate
+
+
+
 # Cài đặt dependencies (nếu chưa có)
 pip install -r src/requirement.txt
 
@@ -717,6 +722,20 @@ GET /ecommerce_product_item/_search
 ---
 
 **Chúc bạn sử dụng Elasticsearch thành công! 🚀**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

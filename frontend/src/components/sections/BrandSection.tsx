@@ -76,7 +76,7 @@ const BrandSection = () => {
               />
               Thương hiệu chính hãng
             </h2>
-            <a href="/collections/all" className="view_more" title="Xem tất cả">
+            <a href="/thuong-hieu" className="view_more" title="Xem tất cả">
               Xem tất cả
               <svg
                 xmlns="http://www.w3.org/2000/svg"

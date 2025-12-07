@@ -23,36 +23,6 @@ namespace Ecommerce.Infrastructure.Elasticsearch
         {
             var filters = new List<QueryContainer>();
 
-            var query = new BoolQuery
-            {
-                Must = request.Query != null ? new QueryContainer[] {
-                    new BoolQuery
-                    {
-                        Should = new QueryContainer[]
-                        {
-                            new MultiMatchQuery
-                            {
-                                Query = request.Query,
-                                Fields = new[] { "name^3", "description", "variant_name", "name.multilingual^1.5" },
-                                Analyzer = "vietnamese_search_analyzer",
-                                Fuzziness = Fuzziness.Auto,
-                                Type = TextQueryType.MostFields
-                            },
-                            new MatchQuery
-                            {
-                                Field = "name",
-                                Query = request.Query,
-                                Analyzer = "vietnamese_search_analyzer",
-                                Fuzziness = Fuzziness.Auto,
-                                Boost = 2.0
-                            }
-                        },
-                        MinimumShouldMatch = 1
-                    }
-                } : null,
-                Filter = filters
-            };
-
             // Apply filters
             if (request.Filters?.Category?.Any() == true)
                 filters.Add(new TermsQuery { Field = "category", Terms = request.Filters.Category });
@@ -84,6 +54,60 @@ namespace Ecommerce.Infrastructure.Elasticsearch
                         Query = variationQuery
                     });
                 }
+            }
+
+            // Build query: if query is empty/null, use MatchAll; otherwise use search query
+            QueryContainer query;
+            if (string.IsNullOrWhiteSpace(request.Query))
+            {
+                // No search query - use MatchAll to get all products
+                if (filters.Count > 0)
+                {
+                    // If there are filters, use BoolQuery with MatchAll and filters
+                    query = new BoolQuery
+                    {
+                        Must = new QueryContainer[] { new MatchAllQuery() },
+                        Filter = filters
+                    };
+                }
+                else
+                {
+                    // No filters and no query - just match all
+                    query = new MatchAllQuery();
+                }
+            }
+            else
+            {
+                // Has search query - use BoolQuery with search and filters
+                query = new BoolQuery
+                {
+                    Must = new QueryContainer[] {
+                        new BoolQuery
+                        {
+                            Should = new QueryContainer[]
+                            {
+                                new MultiMatchQuery
+                                {
+                                    Query = request.Query,
+                                    Fields = new[] { "name^3", "description", "variant_name", "name.multilingual^1.5" },
+                                    Analyzer = "vietnamese_search_analyzer",
+                                    Fuzziness = Fuzziness.Auto,
+                                    Type = TextQueryType.MostFields
+                                },
+                                new MatchQuery
+                                {
+                                    Field = "name",
+                                    Query = request.Query,
+                                    Analyzer = "vietnamese_search_analyzer",
+                                    Fuzziness = Fuzziness.Auto,
+                                    Boost = 2.0
+                                }
+                            },
+                            MinimumShouldMatch = 1
+                        }
+                    },
+                    Filter = filters
+                };
             }
 
             // Sorting

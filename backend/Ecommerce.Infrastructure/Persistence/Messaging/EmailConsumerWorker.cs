@@ -119,7 +119,6 @@ namespace Ecommerce.Infrastructure.Messaging
 
                         await _channel.BasicPublishAsync(exchange: "", routingKey: _queueName, mandatory: false, basicProperties: newProperties, body: ea.Body);
                         await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false); // Ack message gốc để tránh duplicate
-                        _logger.LogInformation("Requeued message to {Queue} with retry-count: {RetryCount}", _queueName, retryCount + 1);
                     }
                 }
                 catch (Exception ex)
@@ -154,7 +153,6 @@ namespace Ecommerce.Infrastructure.Messaging
                 await _connection.CloseAsync();
                 await _channel.DisposeAsync();
                 await _connection.DisposeAsync();
-                _logger.LogInformation("RabbitMQ consumer stopped for queue {Queue}", _queueName);
             }
             catch (Exception ex)
             {

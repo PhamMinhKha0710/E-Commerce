@@ -64,7 +64,6 @@ namespace Ecommerce.Infrastructure.Messaging
         {
             if (_channel == null || !_channel.IsOpen)
             {
-                _logger.LogInformation("Creating new RabbitMQ channel");
                 _channel = await _connection.CreateChannelAsync();
             }
         }
@@ -106,7 +105,6 @@ namespace Ecommerce.Infrastructure.Messaging
                     }
                     catch (OperationInterruptedException ex) when (ex.ShutdownReason.ReplyCode == 404)
                     {
-                        _logger.LogInformation("Queue {Queue} not found, creating new queue", queue);
                         // Tái tạo kênh vì lỗi 404 có thể đóng kênh
                         await EnsureChannelAsync();
                         // Khai báo dead-letter queue trước
@@ -118,7 +116,6 @@ namespace Ecommerce.Infrastructure.Messaging
                     var body = Encoding.UTF8.GetBytes(message);
                     var properties = new BasicProperties { Persistent = true };
                     await _channel.BasicPublishAsync(exchange: "", routingKey: queue, mandatory: false, basicProperties: properties, body: body);
-                    _logger.LogInformation("Published message to queue {Queue}", queue);
                     return;
                 }
                 catch (Exception ex)
@@ -152,7 +149,6 @@ namespace Ecommerce.Infrastructure.Messaging
                     await _channel.DisposeAsync();
                 if (_connection != null)
                     await _connection.DisposeAsync();
-                _logger.LogInformation("RabbitMQ connection and channel disposed");
             }
             catch (Exception ex)
             {
