@@ -25,6 +25,16 @@ const nextConfig: NextConfig = {
         hostname: 'nd-mall.mysapo.net',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'encrypted-tbn0.gstatic.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.gstatic.com',
+        pathname: '/**',
+      },
     ],
     unoptimized: false,
   }

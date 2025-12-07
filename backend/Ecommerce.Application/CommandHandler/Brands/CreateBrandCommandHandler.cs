@@ -27,7 +27,7 @@ public class CreateBrandCommandHandler : IRequestHandler<CreateBrandCommand, Bra
         var brand = new Brand
         {
             Name = request.BrandDto.Name,
-            ImageUrl = request.BrandDto.ImageUrl
+            ImageUrl = request.BrandDto.ImageUrl ?? string.Empty
         };
 
         // Add brand to database
