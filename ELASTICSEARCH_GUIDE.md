@@ -135,6 +135,10 @@ source venv/bin/activate
 #gitbash
  source venv/bin/activate
 
+#
+dotnet ef migrations add IncreaseBrandImageUrlSize --project Ecommerce.Infrastructure --startup-project Ecommerce.Api
+dotnet ef database update
+
 
 
 # Cài đặt dependencies (nếu chưa có)
@@ -722,6 +726,11 @@ GET /ecommerce_product_item/_search
 ---
 
 **Chúc bạn sử dụng Elasticsearch thành công! 🚀**
+
+
+
+
+
 
 
 

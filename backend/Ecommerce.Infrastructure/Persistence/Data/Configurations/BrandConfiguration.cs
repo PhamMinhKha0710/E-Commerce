@@ -15,8 +15,8 @@ public class BrandConfiguration : IEntityTypeConfiguration<Brand>
                .HasMaxLength(100);
 
         builder.Property(b => b.ImageUrl)
-               .IsRequired()
-               .HasMaxLength(500);
+               .IsRequired(false)
+               .HasColumnType("nvarchar(max)");
 
         builder.HasMany(b => b.Products)
                .WithOne(p => p.Brand)

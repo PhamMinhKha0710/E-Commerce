@@ -327,6 +327,9 @@ builder.Services.AddAuthorization(options =>
         
     app.UseCors("AllowAll");
     
+    // Enable static files serving for uploaded images
+    app.UseStaticFiles();
+    
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();

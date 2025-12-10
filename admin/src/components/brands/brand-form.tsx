@@ -14,11 +14,25 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { createBrand, getBrandById, updateBrand } from "@/lib/api/brands"
+import { ImageUpload } from "./image-upload"
 
 // Form schema
 const brandFormSchema = z.object({
   name: z.string().min(2, "Tên phải có ít nhất 2 ký tự").max(100, "Tên tối đa 100 ký tự"),
-  imageUrl: z.string().url("Phải là URL hợp lệ").max(500, "URL tối đa 500 ký tự"),
+  imageUrl: z.string()
+    .refine(
+      (val) => {
+        if (!val) return true
+        // Cho phép URL thông thường (không giới hạn độ dài)
+        if (val.startsWith('http') || val.startsWith('/')) return true
+        // Cho phép data URL nhưng giới hạn ở 10MB (khoảng 13,333,333 ký tự base64)
+        if (val.startsWith('data:image')) {
+          return val.length <= 15000000 // ~10MB base64
+        }
+        return false
+      },
+      "Phải là URL hợp lệ hoặc data URL (tối đa 10MB)"
+    ),
   description: z.string().optional(),
 })
 
@@ -71,11 +85,16 @@ export function BrandForm({ id }: BrandFormProps) {
   const onSubmit = async (data: BrandFormValues) => {
     try {
       setIsLoading(true)
+      const brandData = {
+        name: data.name,
+        imageUrl: data.imageUrl || undefined,
+        description: data.description || undefined,
+      }
       if (isEditMode) {
-        await updateBrand(id, data)
+        await updateBrand(id, brandData)
         toast.success("Cập nhật thương hiệu thành công")
       } else {
-        await createBrand(data)
+        await createBrand(brandData)
         toast.success("Tạo thương hiệu mới thành công")
       }
       router.push("/dashboard/brands")
@@ -131,12 +150,16 @@ export function BrandForm({ id }: BrandFormProps) {
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL Logo</FormLabel>
+                    <FormLabel>Logo thương hiệu</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/logo.png" {...field} disabled={isLoading} />
+                      <ImageUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                      />
                     </FormControl>
                     <FormDescription>
-                      Đường dẫn trực tiếp đến hình ảnh logo của thương hiệu. Nên là hình vuông để hiển thị tốt nhất.
+                      Upload logo của thương hiệu hoặc nhập URL ảnh. Nên là hình vuông để hiển thị tốt nhất.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

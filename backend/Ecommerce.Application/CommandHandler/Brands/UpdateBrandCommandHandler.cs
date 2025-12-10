@@ -32,7 +32,10 @@ public class UpdateBrandCommandHandler : IRequestHandler<UpdateBrandCommand, Bra
 
         // Update brand properties
         existingBrand.Name = request.BrandDto.Name;
-        existingBrand.ImageUrl = request.BrandDto.ImageUrl;
+        if (request.BrandDto.ImageUrl != null)
+        {
+            existingBrand.ImageUrl = request.BrandDto.ImageUrl;
+        }
 
         // Save changes
         var updatedBrand = await _brandRepository.UpdateBrandAsync(existingBrand);

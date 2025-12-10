@@ -8,8 +8,6 @@ public class CreateBrandDto
     [StringLength(100, MinimumLength = 2)]
     public string Name { get; set; }
     
-    [Required]
-    [StringLength(500)]
-    [Url]
-    public string ImageUrl { get; set; }
+    [StringLength(15000000)] // Allow data URLs (base64) up to ~10MB, regular URLs, or empty
+    public string? ImageUrl { get; set; }
 } 

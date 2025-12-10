@@ -56,6 +56,14 @@ public class BrandsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<BrandDto>> CreateBrand(CreateBrandDto createBrandDto)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new { 
+                message = "Dữ liệu không hợp lệ",
+                errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
+            });
+        }
+
         try
         {
             var brand = await _mediator.Send(new CreateBrandCommand(createBrandDto));
@@ -72,6 +80,14 @@ public class BrandsController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<BrandDto>> UpdateBrand(int id, UpdateBrandDto updateBrandDto)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new { 
+                message = "Dữ liệu không hợp lệ",
+                errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
+            });
+        }
+
         try
         {
             var brand = await _mediator.Send(new UpdateBrandCommand(id, updateBrandDto));
