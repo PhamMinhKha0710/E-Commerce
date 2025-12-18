@@ -92,6 +92,7 @@ export interface CreateUpdateProductDto {
   salePrice?: number;
   sku: string;
   stock: number;
+  status: string;        // backend requires non-empty Status
   featured?: boolean;
   categoryId: number;
   brandId: number;
@@ -226,7 +227,10 @@ export async function createProduct(data: CreateUpdateProductDto): Promise<Produ
     );
 
     if (!response.ok) {
-      throw new Error(`Error creating product: ${response.status}`);
+      // Đọc chi tiết lỗi từ backend để dễ debug (validation, category/brand không tồn tại, ...)
+      const errorText = await response.text().catch(() => "");
+      console.error("Create product failed:", response.status, errorText);
+      throw new Error(`Error creating product: ${response.status} - ${errorText}`);
     }
 
     return await response.json();

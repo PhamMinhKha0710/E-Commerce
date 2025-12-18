@@ -48,23 +48,87 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
         }
 
         var popularProducts = await GetPopularityBasedAsync(request.CategoryId, cancellationToken);
-        var contentProducts = await GetContentBasedAsync(request.ProductId, userId, cancellationToken);
-        var collaborativeProducts = await GetCollaborativeBasedAsync(userId);
+        var contentProducts = await GetContentBasedAsync(request.ProductId, userId, request.CategoryId, cancellationToken);
+        var collaborativeProducts = await GetCollaborativeBasedAsync(userId, request.CategoryId);
 
-        var w1 = collaborativeProducts.Any() ? 0.4 : 0;
-        var w2 = collaborativeProducts.Any() ? 0.25 : 0.6;
+        // Hybrid weighting: Ưu tiên category khi có categoryId
+        double wContent, wPopular, wCollaborative;
+        if (request.CategoryId.HasValue)
+        {
+            // Khi có categoryId: Ưu tiên content-based và popularity trong category
+            wContent = collaborativeProducts.Any() ? 0.45 : 0.5;
+            wPopular = collaborativeProducts.Any() ? 0.35 : 0.4;
+            wCollaborative = collaborativeProducts.Any() ? 0.2 : 0;
+        }
+        else
+        {
+            // Khi không có categoryId: Cân bằng hơn
+            wContent = collaborativeProducts.Any() ? 0.35 : 0.4;
+            wPopular = collaborativeProducts.Any() ? 0.25 : 0.5;
+            wCollaborative = collaborativeProducts.Any() ? 0.4 : 0;
+        }
 
         var combinedScores = new Dictionary<int, double>();
-        foreach (var product in popularProducts.Concat(contentProducts).Concat(collaborativeProducts).Distinct())
+        var allProducts = popularProducts.Concat(contentProducts).Concat(collaborativeProducts).Distinct().ToList();
+        
+        foreach (var product in allProducts)
         {
-            double score = w1 * (collaborativeProducts.Contains(product) ? 1 : 0) +
-                        0.35 * (contentProducts.Contains(product) ? 1 : 0) +
-                        w2 * (popularProducts.Contains(product) ? 1 : 0);
+            // Nếu có categoryId, chỉ tính điểm cho sản phẩm cùng category
+            if (request.CategoryId.HasValue && product.ProductCategoryId != request.CategoryId.Value)
+            {
+                continue; // Bỏ qua sản phẩm khác category
+            }
+            
+            double score = 0;
+            
+            // Content-based score
+            if (contentProducts.Contains(product))
+            {
+                score += wContent;
+                // Bonus nếu cùng category với request
+                if (request.CategoryId.HasValue && product.ProductCategoryId == request.CategoryId.Value)
+                    score += 0.1;
+            }
+            
+            // Popularity score
+            if (popularProducts.Contains(product))
+            {
+                score += wPopular;
+                // Bonus nếu cùng category với request
+                if (request.CategoryId.HasValue && product.ProductCategoryId == request.CategoryId.Value)
+                    score += 0.1;
+            }
+            
+            // Collaborative score
+            if (collaborativeProducts.Contains(product))
+            {
+                score += wCollaborative;
+            }
+            
             combinedScores[product.Id] = score;
         }
 
         var result = new List<ProductRecommendationDto>();
-        foreach (var id in combinedScores.OrderByDescending(x => x.Value).Take(request.Limit).Select(x => x.Key))
+        var sortedProductIds = combinedScores.OrderByDescending(x => x.Value).Select(x => x.Key).ToList();
+        
+        // Nếu có categoryId và không đủ sản phẩm, lấy thêm từ cùng category
+        if (request.CategoryId.HasValue && sortedProductIds.Count < request.Limit)
+        {
+            var additionalFromCategory = await _productRepository.GetByCategoryIdAsync(
+                request.CategoryId.Value, 
+                request.Limit - sortedProductIds.Count, 
+                cancellationToken);
+            
+            foreach (var product in additionalFromCategory)
+            {
+                if (!sortedProductIds.Contains(product.Id))
+                {
+                    sortedProductIds.Add(product.Id);
+                }
+            }
+        }
+        
+        foreach (var id in sortedProductIds.Take(request.Limit))
         {
             var product = await _productRepository.GetByIdAsync(id, cancellationToken);
             if (product != null)
@@ -257,6 +321,13 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
 
         products = await _popularityStatRepository.GetPopularProductsAsync(categoryId, 10);
 
+        // Nếu chưa có thống kê độ phổ biến cho category này,
+        // fallback trực tiếp sang danh sách sản phẩm trong category
+        if ((products == null || !products.Any()) && categoryId.HasValue)
+        {
+            products = await _productRepository.GetByCategoryIdAsync(categoryId.Value, 10, cancellationToken);
+        }
+
         dtos = products
             .Select(p =>
             {
@@ -289,41 +360,96 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
         return products;
     }
 
-    private async Task<List<Product>> GetContentBasedAsync(int? productId, int? userId, CancellationToken cancellationToken)
+    private async Task<List<Product>> GetContentBasedAsync(int? productId, int? userId, int? categoryId, CancellationToken cancellationToken)
     {
-        if (!productId.HasValue && !userId.HasValue)
-            return new List<Product>();
+        var results = new List<Product>();
 
-        var products = new List<Product>();
+        // Primary: dùng bảng similarity đã tính sẵn
         if (productId.HasValue)
         {
-            var currentProduct = await _productRepository.GetProductDetailByIdAsync(productId.Value, cancellationToken);
-            if (currentProduct != null)
+            var similar = await _productSimilarityRepository.GetSimilarProductsAsync(new List<int> { productId.Value }, 15);
+            if (similar.Any())
             {
-                products.AddRange(await _productRepository.GetByCategoryIdAsync(currentProduct.ProductCategoryId, 10));
-                products.RemoveAll(p => p.Id == productId.Value);
+                // Nếu có categoryId, ưu tiên sản phẩm cùng category
+                if (categoryId.HasValue)
+                {
+                    var sameCategory = similar.Where(p => p.ProductCategoryId == categoryId.Value).ToList();
+                    var otherCategory = similar.Where(p => p.ProductCategoryId != categoryId.Value).ToList();
+                    results.AddRange(sameCategory);
+                    results.AddRange(otherCategory.Take(5)); // Giới hạn khác category
+                }
+                else
+                {
+                    results.AddRange(similar);
+                }
             }
         }
 
-        if (userId.HasValue)
+        // If user có lịch sử, lấy sản phẩm mới xem để suy ra content-based
+        if (userId.HasValue && results.Count < 10)
+            {
+            var viewed = await _userViewHistoryRepository.GetViewedProductIdsAsync(userId.Value);
+            if (viewed?.Any() == true)
+            {
+                var similar = await _productSimilarityRepository.GetSimilarProductsAsync(viewed.Take(3).ToList(), 15);
+                if (similar.Any())
+                {
+                    // Nếu có categoryId, ưu tiên cùng category
+                    if (categoryId.HasValue)
+                    {
+                        var sameCategory = similar.Where(p => p.ProductCategoryId == categoryId.Value && !results.Any(r => r.Id == p.Id)).ToList();
+                        var otherCategory = similar.Where(p => p.ProductCategoryId != categoryId.Value && !results.Any(r => r.Id == p.Id)).Take(5).ToList();
+                        results.AddRange(sameCategory);
+                        results.AddRange(otherCategory);
+                    }
+                    else
+                    {
+                        results.AddRange(similar.Where(p => !results.Any(r => r.Id == p.Id)));
+                    }
+                }
+            }
+        }
+
+        // Fallback: cùng danh mục nếu có categoryId hoặc productId
+        if (results.Count < 10)
         {
-            var recentSearch = await _userSearchRepository.GetRecentSearchKeywordAsync(userId.Value);
-            if (!string.IsNullOrEmpty(recentSearch))
+            int? targetCategoryId = categoryId;
+            if (!targetCategoryId.HasValue && productId.HasValue)
+        {
+                var currentProduct = await _productRepository.GetProductDetailByIdAsync(productId.Value, cancellationToken);
+                targetCategoryId = currentProduct?.ProductCategoryId;
+            }
+
+            if (targetCategoryId.HasValue)
             {
-                var searchProducts = await _productRepository.GetByCategoryIdAsync(0, 10); // Giả lập
-                products.AddRange(searchProducts.Where(p => p.Name.Contains(recentSearch, StringComparison.OrdinalIgnoreCase)));
+                var byCategory = await _productRepository.GetByCategoryIdAsync(targetCategoryId.Value, 10, cancellationToken);
+                if (productId.HasValue)
+                    byCategory.RemoveAll(p => p.Id == productId.Value);
+                
+                results.AddRange(byCategory.Where(p => !results.Any(r => r.Id == p.Id)));
             }
         }
 
-        return products.Take(10).ToList();
+        return results.Take(15).ToList();
     }
 
-    private async Task<List<Product>> GetCollaborativeBasedAsync(int? userId)
+    private async Task<List<Product>> GetCollaborativeBasedAsync(int? userId, int? categoryId)
     {
         if (!userId.HasValue || await _userViewHistoryRepository.GetCountAsync() < 50)
             return new List<Product>();
 
         var viewedProductIds = await _userViewHistoryRepository.GetViewedProductIdsAsync(userId.Value);
-        return await _productSimilarityRepository.GetSimilarProductsAsync(viewedProductIds, 10);
+        var similar = await _productSimilarityRepository.GetSimilarProductsAsync(viewedProductIds, 15);
+        
+        // Nếu có categoryId, ưu tiên sản phẩm cùng category
+        if (categoryId.HasValue && similar.Any())
+        {
+            var sameCategory = similar.Where(p => p.ProductCategoryId == categoryId.Value).ToList();
+            var otherCategory = similar.Where(p => p.ProductCategoryId != categoryId.Value).Take(5).ToList();
+            sameCategory.AddRange(otherCategory);
+            return sameCategory;
+        }
+        
+        return similar;
     }
 }

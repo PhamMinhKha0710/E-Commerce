@@ -50,15 +50,80 @@ class CategoryService {
 
   /**
    * Tìm category theo tên (case-insensitive, partial match)
+   * Hỗ trợ nhiều cách so sánh để tìm category chính xác nhất
    */
   async findCategoryByName(name: string): Promise<Category | null> {
     const categories = await this.getAllCategories();
     const normalizedName = name.toLowerCase().trim();
-    
-    return categories.find(
-      cat => cat.title.toLowerCase().includes(normalizedName) ||
-             normalizedName.includes(cat.title.toLowerCase())
-    ) || null;
+
+    // Bước 1: Tìm chính xác (exact match)
+    let found = categories.find((cat) => {
+      const normalizedTitle = cat.title.toLowerCase().trim();
+      return normalizedTitle === normalizedName;
+    });
+
+    if (found) {
+      console.log(`[CategoryService] Found exact match: "${found.title}" for "${name}"`);
+      return found;
+    }
+
+    // Bước 2: Tìm bằng cách loại bỏ dấu và so sánh
+    const removeDiacritics = (str: string): string => {
+      return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+    };
+
+    const normalizedNameNoDiacritics = removeDiacritics(name);
+    found = categories.find((cat) => {
+      const normalizedTitle = removeDiacritics(cat.title);
+      return normalizedTitle === normalizedNameNoDiacritics;
+    });
+
+    if (found) {
+      console.log(`[CategoryService] Found match (no diacritics): "${found.title}" for "${name}"`);
+      return found;
+    }
+
+    // Bước 3: Tìm partial match (tên category chứa tên tìm kiếm hoặc ngược lại)
+    found = categories.find((cat) => {
+      const normalizedTitle = cat.title.toLowerCase().trim();
+      return (
+        normalizedTitle.includes(normalizedName) ||
+        normalizedName.includes(normalizedTitle)
+      );
+    });
+
+    if (found) {
+      console.log(`[CategoryService] Found partial match: "${found.title}" for "${name}"`);
+      return found;
+    }
+
+    // Bước 4: Tìm bằng cách so sánh từng từ
+    const nameWords = normalizedName.split(/\s+/).filter(w => w.length > 2);
+    if (nameWords.length > 0) {
+      found = categories.find((cat) => {
+        const normalizedTitle = cat.title.toLowerCase().trim();
+        const titleWords = normalizedTitle.split(/\s+/).filter(w => w.length > 2);
+        // Kiểm tra xem có ít nhất 50% từ khớp không
+        const matchingWords = nameWords.filter(word => 
+          titleWords.some(titleWord => 
+            titleWord.includes(word) || word.includes(titleWord)
+          )
+        );
+        return matchingWords.length >= Math.ceil(nameWords.length * 0.5);
+      });
+
+      if (found) {
+        console.log(`[CategoryService] Found word-based match: "${found.title}" for "${name}"`);
+        return found;
+      }
+    }
+
+    console.warn(`[CategoryService] No category found for name: "${name}"`);
+    return null;
   }
 
   /**
@@ -126,6 +191,8 @@ class CategoryService {
       'thiet-bi-so-phu-kien-so': 'Thiết Bị Số - Phụ Kiện Số',
       'dien-tu-dien-lanh-tv': 'Điện Tử - Điện Lạnh - TV',
       'the-thao-da-ngoai': 'Thể Thao - Dã Ngoại',
+      'pin-sac-du-phong': 'Pin - Sạc dự phòng',
+      'cham-soc-thu-cung': 'Chăm sóc thú cưng',
     };
 
     return slugMap[slug] || slug;
@@ -195,6 +262,8 @@ class CategoryService {
       'thiet-bi-so-phu-kien-so': 'Thiết Bị Số - Phụ Kiện Số',
       'dien-tu-dien-lanh-tv': 'Điện Tử - Điện Lạnh - TV',
       'the-thao-da-ngoai': 'Thể Thao - Dã Ngoại',
+      'pin-sac-du-phong': 'Pin - Sạc dự phòng',
+      'cham-soc-thu-cung': 'Chăm sóc thú cưng',
     };
 
     // Tìm slug từ name

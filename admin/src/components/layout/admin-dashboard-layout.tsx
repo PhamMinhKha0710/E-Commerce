@@ -434,7 +434,7 @@ export function AdminDashboardLayout({
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="/placeholder-avatar.jpg" alt="Avatar" />
+            <AvatarImage src={user?.avatar || undefined} alt="Avatar" />
             <AvatarFallback>{user?.name?.charAt(0) || user?.email?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
         </Button>

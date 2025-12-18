@@ -76,14 +76,21 @@ const fetcher = async ([url, isLoggedIn]: [string, boolean]): Promise<RelatedPro
 
 interface ProductRelatedProps {
   productId: string;
+  categoryId?: number;
 }
 
-export default function ProductRelated({ productId }: ProductRelatedProps) {
+export default function ProductRelated({ productId, categoryId }: ProductRelatedProps) {
   const { isLoggedIn } = useAuth();
   const { ref, inView } = useInView({ triggerOnce: true });
   const [wishlistStatus, setWishlistStatus] = useState<Record<number, boolean>>({});
+  
+  // Build API URL với categoryId động (nếu có)
+  const apiUrl = categoryId 
+    ? `http://localhost:5130/api/Recommendations/recommend?productId=${productId}&categoryId=${categoryId}&limit=6`
+    : `http://localhost:5130/api/Recommendations/recommend?productId=${productId}&limit=6`;
+  
   const { data: relatedProducts, error } = useSWR<RelatedProduct[], Error>(
-    inView ? [`http://localhost:5130/api/Recommendations/recommend?productId=${productId}&categoryId=2&limit=6`, isLoggedIn] : null,
+    inView ? [apiUrl, isLoggedIn] : null,
     fetcher,
     {
       revalidateOnFocus: false,

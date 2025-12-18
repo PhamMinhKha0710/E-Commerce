@@ -4,23 +4,13 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAddToCart } from "@/hooks/useAddToCart";
-import { categoryService } from "@/services/categoryService";
+import { categoryProductService, CategoryProduct } from "@/services/categoryProductService";
 
 // Định nghĩa kiểu dữ liệu cho sản phẩm (đồng bộ với CartContext)
-interface Product {
-  productId: string; // Giữ string vì dữ liệu mẫu là string, sẽ parse sang number khi cần
-  productName: string;
-  price: string; // Chuỗi để hiển thị, sẽ parse sang number khi thêm vào giỏ
-  comparePrice?: string;
-  imageUrl: string;
-  discount?: string;
-  href: string;
-  slug: string;
-  hasVariations?: boolean;
+// Sử dụng CategoryProduct từ service
+type Product = CategoryProduct & {
   contact?: boolean; // Sản phẩm cần liên hệ
-  categoryId?: number;
-  productItemId?: number;
-}
+};
 
 // Dữ liệu sản phẩm cho tab "Mỹ phẩm" - Sử dụng format đúng: /products/{id}-{slug}
 const cosmeticProducts: Product[] = [
@@ -394,99 +384,133 @@ const watchProducts: Product[] = [
 // Component ProductTab
 const ProductTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("tab-1");
-  // Khởi tạo với dữ liệu mẫu cho tab Mỹ phẩm (fallback)
-  const [products, setProducts] = useState<Record<string, Product[]>>({
-    "tab-1": cosmeticProducts,
-  });
+  // Khởi tạo rỗng, luôn ưu tiên dữ liệu từ API để tránh productId không tồn tại
+  const [products, setProducts] = useState<Record<string, Product[]>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const addToCart = useAddToCart();
 
+  // Danh mục dùng riêng cho phần "Bạn có thể thích"
+  // (khác với dữ liệu cho block "Gợi ý hôm nay")
   const tabs = [
-    { id: "tab-1", label: "Mỹ phẩm", url: "my-pham", categorySlug: "lam-dep-suc-khoe" },
-    { id: "tab-2", label: "Điện thoại", url: "dien-thoai-smartphone", categorySlug: "dien-thoai-may-tinh-bang" },
-    { id: "tab-3", label: "Máy giặt", url: "san-pham-noi-bat", categorySlug: "dien-gia-dung" },
-    { id: "tab-4", label: "Đồ chơi", url: "do-choi-me-be", categorySlug: "do-choi-me-be" },
-    { id: "tab-5", label: "Máy tính bảng", url: "may-tinh-bang", categorySlug: "dien-thoai-may-tinh-bang" },
-    { id: "tab-6", label: "Đồng hồ", url: "phu-kien-dong-ho", categorySlug: "dong-ho-va-trang-suc" },
+    {
+      id: "tab-1",
+      label: "Phụ kiện thời trang nữ",
+      url: "phu-kien-thoi-trang-nu",
+      categorySlug: "phu-kien-thoi-trang-nu",
+    },
+    {
+      id: "tab-2",
+      label: "Chăm sóc da mặt",
+      url: "cham-soc-da-mat",
+      categorySlug: "cham-soc-da-mat",
+    },
+    {
+      id: "tab-3",
+      label: "Ngoại Vi",
+      url: "thiet-bi-van-phong-thiet-bi-ngoai-vi",
+      categorySlug: "thiet-bi-van-phong-thiet-bi-ngoai-vi",
+    },
+    {
+      id: "tab-4",
+      label: "Trang phục thể thao",
+      url: "the-thao-da-ngoai",
+      categorySlug: "the-thao-da-ngoai",
+    },
+    {
+      id: "tab-5",
+      label: "Chăm sóc cơ thể",
+      url: "cham-soc-co-the",
+      categorySlug: "cham-soc-co-the",
+    },
+    {
+      id: "tab-6",
+      label: "Điện thoại Smartphone",
+      url: "dien-thoai-smartphone",
+      categorySlug: "dien-thoai-smartphone",
+    },
+    {
+      id: "tab-7",
+      label: "Chăm sóc thú cưng",
+      url: "cham-soc-thu-cung",
+      categorySlug: "cham-soc-thu-cung",
+    },
+    {
+      id: "tab-8",
+      label: "Pin - Sạc dự phòng",
+      url: "pin-sac-du-phong",
+      categorySlug: "pin-sac-du-phong",
+    },
+    {
+      id: "tab-9",
+      label: "Dược mỹ phẩm",
+      url: "duoc-my-pham",
+      categorySlug: "duoc-my-pham",
+    },
   ];
 
   // Fetch products từ API khi tab được chọn
+  // Sử dụng categoryProductService để tách logic ra ngoài component
   useEffect(() => {
-    const fetchProductsForTab = async (tabId: string, categorySlug: string) => {
-      // Nếu đã có dữ liệu hoặc đang loading, không fetch lại
-      if (products[tabId] || loading[tabId]) return;
+    const fetchProductsForTab = async (tabId: string, categorySlug: string, categoryLabel: string) => {
+      // Nếu đang loading, không fetch lại (tránh duplicate requests)
+      if (loading[tabId]) {
+        console.log(`[ProductTab] Tab ${tabId} is already loading, skipping...`);
+        return;
+      }
 
+      // Nếu đã có dữ liệu nhưng không phải tab đang active, vẫn fetch lại để đảm bảo dữ liệu mới nhất
+      // Chỉ skip nếu đang ở tab đó và đã có dữ liệu
+      if (products[tabId] && activeTab === tabId) {
+        console.log(`[ProductTab] Tab ${tabId} already has data and is active, skipping fetch`);
+        return;
+      }
+
+      console.log(`[ProductTab] Starting fetch for tab: ${tabId}, slug: ${categorySlug}, label: ${categoryLabel}`);
       setLoading(prev => ({ ...prev, [tabId]: true }));
       
       try {
-        // Tìm categoryId từ slug
-        const category = await categoryService.findCategoryBySlug(categorySlug);
-        const categoryId = category?.id;
-
-        if (!categoryId) {
-          // Fallback: sử dụng dữ liệu mẫu cho tab Mỹ phẩm
-          if (tabId === "tab-1") {
-            setProducts(prev => ({ ...prev, [tabId]: cosmeticProducts }));
-          } else {
-            setProducts(prev => ({ ...prev, [tabId]: [] }));
-          }
-          setLoading(prev => ({ ...prev, [tabId]: false }));
-          return;
-        }
-
-        // Fetch từ API Recommendations
-        const response = await fetch(
-          `http://localhost:5130/api/Recommendations/recommend?categoryId=${categoryId}&limit=10`
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
-        }
-
-        const data = await response.json();
+        console.log(`[ProductTab] Fetching products for tab: ${tabId}, slug: ${categorySlug}, label: ${categoryLabel}`);
         
-        // Kiểm tra nếu có dữ liệu
-        if (!data || data.length === 0) {
-          // Fallback: sử dụng dữ liệu mẫu cho tab Mỹ phẩm
-          if (tabId === "tab-1") {
-            setProducts(prev => ({ ...prev, [tabId]: cosmeticProducts }));
-          } else {
-            setProducts(prev => ({ ...prev, [tabId]: [] }));
-          }
-          setLoading(prev => ({ ...prev, [tabId]: false }));
-          return;
-        }
+        // Clear cache cho category này trước khi fetch để đảm bảo dữ liệu mới nhất
+        categoryProductService.clearCacheForCategory(categorySlug, categoryLabel);
         
-        // Map dữ liệu từ API sang format Product
-        // Đảm bảo href đúng format: /products/{productId}-{slug}
-        const mappedProducts: Product[] = data.map((item: any) => {
-          // Tạo href đúng format từ productId và slug
-          const href = item.href || `/products/${item.productId}-${item.slug}`;
-          
-          return {
-            productId: item.productId.toString(),
-            productName: item.productName,
-            price: item.price || '',
-            comparePrice: item.comparePrice || undefined,
-            imageUrl: item.imageUrl,
-            discount: item.discount || undefined,
-            href: href, // Format: /products/{id}-{slug}
-            slug: item.slug,
-            hasVariations: item.hasVariations || false,
-            categoryId: item.categoryId,
-            productItemId: item.productItemId,
-          };
+        // Sử dụng service để fetch sản phẩm
+        let fetchedProducts = await categoryProductService.getProductsByCategory({
+          categorySlug,
+          categoryName: categoryLabel,
+          limit: 10,
+          useRecommendations: true, // Dùng API recommendations
         });
 
-        setProducts(prev => ({ ...prev, [tabId]: mappedProducts }));
-      } catch (error) {
-        console.error(`Error fetching products for ${tabId}:`, error);
-        // Fallback: sử dụng dữ liệu mẫu cho tab Mỹ phẩm
-        if (tabId === "tab-1") {
-          setProducts(prev => ({ ...prev, [tabId]: cosmeticProducts }));
+        console.log(`[ProductTab] Fetched ${fetchedProducts.length} products for tab ${tabId} (recommendations)`);
+
+        // Fallback: Nếu recommendations không có sản phẩm, thử dùng API Products trực tiếp
+        if (fetchedProducts.length === 0) {
+          console.warn(`[ProductTab] No products from recommendations, trying direct Products API`);
+          fetchedProducts = await categoryProductService.getProductsByCategory({
+            categorySlug,
+            categoryName: categoryLabel,
+            limit: 10,
+            useRecommendations: false, // Dùng API Products trực tiếp
+          });
+          console.log(`[ProductTab] Fetched ${fetchedProducts.length} products for tab ${tabId} (direct API)`);
+        }
+
+        if (fetchedProducts.length > 0) {
+          setProducts(prev => ({ ...prev, [tabId]: fetchedProducts }));
         } else {
+          console.warn(`[ProductTab] No products found for category slug "${categorySlug}" or label "${categoryLabel}"`);
+          console.warn(`[ProductTab] This might mean:`);
+          console.warn(`  - Category does not exist or slug/name is incorrect`);
+          console.warn(`  - No products in this category`);
+          console.warn(`  - API endpoint is not working`);
           setProducts(prev => ({ ...prev, [tabId]: [] }));
         }
+      } catch (error: any) {
+        console.error(`[ProductTab] Error fetching products for ${tabId}:`, error);
+        console.error(`[ProductTab] Error details:`, error.response?.data || error.message);
+        console.error(`[ProductTab] Stack trace:`, error.stack);
+        setProducts(prev => ({ ...prev, [tabId]: [] }));
       } finally {
         setLoading(prev => ({ ...prev, [tabId]: false }));
       }
@@ -494,9 +518,12 @@ const ProductTab: React.FC = () => {
 
     const activeTabData = tabs.find(tab => tab.id === activeTab);
     if (activeTabData && activeTabData.categorySlug) {
-      fetchProductsForTab(activeTab, activeTabData.categorySlug);
+      console.log(`[ProductTab] Active tab changed to: ${activeTab}, fetching products...`);
+      fetchProductsForTab(activeTab, activeTabData.categorySlug, activeTabData.label);
+    } else {
+      console.warn(`[ProductTab] No active tab data found for tab: ${activeTab}`);
     }
-  }, [activeTab]);
+  }, [activeTab]); // Chỉ phụ thuộc vào activeTab, không phụ thuộc vào products để tránh infinite loop
 
   // Hàm xử lý thêm vào giỏ hàng
   const handleAddToCart = (e: React.FormEvent, product: Product) => {
@@ -536,6 +563,14 @@ const ProductTab: React.FC = () => {
               />
               Bạn có thể thích
             </h2>
+            <p style={{ 
+              fontSize: '14px', 
+              color: '#666', 
+              marginTop: '8px',
+              fontStyle: 'italic'
+            }}>
+              Sản phẩm được gợi ý dựa trên thuật toán Hybrid Recommendation System
+            </p>
           </div>
           <div className="block-content">
             <div className="e-tabs not-dqtab ajax-tab-2" data-section="ajax-tab-2" data-view="grid_2">
@@ -572,7 +607,9 @@ const ProductTab: React.FC = () => {
                                 <div className="spinner-border text-danger" role="status">
                                   <span className="sr-only">Đang tải...</span>
                                 </div>
-                                <p style={{ marginTop: '16px', color: '#666' }}>Đang tải sản phẩm...</p>
+                                <p style={{ marginTop: '16px', color: '#666' }}>
+                                  Đang tải sản phẩm cho "{tab.label}"...
+                                </p>
                               </div>
                             ) : products[tab.id] && Array.isArray(products[tab.id]) && products[tab.id].length > 0 ? (
                               <>

@@ -1,139 +1,80 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import ProductSection from "@/components/sections/ProductSection";
+import apiClient from "@/lib/apiClient";
+
+interface ProductDto {
+  categoryId: number;
+  productId: number;
+  productName: string;
+  href: string;
+  slug: string;
+  imageUrl: string;
+  price?: string;
+  comparePrice?: string;
+  discount?: string;
+  hasVariations?: boolean;
+  contact?: boolean;
+  productItemId?: number | null;
+}
+
+const fallbackProducts: ProductDto[] = [
+  {
+    categoryId: 1,
+    productId: 32899086,
+    productName: "iPhone 14 Pro Max",
+    href: "/products/32899086-iphone-14-pro-max",
+    slug: "iphone-14-pro-max",
+    imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110",
+    price: "26.000.000₫",
+    comparePrice: "28.000.000₫",
+    discount: "-7%",
+    hasVariations: true,
+    productItemId: 1,
+  },
+  {
+    categoryId: 1,
+    productId: 32898940,
+    productName: "iPhone 15 Pro Max Titan Xanh 256g",
+    href: "/products/32898940-iphone-15-pro-max-titan-xanh-256g",
+    slug: "iphone-15-pro-max-titan-xanh-256g",
+    imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/a1.jpg?v=1696321359880",
+    price: "34.000.000₫",
+    comparePrice: "36.000.000₫",
+    discount: "-6%",
+    hasVariations: false,
+    productItemId: 1,
+  },
+];
 
 const RecommendProduct = () => {
-  const productsData = [
-    {
-      categoryId: 1,
-      productId: "32899086",
-      productName: "iPhone 14 Pro Max",
-      href: "iphone-14-pro-max.html",
-      slug: "iphone-14-pro-max",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/a2.jpg?v=1696321699110",
-      price: "26.000.000₫",
-      comparePrice: "28.000.000₫",
-      discount: "-7%",
-      hasVariations: true,
-      productItemId: 1
-    },
-    {
-      
-      categoryId: 1,
-      productId: "32898940",
-      productName: "iPhone 15 Pro Max Titan Xanh 256g",
-      href: "iphone-15-pro-max-titan-xanh-256g.html",
-      slug: "iphone-15-pro-max-titan-xanh-256g",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/a1.jpg?v=1696321359880",
-      price: "34.000.000₫",
-      comparePrice: "36.000.000₫",
-      discount: "-6%",
-      hasVariations: false,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882774",
-      productName: "Tai Nghe Bluetooth Headphone Edifier W820NB PLUS thoáng khí thoải mái",
-      href: "tai-nghe-bluetooth-headphone-edifier-w820nb-plus-thoang-khi-thoai-mai.html",
-      slug: "tai-nghe-bluetooth-headphone-edifier-w820nb-plus-thoang-khi-thoai-mai",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp20.jpg?v=1696241238643",
-      price: "1.399.000₫",
-      comparePrice: "2.399.000₫",
-      discount: "-42%",
-      hasVariations: false,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882682",
-      productName: "Tai nghe bluetooth Galaxy Buds 2 Pro",
-      href: "tai-nghe-bluetooth-galaxy-buds-2-pro.html",
-      slug: "tai-nghe-bluetooth-galaxy-buds-2-pro",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp22.jpg?v=1696240818597",
-      price: "400.000₫",
-      comparePrice: "600.000₫",
-      discount: "-33%",
-      hasVariations: true,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882553",
-      productName: "Chuột không dây Logitech B170 - USB, nhỏ gọn, thuận cả 2 tay, phù hợp PC/Laptop",
-      href: "chuot-khong-day-logitech-b170-usb-nho-gon-thuan-ca-2-tay-phu-hop-pc-laptop.html",
-      slug: "chuot-khong-day-logitech-b170-usb-nho-gon-thuan-ca-2-tay-phu-hop-pc-laptop",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp21.jpg?v=1696240462333",
-      price: "295.000₫",
-      comparePrice: "400.000₫",
-      discount: "-26%",
-      hasVariations: false,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882737",
-      productName: "Hub chia cổng Baseus cổng Type C sang HDMI USB 3.0 dành cho Pro Air Surface Pro 7",
-      href: "hub-chia-cong-baseus-cong-type-c-sang-hdmi-usb-3-0-danh-chopro-air-surface-pro-7.html",
-      slug: "hub-chia-cong-baseus-cong-type-c-sang-hdmi-usb-3-0-danh-chopro-air-surface-pro-7",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp18.jpg?v=1696241086293",
-      price: "499.000₫",
-      comparePrice: "1.090.000₫",
-      discount: "-54%",
-      hasVariations: false,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882811",
-      productName: "Thùng 24 chai Sữa nước Ensure Abbott 237ml/chai",
-      href: "thung-24-chai-sua-nuoc-ensure-abbott-237ml-chai.html",
-      slug: "thung-24-chai-sua-nuoc-ensure-abbott-237ml-chai",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp13.jpg?v=1696241512770",
-      price: "1.400.000₫",
-      comparePrice: "2.000.000₫",
-      discount: "-30%",
-      hasVariations: false,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882800",
-      productName: "Sữa 9 loại hạt Vinamilk Super Nut Super Nut - Thùng 24 hộp 180ml",
-      href: "sua-9-loai-hat-vinamilk-super-nut-super-nut-thung-24-hop-180ml.html",
-      slug: "sua-9-loai-hat-vinamilk-super-nut-super-nut-thung-24-hop-180ml",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp12.jpg?v=1696241450383",
-      price: "250.000₫",
-      comparePrice: "450.000₫",
-      discount: "-44%",
-      hasVariations: false,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882796",
-      productName: "Mì Omachi Tôm Chua Cay Thái Gói 80g",
-      href: "mi-omachi-tom-chua-cay-thai-goi-80g.html",
-      slug: "mi-omachi-tom-chua-cay-thai-goi-80g",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp11.jpg?v=1696241389353",
-      hasVariations: true,
-      contact: true,
-      productItemId: 1
-    },
-    {
-      categoryId: 1,
-      productId: "32882789",
-      productName: "Thùng 48 hộp sữa tươi tiệt trùng TH True Milk HILO 180ml (180ml x 48)",
-      href: "thung-48-hop-sua-tuoi-tiet-trung-th-true-milk-hilo-180ml-180ml-x-48.html",
-      slug: "thung-48-hop-sua-tuoi-tiet-trung-th-true-milk-hilo-180ml-180ml-x-48",
-      imageUrl: "https://bizweb.dktcdn.net/thumb/large/100/497/938/products/sp10.jpg?v=1696241335590",
-      price: "550.000₫",
-      comparePrice: "680.000₫",
-      discount: "-19%",
-      hasVariations: false,
-      productItemId: 1
-    },
-  ];
+  const [productsData, setProductsData] = useState<ProductDto[]>(fallbackProducts);
 
-  return <ProductSection productsData={productsData} />;
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiClient.get<ProductDto[]>("/api/recommendations/recommend", {
+          params: { limit: 12 },
+        });
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setProductsData(res.data);
+        }
+      } catch (err) {
+        // fallback giữ nguyên
+        console.error("Failed to load recommendations", err);
+      }
+    };
+    load();
+  }, []);
+
+  // Ép kiểu an toàn sang ProductSection props (đảm bảo productItemId luôn có giá trị null nếu undefined)
+  const mapped = productsData.map(p => ({
+    ...p,
+    productItemId: p.productItemId ?? null,
+  }));
+
+  return <ProductSection productsData={mapped} />;
 };
 
 export default RecommendProduct;

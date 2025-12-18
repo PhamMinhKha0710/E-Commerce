@@ -44,7 +44,7 @@ const ProductGrid: React.FC = () => {
   const [totalProducts, setTotalProducts] = useState<number>(0);
   const { filters, updateMetadata } = useFilters();
   const [showWishlistNotification, setShowWishlistNotification] = useState(false);
-  const pageSize = 24;
+  const pageSize = 24; // Có thể tăng lên 48 hoặc 96 nếu cần hiển thị nhiều hơn mỗi trang
 
   // Hàm tải dữ liệu từ localStorage
   const loadImageSearchResults = () => {
@@ -128,6 +128,9 @@ const ProductGrid: React.FC = () => {
         setProducts(data.results);
         setTotalProducts(Number(data.total));
         setTotalPages(Math.max(1, Math.ceil(Number(data.total) / pageSize)));
+        
+        // Log để debug: kiểm tra số lượng sản phẩm
+        console.log(`[ProductGrid] Total products: ${data.total}, Results: ${data.results.length}, Page: ${data.page}, PageSize: ${data.pageSize}`);
         
         const categories = Array.from(
           new Set(
