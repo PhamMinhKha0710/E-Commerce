@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 // Định nghĩa interface cho product (đồng bộ với CartContext)
 interface Product {
   categoryId: number;
-  productId: string; 
+  productId: number | string; 
   productName: string; 
   href: string; 
   slug: string;
@@ -133,7 +133,7 @@ const ProductCard = ({ product }: { product: Product }) => {
         : 0;
 
       addToCart({
-        productId: parseInt(product.productId), // Chuyển từ string sang number
+        productId: Number(product.productId),
         productName: product.productName,
         imageUrl: product.imageUrl,
         price: numericPrice,
@@ -172,7 +172,9 @@ const ProductCard = ({ product }: { product: Product }) => {
         }
       );
     } else {
-      window.location.href = `/${product.slug}.html`; 
+      // Điều hướng tới trang chi tiết sản phẩm dùng href nếu có, fallback theo slug cũ
+      const href = product.href || `/products/${product.productId}-${product.slug}`;
+      window.location.href = href; 
     }
   };
 
@@ -186,7 +188,7 @@ const ProductCard = ({ product }: { product: Product }) => {
         encType="multipart/form-data"
       >
         <div className="product-thumbnail">
-          <Link href={`/${product.slug}.html`} className="image_thumb scale_hover">
+          <Link href={product.href || `/products/${product.productId}-${product.slug}`} className="image_thumb scale_hover">
             <Image
               className="lazyload"
               width={200}
@@ -199,7 +201,9 @@ const ProductCard = ({ product }: { product: Product }) => {
         </div>
         <div className="product-info">
           <h3 className="product-name">
-            <Link href={`/${product.slug}.html`}>{product.productName}</Link>
+            <Link href={product.href || `/products/${product.productId}-${product.slug}`}>
+              {product.productName}
+            </Link>
           </h3>
           <div className="price-box">
             {product.price ? (

@@ -65,15 +65,25 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             {
                 Name = productDto.Name,
                 Slug = productDto.Slug,
-                Description = productDto.Description,
+                Description = productDto.Description ?? string.Empty,
                 QtyInStock = productDto.Stock,
                 ProductCategoryId = productDto.CategoryId,
                 BrandId = productDto.BrandId,
-                HasVariation = false
+                HasVariation = false,
+                Currency = "VND", // Explicitly set Currency (required field with default)
+                Suggestion = string.Empty, // Initialize to avoid null issues
+                // ElasticsearchId là cột NOT NULL trong DB, gán tạm rỗng; 
+                // sẽ được cập nhật sau khi đồng bộ Elasticsearch
+                ElasticsearchId = string.Empty
             };
 
             // Add the product
             await _productRepository.AddAsync(product, cancellationToken);
+
+            // Get first image URL for ProductItem (ImageUrl is required)
+            var firstImageUrl = productDto.Images != null && productDto.Images.Any() 
+                ? productDto.Images.First() 
+                : string.Empty;
 
             // Create default product item
             var productItem = new ProductItem
@@ -83,6 +93,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
                 Price = productDto.Price,
                 OldPrice = productDto.SalePrice ?? productDto.Price,
                 QtyInStock = productDto.Stock,
+                ImageUrl = firstImageUrl, // ImageUrl is required in ProductItem
                 IsDefault = true,
                 IsStatus = true
             };

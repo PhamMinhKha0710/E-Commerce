@@ -11,7 +11,10 @@ const nextConfig: NextConfig = {
       'down-vn.img.susercontent.com', 
       'vcdn.tikicdn.com',
       'localhost',
-      'nd-mall.mysapo.net'
+      'nd-mall.mysapo.net',
+      'i.ebayimg.com',
+      'm.media-amazon.com',
+      'www.bhphotovideo.com'
     ],
     remotePatterns: [
       {
@@ -33,6 +36,21 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: '**.gstatic.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ebayimg.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'm.media-amazon.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.bhphotovideo.com',
         pathname: '/**',
       },
     ],

@@ -5,6 +5,7 @@ namespace Ecommerce.Application.Interfaces;
 public interface IProductRepository
 {
     Task<List<Product>> GetAllAsync();
+    Task<List<Product>> GetAllWithBasicInfoAsync(CancellationToken cancellationToken = default);
     IQueryable<Product> Query();
     Task<Product> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task AddAsync(Product entity, CancellationToken cancellationToken = default);
@@ -22,8 +23,8 @@ public interface IProductRepository
     Task<Product> GetProductDetailByIdAsync(int id, CancellationToken cancellationToken);
     Task<List<ProductItem>> GetProductVariantsAsync(int productId, CancellationToken cancellationToken);
     Task<(List<Product> Products, int TotalCount)> GetPaginatedProductsAsync(
-        int pageNumber, 
-        int pageSize, 
+        int pageNumber,
+        int pageSize,
         string? sortBy = null,
         int? categoryId = null,
         int? brandId = null,

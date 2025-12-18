@@ -17,6 +17,17 @@ public class ProductRepository : IProductRepository
     {
         return await _dbContext.Products.ToListAsync();
     }
+
+    public async Task<List<Product>> GetAllWithBasicInfoAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Products
+            .AsSplitQuery()
+            .Include(p => p.ProductItems.Where(pi => pi.IsDefault))
+            .Include(p => p.ProductImages)
+            .Include(p => p.ProductCategory)
+            .Include(p => p.Brand)
+            .ToListAsync(cancellationToken);
+    }
     public IQueryable<Product> Query()
     {
         return _dbContext.Products.AsQueryable();

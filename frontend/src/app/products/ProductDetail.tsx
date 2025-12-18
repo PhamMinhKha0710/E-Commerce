@@ -187,7 +187,7 @@ export default function ProductDetail({ initialProduct, productId }: ProductDeta
         </div>
       </div>
 
-      <ProductRelated productId={productId} />
+      <ProductRelated productId={productId} categoryId={product?.categoryId} />
     </section>
   );
 }

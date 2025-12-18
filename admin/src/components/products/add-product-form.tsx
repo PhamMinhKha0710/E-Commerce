@@ -39,6 +39,7 @@ const initialFormData: CreateUpdateProductDto = {
   salePrice: 0,
   sku: "",
   stock: 0,
+  status: "In Stock",
   featured: false,
   categoryId: 0,
   brandId: 0,
@@ -163,8 +164,14 @@ export function AddProductForm() {
       return
     }
 
+      // Cập nhật status tự động trước khi gửi (In Stock / Out of Stock)
+      const payload: CreateUpdateProductDto = {
+        ...formData,
+        status: formData.stock > 0 ? "In Stock" : "Out of Stock",
+      }
+
       // Call API to create product
-      const result = await createProduct(formData)
+      const result = await createProduct(payload)
       
       toast({
         title: "Tạo sản phẩm thành công",
