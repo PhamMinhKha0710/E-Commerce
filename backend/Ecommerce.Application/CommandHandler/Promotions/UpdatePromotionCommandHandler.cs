@@ -43,7 +43,7 @@ public class UpdatePromotionCommandHandler : IRequestHandler<UpdatePromotionComm
             throw new InvalidOperationException("Ngày bắt đầu phải trước ngày kết thúc.");
         }
         
-        // Update the promotion entity
+        // Update the promotion entity properties only (don't modify navigation properties here)
         existingPromotion.Name = dto.Name;
         existingPromotion.Code = dto.Code;
         existingPromotion.Description = dto.Description;
@@ -53,21 +53,8 @@ public class UpdatePromotionCommandHandler : IRequestHandler<UpdatePromotionComm
         existingPromotion.IsActive = dto.IsActive;
         existingPromotion.TotalQuantity = dto.TotalQuantity;
         
-        // Clear and rebuild promotion categories
-        existingPromotion.PromotionCategories = new List<PromotionCategory>();
-        
-        // Add categories if any
-        if (dto.CategoryIds != null && dto.CategoryIds.Any())
-        {
-            existingPromotion.PromotionCategories = dto.CategoryIds.Select(categoryId => new PromotionCategory
-            {
-                PromotionId = dto.Id,
-                ProductCategoryId = categoryId
-            }).ToList();
-        }
-        
-        // Save to database
-        var result = await _promotionRepository.UpdatePromotionAsync(existingPromotion);
+        // Save to database - repository will handle category updates
+        var result = await _promotionRepository.UpdatePromotionAsync(existingPromotion, dto.CategoryIds ?? new List<int>());
         
         // Reload promotion with navigation properties
         var updatedPromotion = await _promotionRepository.GetPromotionByIdAsync(result.Id);

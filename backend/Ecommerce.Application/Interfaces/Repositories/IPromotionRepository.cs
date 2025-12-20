@@ -10,7 +10,7 @@ public interface IPromotionRepository
     Task<Promotion> GetPromotionByIdAsync(int id);
     Task<Promotion> GetPromotionByCodeAsync(string code);
     Task<Promotion> CreatePromotionAsync(Promotion promotion);
-    Task<Promotion> UpdatePromotionAsync(Promotion promotion);
+    Task<Promotion> UpdatePromotionAsync(Promotion promotion, List<int>? categoryIds = null);
     Task<bool> DeletePromotionAsync(int id);
     Task<List<ProductCategory>> GetAllCategoriesAsync();
     Task<bool> IsCodeUniqueAsync(string code, int? excludeId = null);

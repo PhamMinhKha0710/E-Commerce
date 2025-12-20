@@ -34,6 +34,8 @@ public class GetPromotionByIdQueryHandler : IRequestHandler<GetPromotionByIdQuer
             StartDate = promotion.StartDate,
             EndDate = promotion.EndDate,
             IsActive = promotion.IsActive,
+            TotalQuantity = promotion.TotalQuantity,
+            UsedQuantity = promotion.UsedQuantity,
             CategoryIds = promotion.PromotionCategories?.Select(pc => pc.ProductCategoryId).ToList() ?? new List<int>(),
             Categories = promotion.PromotionCategories?.Select(pc => new CategoryDto
             {
