@@ -82,7 +82,7 @@ public class PromotionRepository : IPromotionRepository
         return promotion;
     }
 
-    public async Task<Promotion> UpdatePromotionAsync(Promotion promotion)
+    public async Task<Promotion> UpdatePromotionAsync(Promotion promotion, List<int>? categoryIds = null)
     {
         var existingPromotion = await _context.Promotions
             .Include(p => p.PromotionCategories)
@@ -91,16 +91,47 @@ public class PromotionRepository : IPromotionRepository
         if (existingPromotion == null)
             throw new NotFoundException($"Promotion with id {promotion.Id} not found");
 
-        // Xóa các danh mục khuyến mãi hiện tại
-        _context.PromotionCategories.RemoveRange(existingPromotion.PromotionCategories);
+        // Xóa các danh mục khuyến mãi hiện tại từ database
+        if (existingPromotion.PromotionCategories != null && existingPromotion.PromotionCategories.Any())
+        {
+            _context.PromotionCategories.RemoveRange(existingPromotion.PromotionCategories);
+            existingPromotion.PromotionCategories.Clear();
+        }
 
         // Cập nhật thông tin khuyến mãi
-        _context.Entry(existingPromotion).CurrentValues.SetValues(promotion);
+        existingPromotion.Name = promotion.Name;
+        existingPromotion.Code = promotion.Code;
+        existingPromotion.Description = promotion.Description;
+        existingPromotion.DiscountRate = promotion.DiscountRate;
+        existingPromotion.StartDate = promotion.StartDate;
+        existingPromotion.EndDate = promotion.EndDate;
+        existingPromotion.IsActive = promotion.IsActive;
+        existingPromotion.TotalQuantity = promotion.TotalQuantity;
 
-        // Thêm danh mục khuyến mãi mới
-        if (promotion.PromotionCategories != null)
+        // Thêm danh mục khuyến mãi mới từ categoryIds (nếu được cung cấp)
+        if (categoryIds != null && categoryIds.Any())
         {
-            existingPromotion.PromotionCategories = promotion.PromotionCategories;
+            foreach (var categoryId in categoryIds)
+            {
+                // Tạo entity mới để tránh tracking conflict
+                existingPromotion.PromotionCategories.Add(new PromotionCategory
+                {
+                    PromotionId = promotion.Id,
+                    ProductCategoryId = categoryId
+                });
+            }
+        }
+        // Nếu categoryIds không được cung cấp, sử dụng từ promotion entity (backward compatibility)
+        else if (promotion.PromotionCategories != null && promotion.PromotionCategories.Any())
+        {
+            foreach (var category in promotion.PromotionCategories)
+            {
+                existingPromotion.PromotionCategories.Add(new PromotionCategory
+                {
+                    PromotionId = promotion.Id,
+                    ProductCategoryId = category.ProductCategoryId
+                });
+            }
         }
 
         await _context.SaveChangesAsync();

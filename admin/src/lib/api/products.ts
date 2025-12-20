@@ -260,7 +260,10 @@ export async function updateProduct(id: number, data: CreateUpdateProductDto): P
     );
 
     if (!response.ok) {
-      throw new Error(`Error updating product: ${response.status}`);
+      // Đọc chi tiết lỗi từ backend để dễ debug
+      const errorText = await response.text().catch(() => "");
+      console.error("Update product failed:", response.status, errorText);
+      throw new Error(`Error updating product: ${response.status} - ${errorText}`);
     }
 
     return await response.json();

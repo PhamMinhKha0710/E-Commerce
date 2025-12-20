@@ -19,6 +19,7 @@ import {
 } from "@/lib/api/products"
 import { getAdminCategories } from "@/lib/api/categories"
 import { getBrands } from "@/lib/api/brands"
+import { formatDescriptionToHtml } from "@/lib/descriptionFormatter"
 
 // Define interfaces for API responses
 interface CategoryResponse {
@@ -148,6 +149,7 @@ export function AddProductForm() {
     setFormData((prev) => ({ ...prev, images: newImages }))
   }
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -164,9 +166,13 @@ export function AddProductForm() {
       return
     }
 
+      // Format description thành HTML
+      const formattedDescription = formatDescriptionToHtml(formData.description)
+
       // Cập nhật status tự động trước khi gửi (In Stock / Out of Stock)
       const payload: CreateUpdateProductDto = {
         ...formData,
+        description: formattedDescription,
         status: formData.stock > 0 ? "In Stock" : "Out of Stock",
       }
 

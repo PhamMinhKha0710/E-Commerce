@@ -253,7 +253,7 @@ public class ProductRepository : IProductRepository
         // Price filtering - need to filter by ProductItems price
         if (minPrice.HasValue || maxPrice.HasValue)
         {
-            query = query.Where(p => p.ProductItems.Any(pi => 
+            query = query.Where(p => p.ProductItems != null && p.ProductItems.Any(pi => 
                 (!minPrice.HasValue || pi.Price >= minPrice.Value) &&
                 (!maxPrice.HasValue || pi.Price <= maxPrice.Value)
             ));
@@ -317,12 +317,14 @@ public class ProductRepository : IProductRepository
     public async Task<(List<string> Categories, List<string> Brands)> GetProductFilterOptionsAsync(CancellationToken cancellationToken)
     {
         var categories = await _dbContext.ProductCategories
-            .Select(c => c.Name)
+            .Where(c => !string.IsNullOrEmpty(c.Name))
+            .Select(c => c.Name!)
             .Distinct()
             .ToListAsync(cancellationToken);
 
         var brands = await _dbContext.Brands
-            .Select(b => b.Name)
+            .Where(b => !string.IsNullOrEmpty(b.Name))
+            .Select(b => b.Name!)
             .Distinct()
             .ToListAsync(cancellationToken);
 
@@ -332,18 +334,20 @@ public class ProductRepository : IProductRepository
     public async Task<(List<(int Id, string Name)> Categories, List<(int Id, string Name)> Brands)> GetProductFilterOptionsWithIdsAsync(CancellationToken cancellationToken)
     {
         var categories = await _dbContext.ProductCategories
+            .Where(c => !string.IsNullOrEmpty(c.Name))
             .Select(c => new { c.Id, c.Name })
             .Distinct()
             .ToListAsync(cancellationToken);
 
         var brands = await _dbContext.Brands
+            .Where(b => !string.IsNullOrEmpty(b.Name))
             .Select(b => new { b.Id, b.Name })
             .Distinct()
             .ToListAsync(cancellationToken);
 
         return (
-            categories.Select(c => (c.Id, c.Name)).ToList(),
-            brands.Select(b => (b.Id, b.Name)).ToList()
+            categories.Select(c => (c.Id, c.Name ?? string.Empty)).ToList(),
+            brands.Select(b => (b.Id, b.Name ?? string.Empty)).ToList()
         );
     }
 

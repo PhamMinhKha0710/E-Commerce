@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getProducts, type ProductListResponse } from "@/lib/api/products"
+import { getProducts, deleteProduct, type ProductListResponse } from "@/lib/api/products"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Sheet,
@@ -31,6 +31,17 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Label } from "@/components/ui/label"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { toast } from "@/components/ui/use-toast"
 
 export function ProductManagement() {
   const [loading, setLoading] = useState(true)
@@ -59,6 +70,11 @@ export function ProductManagement() {
   const [status, setStatus] = useState<string | undefined>(undefined)
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined)
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined)
+  
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<number | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Debounce search term
   useEffect(() => {
@@ -153,6 +169,77 @@ export function ProductManagement() {
   }
 
   const hasActiveFilters = categoryId !== undefined || brandId !== undefined || status !== undefined || minPrice !== undefined || maxPrice !== undefined
+
+  const handleDeleteClick = (productId: number) => {
+    setProductToDelete(productId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      await deleteProduct(productToDelete)
+      
+      // Remove from selected if was selected
+      setSelectedProducts(selectedProducts.filter(id => id !== productToDelete))
+      
+      // Refresh product list
+      setLoading(true)
+      let currentPage = pageNumber
+      const data = await getProducts(
+        currentPage, 
+        pageSize, 
+        sortBy || undefined,
+        debouncedSearchTerm || undefined,
+        categoryId,
+        brandId,
+        status,
+        minPrice,
+        maxPrice
+      )
+      
+      // If current page is empty and not first page, go to previous page
+      if (data.products.length === 0 && currentPage > 1) {
+        currentPage = currentPage - 1
+        const prevPageData = await getProducts(
+          currentPage, 
+          pageSize, 
+          sortBy || undefined,
+          debouncedSearchTerm || undefined,
+          categoryId,
+          brandId,
+          status,
+          minPrice,
+          maxPrice
+        )
+        setProductData(prevPageData)
+        setPageNumber(currentPage)
+      } else {
+        setProductData(data)
+      }
+      
+      toast({
+        title: "Đã xóa sản phẩm",
+        description: "Sản phẩm đã được xóa khỏi hệ thống.",
+        variant: "default",
+      })
+      
+      setDeleteDialogOpen(false)
+      setProductToDelete(null)
+    } catch (error) {
+      console.error("Failed to delete product:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa sản phẩm. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -458,7 +545,12 @@ export function ProductManagement() {
                                 <Link href={`/dashboard/products/${product.id}?edit=true`}>Chỉnh sửa</Link>
                               </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">Xóa sản phẩm</DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteClick(product.id)}
+                            >
+                              Xóa sản phẩm
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -512,6 +604,28 @@ export function ProductManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này không thể hoàn tác. Sản phẩm này sẽ bị xóa vĩnh viễn khỏi hệ thống.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Đang xóa..." : "Xóa"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

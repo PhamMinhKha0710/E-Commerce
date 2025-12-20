@@ -3,6 +3,8 @@ using Ecommerce.Application.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Ecommerce.Application.Common.DTOs.Product;
+using System;
+using System.Linq;
 
 namespace Ecommerce.Application.QueryHandlers.Admin.Products;
 
@@ -35,28 +37,54 @@ public class GetAdminProductsQueryHandler : IRequestHandler<GetAdminProductsQuer
                 request.MaxPrice,
                 cancellationToken);
 
-            // Map to DTOs
+            // Map to DTOs with null safety
             var productDtos = products.Select(p => 
             {
-                var defaultItem = p.ProductItems?.FirstOrDefault(pi => pi.IsDefault) ?? p.ProductItems?.FirstOrDefault();
-
-                return new AdminProductListItemDto
+                try
                 {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Slug = p.Slug,
-                    SKU = defaultItem?.SKU ?? string.Empty,
-                    Price = defaultItem?.Price ?? 0,
-                    SalePrice = defaultItem?.OldPrice ?? 0,
-                    Stock = p.QtyInStock,
-                    Status = p.QtyInStock > 0 ? "In Stock" : "Out of Stock",
-                    CategoryId = p.ProductCategoryId,
-                    CategoryName = p.ProductCategory?.Name ?? string.Empty,
-                    BrandId = p.BrandId,
-                    BrandName = p.Brand?.Name ?? string.Empty,
-                    HasVariants = p.HasVariation,
-                    ImageUrl = (p.ProductImages?.FirstOrDefault())?.ImageUrl ?? string.Empty
-                };
+                    var defaultItem = p.ProductItems?.FirstOrDefault(pi => pi != null && pi.IsDefault) 
+                        ?? p.ProductItems?.FirstOrDefault(pi => pi != null);
+
+                    return new AdminProductListItemDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name ?? string.Empty,
+                        Slug = p.Slug ?? string.Empty,
+                        SKU = defaultItem?.SKU ?? string.Empty,
+                        Price = defaultItem?.Price ?? 0,
+                        SalePrice = defaultItem?.OldPrice ?? 0,
+                        Stock = p.QtyInStock,
+                        Status = p.QtyInStock > 0 ? "In Stock" : "Out of Stock",
+                        CategoryId = p.ProductCategoryId,
+                        CategoryName = p.ProductCategory?.Name ?? string.Empty,
+                        BrandId = p.BrandId,
+                        BrandName = p.Brand?.Name ?? string.Empty,
+                        HasVariants = p.HasVariation,
+                        ImageUrl = (p.ProductImages?.FirstOrDefault(img => img != null))?.ImageUrl ?? string.Empty
+                    };
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error mapping product {ProductId} to DTO", p.Id);
+                    // Return a safe default DTO
+                    return new AdminProductListItemDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name ?? "Unknown",
+                        Slug = p.Slug ?? string.Empty,
+                        SKU = string.Empty,
+                        Price = 0,
+                        SalePrice = 0,
+                        Stock = p.QtyInStock,
+                        Status = "Unknown",
+                        CategoryId = 0,
+                        CategoryName = string.Empty,
+                        BrandId = 0,
+                        BrandName = string.Empty,
+                        HasVariants = false,
+                        ImageUrl = string.Empty
+                    };
+                }
             }).ToList();
 
             // Get filter options
@@ -78,7 +106,9 @@ public class GetAdminProductsQueryHandler : IRequestHandler<GetAdminProductsQuer
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving admin products list");
+            _logger.LogError(ex, "Error retrieving admin products list. PageNumber: {PageNumber}, PageSize: {PageSize}, SortBy: {SortBy}, CategoryId: {CategoryId}, BrandId: {BrandId}, Status: {Status}", 
+                request.PageNumber, request.PageSize, request.SortBy, request.CategoryId, request.BrandId, request.Status);
+            _logger.LogError(ex, "Exception details: {Message}, StackTrace: {StackTrace}", ex.Message, ex.StackTrace);
             throw;
         }
     }

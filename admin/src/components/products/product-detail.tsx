@@ -33,6 +33,7 @@ import { getProductDetail, updateProduct, deleteProduct, type ProductDetail as P
 import { getAdminCategories } from "@/lib/api/categories"
 import { getBrands } from "@/lib/api/brands"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatDescriptionToHtml, htmlToPlainText } from "@/lib/descriptionFormatter"
 
 // Define interfaces for API responses
 interface CategoryResponse {
@@ -60,6 +61,7 @@ export function ProductDetail({ productId }: { productId: string }) {
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [loadingBrands, setLoadingBrands] = useState(true)
 
+
   useEffect(() => {
     async function fetchProductDetail() {
       setIsLoading(true)
@@ -71,7 +73,12 @@ export function ProductDetail({ productId }: { productId: string }) {
         }
         const data = await getProductDetail(id)
         setProduct(data)
-        setFormData(data)
+        // Convert HTML description về plain text để hiển thị trong textarea
+        const formDataWithPlainText = {
+          ...data,
+          description: htmlToPlainText(data.description)
+        }
+        setFormData(formDataWithPlainText)
       } catch (err) {
         console.error("Failed to fetch product details:", err)
         setError(err instanceof Error ? err.message : "Failed to load product details")
@@ -165,28 +172,36 @@ export function ProductDetail({ productId }: { productId: string }) {
     setFormData((prev) => prev ? ({ ...prev, attributes: newAttributes }) : null)
   }
 
+
   const handleSave = async () => {
     if (!formData) return
     setIsSaving(true)
     try {
+      // Format description thành HTML nếu cần
+      const formattedDescription = formatDescriptionToHtml(formData.description)
+      
+      // Tự động set status dựa trên stock
+      const status = formData.stock > 0 ? "In Stock" : "Out of Stock"
+      
       // Prepare the data for the API
       const updateData = {
         name: formData.name,
         slug: formData.slug,
-        description: formData.description,
+        description: formattedDescription,
         price: formData.price,
         salePrice: formData.salePrice,
         sku: formData.sku,
         stock: formData.stock,
-        featured: formData.featured,
+        status: status, // Backend requires status field
+        featured: formData.featured ?? false,
         categoryId: typeof formData.categoryId === 'string' 
           ? parseInt(formData.categoryId, 10) 
           : formData.categoryId,
         brandId: typeof formData.brandId === 'string' 
           ? parseInt(formData.brandId, 10) 
           : formData.brandId,
-        images: formData.images,
-        attributes: formData.attributes
+        images: formData.images || [],
+        attributes: formData.attributes || []
       }
       
       const updatedProduct = await updateProduct(formData.id, updateData)

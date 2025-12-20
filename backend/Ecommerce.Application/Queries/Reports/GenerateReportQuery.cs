@@ -47,3 +47,10 @@ public class GenerateReportQuery : IRequest<ReportDto>
 
 
 
+
+
+
+
+
+
+
